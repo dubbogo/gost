@@ -39,19 +39,16 @@ func NewWheel(span time.Duration, buckets int) *Wheel {
 		period: span * (time.Duration(buckets)),
 		ticker: time.NewTicker(span),
 		index:  0,
-		ring:   make([](chan struct{}), buckets),
+		ring:   make([]chan struct{}, buckets),
 		now:    time.Now(),
 	}
 
 	go func() {
 		var notify chan struct{}
-		// var cw CountWatch
-		// cw.Start()
 		for t := range w.ticker.C {
 			w.Lock()
 			w.now = t
 
-			// fmt.Println("index:", w.index, ", value:", w.bitmap.Get(w.index))
 			notify = w.ring[w.index]
 			w.ring[w.index] = nil
 			w.index = (w.index + 1) % len(w.ring)
@@ -62,7 +59,6 @@ func NewWheel(span time.Duration, buckets int) *Wheel {
 				close(notify)
 			}
 		}
-		// fmt.Println("timer costs:", cw.Count()/1e9, "s")
 	}()
 
 	return w
@@ -87,7 +83,6 @@ func (w *Wheel) After(timeout time.Duration) <-chan struct{} {
 	if w.ring[pos] == nil {
 		w.ring[pos] = make(chan struct{})
 	}
-	// fmt.Println("pos:", pos)
 	c := w.ring[pos]
 	w.Unlock()
 

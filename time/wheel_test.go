@@ -24,13 +24,11 @@ func TestWheel(t *testing.T) {
 
 	cw.Start()
 	for {
-		select {
-		case <-wheel.After(TimeMillisecondDuration(1000)):
-			fmt.Println("loop:", index)
-			index++
-			if index >= 150 {
-				return
-			}
+		<-wheel.After(TimeMillisecondDuration(1000))
+		fmt.Println("loop:", index)
+		index++
+		if index >= 150 {
+			return
 		}
 	}
 }
@@ -54,13 +52,11 @@ func TestWheels(t *testing.T) {
 		defer wg.Done()
 		var index int
 		for {
-			select {
-			case <-wheel.After(d):
-				fmt.Println("loop:", index, ", interval:", d)
-				index++
-				if index >= 100 {
-					return
-				}
+			<-wheel.After(d)
+			fmt.Println("loop:", index, ", interval:", d)
+			index++
+			if index >= 100 {
+				return
 			}
 		}
 	}
