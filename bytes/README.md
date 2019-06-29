@@ -7,9 +7,11 @@ package example
 
 import (
 	"context"
-
-	"sofastack.io/sofa-mosn/pkg/buffer"
 	"net/http"
+)
+
+import (
+	"github.com/dubbogo/gost/bytes"
 )
 
 var ins exampleBufferCtx
