@@ -3,8 +3,9 @@
 // governed by Apache License 2.0.
 
 // http://blog.csdn.net/siddontang/article/details/23541587
-// reflect.StringHeader和reflect.SliceHeader的结构体只相差末尾一个字段(cap)
-// vitess代码，一种很hack的做法，string和slice的转换只需要拷贝底层的指针，而不是内存拷贝。
+// the difference btw reflect.StringHeader and reflect.SliceHeader is that there is a 'cap' in reflect.SliceHeader.
+//
+// The following codes is from a vitness project.
 package gxstrings
 
 import (
@@ -12,6 +13,8 @@ import (
 	"unsafe"
 )
 
+// String converts slice to a string object just by convert its pointer type
+// on the same memory heap without copying.
 func String(b []byte) (s string) {
 	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
@@ -20,6 +23,8 @@ func String(b []byte) (s string) {
 	return
 }
 
+// String converts string to a slice object just by convert its pointer type
+// on the same memory heap without copying.
 func Slice(s string) (b []byte) {
 	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
@@ -40,4 +45,3 @@ func BytePointer(b []byte) unsafe.Pointer {
 	p := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	return unsafe.Pointer(p.Data)
 }
-

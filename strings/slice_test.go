@@ -1,37 +1,82 @@
 package gxstrings
 
 import (
+	"reflect"
 	"testing"
 )
 
 // go test  -v slice_test.go  slice.go
 
-// slice转string之后，如果slice的值有变化，string也会跟着改变
 func TestString(t *testing.T) {
 	b := []byte("hello world")
+	// After converting slice to string, the string value will change
+	// when the slice got new value.
 	a := String(b)
 	b[0] = 'a'
-	println(a) //output  aello world
+	if !reflect.DeepEqual("aello world", a) {
+		t.Errorf("a:%+v != `aello world`", a)
+	}
+}
+
+// BenchmarkString0-8   	2000000000	         0.27 ns/op
+func BenchmarkString0(b *testing.B) {
+	b.StartTimer()
+	for i := 0; i < 100000000; i++ {
+		bs := []byte("hello world")
+		_ = string(bs)
+		bs[0] = 'a'
+	}
+	b.StopTimer()
+	bs := []byte("hello world")
+	a := string(bs)
+	bs[0] = 'a'
+	if reflect.DeepEqual("aello world", a) {
+		b.Errorf("a:%+v != `aello world`", a)
+	}
+}
+
+// BenchmarkString-8   	       1	1722255064 ns/op
+func BenchmarkString(b *testing.B) {
+	b.StartTimer()
+	for i := 0; i < 100000000; i++ {
+		bs := []byte("hello world")
+		_ = String(bs)
+		bs[0] = 'a'
+	}
+	b.StopTimer()
+	bs := []byte("hello world")
+	a := String(bs)
+	bs[0] = 'a'
+	if !reflect.DeepEqual("aello world", a) {
+		b.Errorf("a:%+v != `aello world`", a)
+	}
 }
 
 func TestSlice(t *testing.T) {
-	// 编译器会把 "hello, world" 这个字符串常量的字节数组分配在没有写权限的 memory segment
-	a := "hello world"
-	b := Slice(a)
-
-	// !!! 上面这个崩溃在defer里面是recover不回来的，真的就崩溃了，原因可能就跟c的非法内存访问一样，os不跟你玩了
-	// b[0] = 'a' //这里就等着崩溃吧
-
-	//但是可以这样，因为go又重新给b分配了内存
-	b = append(b, "hello world"...)
-	println(String(b)) // output: hello worldhello world
-}
-
-func TestSlice2(t *testing.T) {
-	// 你可以动态生成一个字符串，使其分配在可写的区域，比如 gc heap，那么就不会崩溃了。
 	a := string([]byte("hello world"))
 	b := Slice(a)
 	b = append(b, "hello world"...)
-	println(String(b)) // output: hello worldhello world
+	println(String(b))
+
+	if !reflect.DeepEqual([]byte("hello worldhello world"), b) {
+		t.Errorf("a:%+v != `hello worldhello world`", string(b))
+	}
 }
 
+// BenchmarkSlice0-8   	       1	1187713598 ns/op
+func BenchmarkSlice0(b *testing.B) {
+	for i := 0; i < 100000000; i++ {
+		a := string([]byte("hello world"))
+		bs := ([]byte)(a)
+		_ = append(bs, "hello world"...)
+	}
+}
+
+// BenchmarkSlice-8   	       1	4895001383 ns/op
+func BenchmarkSlice(b *testing.B) {
+	for i := 0; i < 100000000; i++ {
+		a := string([]byte("hello world"))
+		bs := Slice(a)
+		_ = append(bs, "hello world"...)
+	}
+}
