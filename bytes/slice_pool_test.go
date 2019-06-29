@@ -18,56 +18,56 @@ func intN(n int) int {
 	return rand.Intn(n) + 1
 }
 
-func TestByteBufferPoolSmallBytes(t *testing.T) {
-	pool := newByteBufferPool()
+func TestSlicePoolSmallBytes(t *testing.T) {
+	pool := NewSlicePool()
 
 	for i := 0; i < 1024; i++ {
 		size := intN(1 << minShift)
-		bp := pool.take(size)
+		bp := pool.Get(size)
 
 		if cap(*bp) != 1<<minShift {
 			t.Errorf("Expect get the %d bytes from pool, but got %d", size, cap(*bp))
 		}
 
 		// Puts the bytes to pool
-		pool.give(bp)
+		pool.Put(bp)
 	}
 }
 
-func TestBytesBufferPoolMediumBytes(t *testing.T) {
-	pool := newByteBufferPool()
+func TestSlicePoolMediumBytes(t *testing.T) {
+	pool := NewSlicePool()
 
 	for i := minShift; i < maxShift; i++ {
 		size := intRange((1<<uint(i))+1, 1<<uint(i+1))
-		bp := pool.take(size)
+		bp := pool.Get(size)
 
 		if cap(*bp) != 1<<uint(i+1) {
 			t.Errorf("Expect get the slab size (%d) from pool, but got %d", 1<<uint(i+1), cap(*bp))
 		}
 
 		//Puts the bytes to pool
-		pool.give(bp)
+		pool.Put(bp)
 	}
 }
 
-func TestBytesBufferPoolLargeBytes(t *testing.T) {
-	pool := newByteBufferPool()
+func TestSlicePoolLargeBytes(t *testing.T) {
+	pool := NewSlicePool()
 
 	for i := 0; i < 1024; i++ {
 		size := 1<<maxShift + intN(i+1)
-		bp := pool.take(size)
+		bp := pool.Get(size)
 
 		if cap(*bp) != size {
 			t.Errorf("Expect get the %d bytes from pool, but got %d", size, cap(*bp))
 		}
 
 		// Puts the bytes to pool
-		pool.give(bp)
+		pool.Put(bp)
 	}
 }
 
 func TestBytesSlot(t *testing.T) {
-	pool := newByteBufferPool()
+	pool := NewSlicePool()
 
 	if pool.slot(pool.minSize-1) != 0 {
 		t.Errorf("Expect get the 0 slot")

@@ -18,49 +18,46 @@
 package gxbytes
 
 import (
-	"context"
 	"sync"
 )
 
 const (
-    minShift = 6
-    maxShift = 18
-    errSlot = -1
+	minShift = 6
+	maxShift = 18
+	errSlot  = -1
 )
 
 var (
-    bbPool *byteBufferPool
-    ins = ByteBufferCtx{}
+	defaultSlicePool *SlicePool
 )
 
 func init() {
-	RegisterBuffer(&ins)
-	bbPool = newByteBufferPool()
+	defaultSlicePool = NewSlicePool()
 }
 
-// byteBufferPool is []byte pools
-type byteBufferPool struct {
+// SlicePool is []byte pools
+type SlicePool struct {
 	minShift int
 	minSize  int
 	maxSize  int
 
-	pool []*bufferSlot
+	pool []*sliceSlot
 }
 
-type bufferSlot struct {
+type sliceSlot struct {
 	defaultSize int
 	pool        sync.Pool
 }
 
-// newByteBufferPool returns byteBufferPool
-func newByteBufferPool() *byteBufferPool {
-	p := &byteBufferPool{
+// newSlicePool returns SlicePool
+func NewSlicePool() *SlicePool {
+	p := &SlicePool{
 		minShift: minShift,
 		minSize:  1 << minShift,
 		maxSize:  1 << maxShift,
 	}
 	for i := 0; i <= maxShift-minShift; i++ {
-		slab := &bufferSlot{
+		slab := &sliceSlot{
 			defaultSize: 1 << (uint)(i+minShift),
 		}
 		p.pool = append(p.pool, slab)
@@ -69,7 +66,7 @@ func newByteBufferPool() *byteBufferPool {
 	return p
 }
 
-func (p *byteBufferPool) slot(size int) int {
+func (p *SlicePool) slot(size int) int {
 	if size > p.maxSize {
 		return errSlot
 	}
@@ -87,20 +84,20 @@ func (p *byteBufferPool) slot(size int) int {
 	return slot
 }
 
-func newBytes(size int) []byte {
+func newSlice(size int) []byte {
 	return make([]byte, size)
 }
 
-// take returns *[]byte from byteBufferPool
-func (p *byteBufferPool) take(size int) *[]byte {
+// Get returns *[]byte from SlicePool
+func (p *SlicePool) Get(size int) *[]byte {
 	slot := p.slot(size)
 	if slot == errSlot {
-		b := newBytes(size)
+		b := newSlice(size)
 		return &b
 	}
 	v := p.pool[slot].pool.Get()
 	if v == nil {
-		b := newBytes(p.pool[slot].defaultSize)
+		b := newSlice(p.pool[slot].defaultSize)
 		b = b[0:size]
 		return &b
 	}
@@ -109,8 +106,8 @@ func (p *byteBufferPool) take(size int) *[]byte {
 	return b
 }
 
-// give returns *[]byte to byteBufferPool
-func (p *byteBufferPool) give(buf *[]byte) {
+// Put returns *[]byte to SlicePool
+func (p *SlicePool) Put(buf *[]byte) {
 	if buf == nil {
 		return
 	}
@@ -125,43 +122,12 @@ func (p *byteBufferPool) give(buf *[]byte) {
 	p.pool[slot].pool.Put(buf)
 }
 
-type ByteBufferCtx struct {
-	TempBufferCtx
-}
-
-type ByteBufferPoolContainer struct {
-	bytes []*[]byte
-	*byteBufferPool
-}
-
-func (ctx ByteBufferCtx) New() interface{} {
-	return &ByteBufferPoolContainer{
-		byteBufferPool: bbPool,
-	}
-}
-
-func (ctx ByteBufferCtx) Reset(i interface{}) {
-	p := i.(*ByteBufferPoolContainer)
-	for _, buf := range p.bytes {
-		p.give(buf)
-	}
-	p.bytes = p.bytes[:0]
-}
-
-// GetBytesByContext returns []byte from byteBufferPool by context
-func GetBytesByContext(context context.Context, size int) *[]byte {
-	p := PoolContext(context).Find(&ins, nil).(*ByteBufferPoolContainer)
-	buf := p.take(size)
-	p.bytes = append(p.bytes, buf)
-	return buf
-}
-
-// GetBytes returns *[]byte from byteBufferPool
+// GetBytes returns *[]byte from SlicePool
 func GetBytes(size int) *[]byte {
-	return bbPool.take(size)
+	return defaultSlicePool.Get(size)
 }
 
-// PutBytes Put *[]byte to byteBufferPool
+// PutBytes Put *[]byte to SlicePool
 func PutBytes(buf *[]byte) {
-	bbPool.give(buf)
+	defaultSlicePool.Put(buf)
 }

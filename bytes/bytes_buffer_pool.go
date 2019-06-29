@@ -18,49 +18,41 @@
 package gxbytes
 
 import (
-	"errors"
+	"bytes"
 	"sync"
 )
 
-var ibPool IoBufferPool
+var (
+	defaultPool BytesBufferPool
+)
 
-// IoBufferPool is Iobuffer Pool
-type IoBufferPool struct {
-	pool sync.Pool
-}
-
-// take returns IoBuffer from IoBufferPool
-func (p *IoBufferPool) take(size int) (buf Buffer) {
-	v := p.pool.Get()
-	if v == nil {
-		buf = NewIoBuffer(size)
-	} else {
-		buf = v.(Buffer)
-		buf.Alloc(size)
-		buf.Count(1)
-	}
-	return
-}
-
-// give returns IoBuffer to IoBufferPool
-func (p *IoBufferPool) give(buf Buffer) {
-	buf.Free()
-	p.pool.Put(buf)
-}
-
-// GetIoBuffer returns IoBuffer from pool
-func GetIoBuffer(size int) Buffer {
-	return ibPool.take(size)
+// GetBytesBuffer returns bytes.Buffer from pool
+func GetBytesBuffer() *bytes.Buffer {
+	return defaultPool.Get()
 }
 
 // PutIoBuffer returns IoBuffer to pool
-func PutIoBuffer(buf Buffer) error {
-	count := buf.Count(-1)
-	if count > 0 {
-		return nil
-	} else if count < 0 {
-		return errors.New("PutIoBuffer duplicate")
+func PutBytesBuffer(buf *bytes.Buffer) {
+	defaultPool.Put(buf)
+}
+
+// BytesBufferPool is bytes.Buffer Pool
+type BytesBufferPool struct {
+	pool sync.Pool
+}
+
+// take returns *bytes.Buffer from Pool
+func (p *BytesBufferPool) Get() *bytes.Buffer {
+	v := p.pool.Get()
+	if v == nil {
+		return new(bytes.Buffer)
 	}
-	ibPool.give(buf)
-	return nil
+
+	return v.(*bytes.Buffer)
+}
+
+// give returns *byes.Buffer to Pool
+func (p *BytesBufferPool) Put(buf *bytes.Buffer) {
+	buf.Reset()
+	p.pool.Put(buf)
 }
