@@ -2,6 +2,14 @@
 
 A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
+## bytes
+
+* BytesBufferPool
+> bytes.Buffer pool
+
+* SlicePool
+> slice pool
+
 ## sync
 
 > deadlock
@@ -10,9 +18,8 @@ Copy from [go-deadlock](https://github.com/sasha-s/go-deadlock) and add EnableDe
 
 ## strings
 
-> string <--> slice
-
-Convert from string to slice or from slice to string asap.
+* IsNil 
+> check a var is nil or not.
 
 ## time
 
