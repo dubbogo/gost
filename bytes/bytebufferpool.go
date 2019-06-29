@@ -22,19 +22,19 @@ import (
 	"sync"
 )
 
-var ins = ByteBufferCtx{}
+const (
+    minShift = 6
+    maxShift = 18
+    errSlot = -1
+)
+
+var (
+    bbPool *byteBufferPool
+    ins = ByteBufferCtx{}
+)
 
 func init() {
 	RegisterBuffer(&ins)
-}
-
-const minShift = 6
-const maxShift = 18
-const errSlot = -1
-
-var bbPool *byteBufferPool
-
-func init() {
 	bbPool = newByteBufferPool()
 }
 

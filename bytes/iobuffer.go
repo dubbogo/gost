@@ -26,12 +26,17 @@ import (
 	"sync/atomic"
 )
 
-const MinRead = 1 << 9
-const MaxRead = 1 << 17
-const ResetOffMark = -1
-const DefaultSize = 1 << 4
+const (
+    MinRead = 1 << 9
+    MaxRead = 1 << 17
+    ResetOffMark = -1
+    DefaultSize = 1 << 4
+	DefaultConnReadTimeout = 15 * time.Second
+)
 
-var nullByte []byte
+var (
+    nullByte []byte
+)
 
 var (
 	EOF                  = errors.New("EOF")
@@ -67,11 +72,6 @@ func (b *IoBuffer) Read(p []byte) (n int, err error) {
 
 	return
 }
-
-// Default connection arguments
-const (
-	DefaultConnReadTimeout = 15 * time.Second
-)
 
 func (b *IoBuffer) ReadOnce(r io.Reader) (n int64, err error) {
 	var (

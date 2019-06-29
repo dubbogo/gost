@@ -30,13 +30,14 @@ type ContextKey int
 
 // Context key types(built-in)
 const (
-	ContextKeyStart ContextKey = iota
-	ContextKeyBufferPoolCtx
+	ContextKeyBufferPoolCtx ContextKey = iota
 
 	ContextKeyEnd
 )
 
-const maxBufferPool = 16
+const (
+	maxBufferPool = 16
+)
 
 var (
 	index int32
