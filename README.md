@@ -1,6 +1,6 @@
-# gostd
+# gost
 
-Optimization of something in golang sdk
+A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 ## sync
 
