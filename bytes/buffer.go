@@ -32,10 +32,12 @@ type ContextKey int
 const (
 	ContextKeyBufferPoolCtx ContextKey = iota
 
-	ContextKeyEnd
+	ContextKeyEnd = 15
 )
 
 const (
+	// !! there are 16 levels memory block in a memory pool.
+	// such as 2 4 8 16 32 64 128 512 1024 ...
 	maxBufferPool = 16
 )
 
