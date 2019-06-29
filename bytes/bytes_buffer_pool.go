@@ -23,12 +23,18 @@ import (
 )
 
 var (
-	defaultPool BytesBufferPool
+	defaultPool *ObjectPool
 )
+
+func init() {
+	defaultPool = NewObjectPool(func() PoolObject {
+		return new(bytes.Buffer)
+	})
+}
 
 // GetBytesBuffer returns bytes.Buffer from pool
 func GetBytesBuffer() *bytes.Buffer {
-	return defaultPool.Get()
+	return defaultPool.Get().(*bytes.Buffer)
 }
 
 // PutIoBuffer returns IoBuffer to pool
@@ -36,23 +42,35 @@ func PutBytesBuffer(buf *bytes.Buffer) {
 	defaultPool.Put(buf)
 }
 
-// BytesBufferPool is bytes.Buffer Pool
-type BytesBufferPool struct {
+// Pool object
+type PoolObject interface {
+	Reset()
+}
+
+type New func() PoolObject
+
+// Pool is bytes.Buffer Pool
+type ObjectPool struct {
+	New  New
 	pool sync.Pool
 }
 
+func NewObjectPool(n New) *ObjectPool {
+	return &ObjectPool{New: n}
+}
+
 // take returns *bytes.Buffer from Pool
-func (p *BytesBufferPool) Get() *bytes.Buffer {
+func (p *ObjectPool) Get() PoolObject {
 	v := p.pool.Get()
 	if v == nil {
-		return new(bytes.Buffer)
+		return p.New()
 	}
 
-	return v.(*bytes.Buffer)
+	return v.(PoolObject)
 }
 
 // give returns *byes.Buffer to Pool
-func (p *BytesBufferPool) Put(buf *bytes.Buffer) {
-	buf.Reset()
-	p.pool.Put(buf)
+func (p *ObjectPool) Put(o PoolObject) {
+	o.Reset()
+	p.pool.Put(o)
 }

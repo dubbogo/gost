@@ -12,4 +12,11 @@ func TestBytesBufferPool(t *testing.T) {
 		t.Error("iobuffer len not match write bytes' size")
 	}
 	PutBytesBuffer(buf)
+	buf2 := GetBytesBuffer()
+	// https://go-review.googlesource.com/c/go/+/162919/
+	// before go 1.13, sync.Pool just reserves some objs before every gc and will be cleanup by gc.
+	// after Go 1.13, maybe there are many reserved objs after gc.
+	if buf != buf2 {
+		t.Errorf("buf pointer %p != buf2 pointer %p", buf, buf2)
+	}
 }

@@ -18,6 +18,15 @@ func intN(n int) int {
 	return rand.Intn(n) + 1
 }
 
+func ExampleGetBytes() {
+	// Obtain a buffer from the pool.
+	bufPtr := GetBytes(16)
+	defer PutBytes(bufPtr)
+	buf := *bufPtr
+	copy(buf, []byte("hello, world"))
+	println(string(buf))
+}
+
 func TestSlicePoolSmallBytes(t *testing.T) {
 	pool := NewSlicePool()
 
