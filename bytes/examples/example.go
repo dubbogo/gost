@@ -13,7 +13,7 @@ import (
 )
 
 /////////////////////////////////
-// 请求维度的内存申请复用
+// 请求维度的内存(普通对象)申请复用
 /////////////////////////////////
 
 var ins exampleBufferCtx
@@ -65,7 +65,7 @@ func run(ctx context.Context) {
 }
 
 /////////////////////////////////
-// IoBuffer复用
+// IoBuffer 复用
 /////////////////////////////////
 
 // GetIoBuffer returns IoBuffer from pool
@@ -84,7 +84,7 @@ func PutIoBuffer(buf gxbytes.Buffer) error {
 }
 
 /////////////////////////////////
-// Byte复用
+// slice 复用
 /////////////////////////////////
 
 // GetBytes returns *[]byte from byteBufferPool
