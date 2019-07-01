@@ -19,12 +19,15 @@ func intN(n int) int {
 }
 
 func ExampleGetBytes() {
+	str := "hello, world"
 	// Obtain a buffer from the pool.
-	bufPtr := GetBytes(16)
+	bufPtr := GetBytes(len(str))
 	defer PutBytes(bufPtr)
 	buf := *bufPtr
-	copy(buf, []byte("hello, world"))
-	println(string(buf))
+	copy(buf, []byte(str))
+	if string(buf) != str {
+		panic("wrong slice buffer content!!")
+	}
 }
 
 func TestSlicePoolSmallBytes(t *testing.T) {
