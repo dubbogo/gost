@@ -1,7 +1,6 @@
 package hessian
 
 import (
-	"github.com/pkg/errors"
 	"math"
 	"strings"
 	"unicode"
@@ -126,8 +125,7 @@ const (
 func strToInt(str string) (int64, error) {
 	str = strings.TrimSpace(str)
 	if len(str) == 0 {
-		//todo ErrTruncated
-		return 0, nil
+		return 0, ErrTruncated
 	}
 	negative := false
 	i := 0
@@ -145,17 +143,13 @@ func strToInt(str string) (int64, error) {
 	r := uint64(0)
 	for ; i < len(str); i++ {
 		if !unicode.IsDigit(rune(str[i])) {
-			//todo ErrTruncated
-
-			//			err = ErrTruncated
-			err = errors.Errorf("")
+			err = ErrTruncated
 			break
 		}
 		hasNum = true
 		if r >= uintCutOff {
 			r = 0
-			// todo err = errors.Trace(ErrBadNumber)
-			err = errors.Errorf("")
+			err = ErrBadNumber
 			break
 		}
 		r = r * uint64(10)
@@ -163,25 +157,21 @@ func strToInt(str string) (int64, error) {
 		r1 := r + uint64(str[i]-'0')
 		if r1 < r || r1 > maxUint {
 			r = 0
-			//todo err = errors.Trace(ErrBadNumber)
-			err = errors.Errorf("")
+			err = ErrBadNumber
 			break
 		}
 		r = r1
 	}
 	if !hasNum {
-		//err = ErrTruncated
+		err = ErrTruncated
 	}
 
 	if !negative && r >= intCutOff {
-		//todo errors.Trace(ErrBadNumber)
-		return math.MaxInt64, nil
+		return math.MaxInt64, ErrBadNumber
 	}
 
 	if negative && r > intCutOff {
-		//todo errors.Trace(ErrBadNumber)
-
-		return math.MinInt64, nil
+		return math.MinInt64, ErrBadNumber
 	}
 
 	if negative {

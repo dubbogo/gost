@@ -15,16 +15,19 @@
 package hessian
 
 import (
-	"github.com/pkg/errors"
 	"math"
 	"strconv"
 )
 
+import (
+	"github.com/pkg/errors"
+)
+
 var (
-	ErrBadNumber = errors.Errorf("")
-	ErrOverflow  = errors.Errorf("")
-	ErrTruncated = errors.Errorf("")
-	ErrDivByZero = errors.Errorf("")
+	ErrBadNumber = errors.Errorf("Bad Number")
+	ErrOverflow  = errors.Errorf("Data Overflow")
+	ErrTruncated = errors.Errorf("Data Truncated")
+	ErrDivByZero = errors.Errorf("Division by 0")
 )
 
 // RoundMode is the type for round mode.
