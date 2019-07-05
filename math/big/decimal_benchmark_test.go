@@ -17,11 +17,11 @@ import "testing"
 
 func BenchmarkRound(b *testing.B) {
 	b.StopTimer()
-	var roundTo BigDecimal
+	var roundTo Decimal
 	tests := []struct {
 		input    string
 		scale    int
-		inputDec BigDecimal
+		inputDec Decimal
 	}{
 		{input: "123456789.987654321", scale: 1},
 		{input: "15.1", scale: 0},
