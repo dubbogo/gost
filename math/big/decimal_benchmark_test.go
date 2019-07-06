@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package hessian
+package gxbig
 
 import "testing"
 

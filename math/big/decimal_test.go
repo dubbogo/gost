@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package hessian
+package gxbig
 
 import (
 	"strings"
@@ -847,9 +847,9 @@ func TestDivMod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, to Decimal
-		ec := DecimalMod(&a, &b, &to)
 		_ = a.FromString([]byte(tt.a))
 		_ = b.FromString([]byte(tt.b))
+		ec := DecimalMod(&a, &b, &to)
 		assert.Equal(t, ec, tt.err)
 		if tt.err == ErrDivByZero {
 			continue
