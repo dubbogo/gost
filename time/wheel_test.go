@@ -1,14 +1,13 @@
 package gxtime
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 )
 
 // output:
-// timer costs: 100002 ms
+// timer costs: 30001 ms
 // --- PASS: TestNewWheel (100.00s)
 func TestWheel(t *testing.T) {
 	var (
@@ -18,23 +17,23 @@ func TestWheel(t *testing.T) {
 	)
 	wheel = NewWheel(TimeMillisecondDuration(100), 20)
 	defer func() {
-		fmt.Println("timer costs:", cw.Count()/1e6, "ms")
+		t.Log("timer costs:", cw.Count()/1e6, "ms")
 		wheel.Stop()
 	}()
 
 	cw.Start()
 	for {
 		<-wheel.After(TimeMillisecondDuration(1000))
-		fmt.Println("loop:", index)
+		t.Log("loop:", index)
 		index++
-		if index >= 150 {
+		if index >= 30 {
 			return
 		}
 	}
 }
 
 // output:
-// timer costs: 150001 ms
+// timer costs: 45001 ms
 // --- PASS: TestNewWheel2 (150.00s)
 func TestWheels(t *testing.T) {
 	var (
@@ -44,7 +43,7 @@ func TestWheels(t *testing.T) {
 	)
 	wheel = NewWheel(TimeMillisecondDuration(100), 20)
 	defer func() {
-		fmt.Println("timer costs:", cw.Count()/1e6, "ms") //
+		t.Log("timer costs:", cw.Count()/1e6, "ms") //
 		wheel.Stop()
 	}()
 
@@ -53,9 +52,9 @@ func TestWheels(t *testing.T) {
 		var index int
 		for {
 			<-wheel.After(d)
-			fmt.Println("loop:", index, ", interval:", d)
+			t.Log("loop:", index, ", interval:", d)
 			index++
-			if index >= 100 {
+			if index >= 30 {
 				return
 			}
 		}

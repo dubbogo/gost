@@ -1,4 +1,5 @@
 package gxsync
+
 // ref: github.com/sasha-s/go-deadlock
 
 import (
