@@ -11,4 +11,3 @@ func EnableDeadlock(enable bool) {
 		Opts.DisableLockOrderDetection = false
 	}
 }
-
