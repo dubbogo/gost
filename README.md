@@ -13,12 +13,17 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 * SlicePool
 > slice pool
+## container
+
+* HashSet
+
+## math
+
+* Decimal
 
 ## sync
 
-> deadlock
-
-Copy from [go-deadlock](https://github.com/sasha-s/go-deadlock) and add EnableDeadlock.
+* TaskPool
 
 ## strings
 
