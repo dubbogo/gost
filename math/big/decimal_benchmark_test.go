@@ -45,7 +45,7 @@ func BenchmarkRound(b *testing.B) {
 	}
 
 	for i := 0; i < len(tests); i++ {
-		tests[i].inputDec.FromString([]byte(tests[i].input))
+		tests[i].inputDec.FromBytes([]byte(tests[i].input))
 	}
 
 	b.StartTimer()
