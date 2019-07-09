@@ -391,8 +391,13 @@ func (d *Decimal) ToString() (str []byte) {
 	return
 }
 
-// FromString parses decimal from string.
-func (d *Decimal) FromString(str []byte) error {
+// FromBytes parses decimal from string.
+func (d *Decimal) FromString(str string) error {
+	return d.FromBytes([]byte(str))
+}
+
+// FromBytes parses decimal from bytes.
+func (d *Decimal) FromBytes(str []byte) error {
 	for i := 0; i < len(str); i++ {
 		if !isSpace(str[i]) {
 			str = str[i:]
@@ -1077,7 +1082,7 @@ func (d *Decimal) ToUint() (uint64, error) {
 // FromFloat64 creates a decimal from float64 value.
 func (d *Decimal) FromFloat64(f float64) error {
 	s := strconv.FormatFloat(f, 'g', -1, 64)
-	return d.FromString([]byte(s))
+	return d.FromBytes([]byte(s))
 }
 
 // ToFloat64 converts decimal to float64 value.
@@ -2277,7 +2282,7 @@ func NewDecFromFloatForTest(f float64) *Decimal {
 // NewDecFromStringForTest creates a Decimal from string, as it returns no error, it should only be used in test.
 func NewDecFromStringForTest(s string) *Decimal {
 	dec := new(Decimal)
-	_ = dec.FromString([]byte(s))
+	_ = dec.FromBytes([]byte(s))
 	//todo terror.Log(errors.Trace(err))
 	return dec
 }
@@ -2295,7 +2300,7 @@ func NewMaxOrMinDec(negative bool, prec, frac int) *Decimal {
 	}
 	str[1+prec-frac] = '.'
 	dec := new(Decimal)
-	_ = dec.FromString(str)
+	_ = dec.FromBytes(str)
 	//todo terror.Log(errors.Trace(err))
 	return dec
 }
