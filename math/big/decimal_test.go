@@ -39,7 +39,7 @@ func TestFromInt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dec := NewDecFromInt(tt.input)
-		str := dec.ToString()
+		str := dec.ToBytes()
 		assert.Equal(t, string(str), tt.output)
 	}
 }
@@ -56,7 +56,7 @@ func TestFromUint(t *testing.T) {
 	for _, tt := range tests {
 		var dec Decimal
 		dec.FromUint(tt.input)
-		str := dec.ToString()
+		str := dec.ToBytes()
 		assert.Equal(t, string(str), tt.output)
 	}
 }
@@ -122,7 +122,7 @@ func TestFromFloat(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dec := NewDecFromFloatForTest(tt.f)
-		str := dec.ToString()
+		str := dec.ToBytes()
 		assert.Equal(t, string(str), tt.s)
 	}
 }
@@ -235,7 +235,7 @@ func TestRemoveTrailingZeros(t *testing.T) {
 
 		// calculate the number of digits after point but trailing zero
 		digitsFracExp := 0
-		str := string(dec.ToString())
+		str := string(dec.ToBytes())
 		point := strings.Index(str, ".")
 		if point != -1 {
 			pos := len(str) - 1
@@ -268,7 +268,7 @@ func TestShift(t *testing.T) {
 			//origin := dec
 			err = dec.Shift(ca.shift)
 			assert.Equal(t, err, ca.err)
-			result := dec.ToString()
+			result := dec.ToBytes()
 			//, Commentf("origin:%s\ndec:%s", origin.String(), string(result))
 			assert.Equal(t, string(result), ca.output)
 		}
@@ -398,7 +398,7 @@ func TestRoundWithHalfEven(t *testing.T) {
 		var rounded Decimal
 		err := dec.Round(&rounded, ca.scale, ModeHalfEven)
 		assert.Equal(t, err, ca.err)
-		result := rounded.ToString()
+		result := rounded.ToBytes()
 		assert.Equal(t, string(result), ca.output)
 	}
 }
@@ -432,7 +432,7 @@ func TestRoundWithTruncate(t *testing.T) {
 		var rounded Decimal
 		err := dec.Round(&rounded, ca.scale, ModeTruncate)
 		assert.Equal(t, err, ca.err)
-		result := rounded.ToString()
+		result := rounded.ToBytes()
 		assert.Equal(t, string(result), ca.output)
 	}
 }
@@ -467,7 +467,7 @@ func TestRoundWithCeil(t *testing.T) {
 		var rounded Decimal
 		err := dec.Round(&rounded, ca.scale, modeCeiling)
 		assert.Equal(t, err, ca.err)
-		result := rounded.ToString()
+		result := rounded.ToBytes()
 		assert.Equal(t, string(result), ca.output)
 	}
 }
@@ -494,7 +494,7 @@ func TestFromString(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, err, ca.err)
 		}
-		result := string(dec.ToString())
+		result := string(dec.ToBytes())
 		assert.Equal(t, result, ca.output)
 	}
 	wordBufLen = 1
@@ -506,13 +506,13 @@ func TestFromString(t *testing.T) {
 		var dec Decimal
 		err := dec.FromBytes([]byte(ca.input))
 		assert.Equal(t, err, ca.err)
-		result := string(dec.ToString())
+		result := string(dec.ToBytes())
 		assert.Equal(t, result, ca.output)
 	}
 	wordBufLen = maxWordBufLen
 }
 
-func TestToString(t *testing.T) {
+func TestToBytes(t *testing.T) {
 	type tcase struct {
 		input  string
 		output string
@@ -525,7 +525,7 @@ func TestToString(t *testing.T) {
 	for _, ca := range tests {
 		var dec Decimal
 		_ = dec.FromBytes([]byte(ca.input))
-		result := dec.ToString()
+		result := dec.ToBytes()
 		assert.Equal(t, string(result), ca.output)
 	}
 }
@@ -564,7 +564,7 @@ func TestToBinFromBin(t *testing.T) {
 		var dec2 Decimal
 		_, err = dec2.FromBin(buf, ca.precision, ca.frac)
 		assert.Equal(t, err, nil)
-		str := dec2.ToString()
+		str := dec2.ToBytes()
 		assert.Equal(t, string(str), ca.output)
 	}
 	var dec Decimal
@@ -637,7 +637,7 @@ func TestMaxDecimal(t *testing.T) {
 	for _, tt := range tests {
 		var dec Decimal
 		maxDecimal(tt.prec, tt.frac, &dec)
-		str := dec.ToString()
+		str := dec.ToBytes()
 		assert.Equal(t, string(str), tt.result)
 	}
 }
@@ -656,7 +656,7 @@ func TestNeg(t *testing.T) {
 	for _, tt := range tests {
 		a := NewDecFromStringForTest(tt.a)
 		negResult := DecimalNeg(a)
-		result := negResult.ToString()
+		result := negResult.ToBytes()
 		assert.Equal(t, string(result), tt.result)
 	}
 }
@@ -691,7 +691,7 @@ func TestAdd(t *testing.T) {
 		var sum Decimal
 		err := DecimalAdd(a, b, &sum)
 		assert.Equal(t, err, tt.err)
-		result := sum.ToString()
+		result := sum.ToBytes()
 		assert.Equal(t, string(result), tt.result)
 	}
 }
@@ -725,7 +725,7 @@ func TestSub(t *testing.T) {
 		b.FromBytes([]byte(tt.b))
 		err := DecimalSub(&a, &b, &sum)
 		assert.Equal(t, err, tt.err)
-		result := sum.ToString()
+		result := sum.ToBytes()
 		assert.Equal(t, string(result), tt.result)
 	}
 }
@@ -794,7 +794,7 @@ func TestDivMod(t *testing.T) {
 		if tt.err == ErrDivByZero {
 			continue
 		}
-		result := to.ToString()
+		result := to.ToBytes()
 		assert.Equal(t, string(result), tt.result)
 	}
 
@@ -816,7 +816,7 @@ func TestDivMod(t *testing.T) {
 		if tt.err == ErrDivByZero {
 			continue
 		}
-		result := to.ToString()
+		result := to.ToBytes()
 		assert.Equal(t, string(result), tt.result)
 	}
 
