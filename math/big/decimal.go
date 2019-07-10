@@ -266,7 +266,7 @@ func (d *Decimal) String() string {
 	tmp := *d
 	_ = tmp.Round(&tmp, int(tmp.resultFrac), ModeHalfEven)
 	//todo terror.Log(errors.Trace(err))
-	return string(tmp.ToString())
+	return string(tmp.ToBytes())
 }
 
 func (d *Decimal) stringSize() int {
@@ -314,7 +314,7 @@ func (d *Decimal) removeTrailingZeros() (lastWordIdx int, digitsFrac int) {
 //      str       - result string
 //      errCode   - eDecOK/eDecTruncate/eDecOverflow
 //
-func (d *Decimal) ToString() (str []byte) {
+func (d *Decimal) ToBytes() (str []byte) {
 	str = make([]byte, d.stringSize())
 	digitsFrac := int(d.digitsFrac)
 	wordStartIdx, digitsInt := d.removeLeadingZeros()
