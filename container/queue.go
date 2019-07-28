@@ -29,19 +29,21 @@ const (
 )
 
 var (
-	ErrEmpty = errors.New("")
+	ErrEmpty = errors.New("quue is empty")
+	ErrFull  = errors.New("queue is full")
 )
 
 // Queue represents a single instance of the queue data structure.
 type Queue struct {
-	buf               []interface{}
-	head, tail, count int
-	lock              sync.Mutex
+	buf                    []interface{}
+	head, tail, count, cap int
+	lock                   sync.Mutex
 }
 
 // New constructs and returns a new Queue.
-func NewQueue() *Queue {
+func NewQueue(cap int) *Queue {
 	return &Queue{
+		cap: cap,
 		buf: make([]interface{}, defaultQueueLen),
 	}
 }
@@ -56,7 +58,11 @@ func (q *Queue) Length() int {
 // resizes the queue to fit exactly twice its current contents
 // this can result in shrinking if the queue is less than half-full
 func (q *Queue) resize() {
-	newBuf := make([]interface{}, q.count<<1)
+	newSize := q.count << 1
+	if newSize > q.cap {
+		newSize = q.cap
+	}
+	newBuf := make([]interface{}, newSize)
 
 	if q.tail > q.head {
 		copy(newBuf, q.buf[q.head:q.tail])
@@ -71,9 +77,13 @@ func (q *Queue) resize() {
 }
 
 // Add puts an element on the end of the queue.
-func (q *Queue) Add(elem interface{}) {
+func (q *Queue) Add(elem interface{}) error {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	if q.count >= q.cap {
+		return ErrFull
+	}
+
 	if q.count == len(q.buf) {
 		q.resize()
 	}
@@ -81,6 +91,7 @@ func (q *Queue) Add(elem interface{}) {
 	q.buf[q.tail] = elem
 	q.tail = (q.tail + 1) & (len(q.buf) - 1)
 	q.count++
+	return nil
 }
 
 // Peek returns the element at the head of the queue. return ErrEmpty

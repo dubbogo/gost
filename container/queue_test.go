@@ -26,7 +26,7 @@ import (
 )
 
 func TestQueueSimple(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue(defaultQueueLen)
 
 	for i := 0; i < defaultQueueLen; i++ {
 		q.Add(i)
@@ -40,7 +40,7 @@ func TestQueueSimple(t *testing.T) {
 }
 
 func TestQueueWrapping(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue(defaultQueueLen)
 
 	for i := 0; i < defaultQueueLen; i++ {
 		q.Add(i)
@@ -57,8 +57,18 @@ func TestQueueWrapping(t *testing.T) {
 	}
 }
 
+func TestQueueFull(t *testing.T) {
+	q := NewQueue(defaultQueueLen)
+	for i := 0; i < defaultQueueLen; i++ {
+		err := q.Add(i)
+		assert.Nil(t, err)
+	}
+	err := q.Add(defaultQueueLen)
+	assert.Equal(t, ErrFull, err)
+}
+
 func TestQueueLength(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue(1000)
 
 	assert.Equal(t, 0, q.Length(), "empty queue length should be 0")
 
@@ -72,8 +82,8 @@ func TestQueueLength(t *testing.T) {
 	}
 }
 
-func TestQueuePeekOutOfRangePanics(t *testing.T) {
-	q := NewQueue()
+func TestQueuePeekOutOfRangeErr(t *testing.T) {
+	q := NewQueue(defaultQueueLen)
 
 	_, err := q.Peek()
 	assert.Equal(t, ErrEmpty, err)
@@ -86,8 +96,8 @@ func TestQueuePeekOutOfRangePanics(t *testing.T) {
 	assert.Equal(t, ErrEmpty, err)
 }
 
-func TestQueueRemoveOutOfRangePanics(t *testing.T) {
-	q := NewQueue()
+func TestQueueRemoveOutOfRangeErr(t *testing.T) {
+	q := NewQueue(defaultQueueLen)
 
 	_, err := q.Remove()
 	assert.Equal(t, ErrEmpty, err)
@@ -106,7 +116,7 @@ func TestQueueRemoveOutOfRangePanics(t *testing.T) {
 // enough, but if you have less than that available and start swapping, then all bets are off.
 
 func BenchmarkQueueSerial(b *testing.B) {
-	q := NewQueue()
+	q := NewQueue(defaultQueueLen)
 	for i := 0; i < b.N; i++ {
 		q.Add(nil)
 	}
@@ -117,7 +127,7 @@ func BenchmarkQueueSerial(b *testing.B) {
 }
 
 func BenchmarkQueueTickTock(b *testing.B) {
-	q := NewQueue()
+	q := NewQueue(defaultQueueLen)
 	for i := 0; i < b.N; i++ {
 		q.Add(nil)
 		q.Peek()
