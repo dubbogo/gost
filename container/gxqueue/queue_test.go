@@ -223,7 +223,7 @@ func TestMultipleGetEmpty(t *testing.T) {
 
 	if assert.Len(t, results[0], 1) && assert.Len(t, results[1], 1) {
 		assert.True(t, (results[0][0] == `a` && results[1][0] == `b`) ||
-				(results[0][0] == `b` && results[1][0] == `a`),
+			(results[0][0] == `b` && results[1][0] == `a`),
 			`The array should be a, b or b, a`)
 	}
 }
