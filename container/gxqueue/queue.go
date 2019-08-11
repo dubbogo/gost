@@ -60,15 +60,13 @@ func (w *waiters) remove(sema *sema) {
 	if len(*w) == 0 {
 		return
 	}
-	// build new slice, copy all except sema
 	ws := *w
-	newWs := make(waiters, 0, len(*w))
-	for i := range ws {
-		if ws[i] != sema {
-			newWs = append(newWs, ws[i])
+	for i := range *w {
+		if ws[i] == sema {
+			*w = append(ws[:i], ws[i+1:]...)
+			return
 		}
 	}
-	*w = newWs
 }
 
 type items []interface{}
@@ -153,9 +151,9 @@ func (q *Queue) Put(items ...interface{}) error {
 	}
 
 	q.lock.Lock()
+	defer q.lock.Unlock()
 
 	if q.disposed {
-		q.lock.Unlock()
 		return ErrDisposed
 	}
 
@@ -177,7 +175,6 @@ func (q *Queue) Put(items ...interface{}) error {
 		}
 	}
 
-	q.lock.Unlock()
 	return nil
 }
 
