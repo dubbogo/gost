@@ -38,6 +38,7 @@ var (
 	ErrEmptyQueue = errors.New(`queue: empty queue`)
 )
 
+// waiters is the struct responsible for store sema(waiter better) of queue.
 type waiters []*sema
 
 func (w *waiters) get() *sema {
@@ -60,38 +61,34 @@ func (w *waiters) remove(sema *sema) {
 	if len(*w) == 0 {
 		return
 	}
-	ws := *w
 	for i := range *w {
-		if ws[i] == sema {
-			*w = append(ws[:i], ws[i+1:]...)
+		if (*w)[i] == sema {
+			*w = append((*w)[:i], (*w)[i+1:]...)
 			return
 		}
 	}
 }
 
+// items is the struct responsible for store queue data
 type items []interface{}
 
 func (items *items) get(number int64) []interface{} {
-	returnItems := make([]interface{}, 0, number)
-	index := int64(0)
-	for i := int64(0); i < number; i++ {
-		if i >= int64(len(*items)) {
-			break
-		}
-
-		returnItems = append(returnItems, (*items)[i])
-		(*items)[i] = nil
-		index++
+	index := int(number)
+	if int(number) > len(*items) {
+		index = len(*items)
 	}
+
+	returnItems := make([]interface{}, 0, index)
+	returnItems = returnItems[:index]
+
+	copy(returnItems[:index], (*items))
 
 	*items = (*items)[index:]
 	return returnItems
 }
 
 func (items *items) peek() (interface{}, bool) {
-	length := len(*items)
-
-	if length == 0 {
+	if len(*items) == 0 {
 		return nil, false
 	}
 
@@ -123,6 +120,8 @@ func (items *items) getUntil(checker func(item interface{}) bool) []interface{} 
 	return returnItems
 }
 
+// sema is the struct responsible for tracking the state
+// of waiter. blocking poll if no data, notify if new data comes in.
 type sema struct {
 	ready    chan bool
 	response *sync.WaitGroup
@@ -142,6 +141,13 @@ type Queue struct {
 	items    items
 	lock     sync.Mutex
 	disposed bool
+}
+
+// New is a constructor for a new threadsafe queue.
+func New(hint int64) *Queue {
+	return &Queue{
+		items: make([]interface{}, 0, hint),
+	}
 }
 
 // Put will add the specified items to the queue.
@@ -333,13 +339,6 @@ func (q *Queue) Dispose() []interface{} {
 	q.waiters = nil
 
 	return disposedItems
-}
-
-// New is a constructor for a new threadsafe queue.
-func New(hint int64) *Queue {
-	return &Queue{
-		items: make([]interface{}, 0, hint),
-	}
 }
 
 // ExecuteInParallel will (in parallel) call the provided function
