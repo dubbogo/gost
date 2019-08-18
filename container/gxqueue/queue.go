@@ -140,7 +140,7 @@ type Queue struct {
 	waiters  waiters
 	items    items
 	lock     sync.Mutex
-	disposed bool
+	disposed int32
 }
 
 // New is a constructor for a new threadsafe queue.
@@ -159,7 +159,7 @@ func (q *Queue) Put(items ...interface{}) error {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	if q.disposed {
+	if atomic.LoadInt32(&q.disposed) == 1 {
 		return ErrDisposed
 	}
 
@@ -205,7 +205,7 @@ func (q *Queue) Poll(number int64, timeout time.Duration) ([]interface{}, error)
 
 	q.lock.Lock()
 
-	if q.disposed {
+	if atomic.LoadInt32(&q.disposed) == 1 {
 		q.lock.Unlock()
 		return nil, ErrDisposed
 	}
@@ -224,7 +224,7 @@ func (q *Queue) Poll(number int64, timeout time.Duration) ([]interface{}, error)
 		select {
 		case <-sema.ready:
 			// we are now inside the put's lock
-			if q.disposed {
+			if atomic.LoadInt32(&q.disposed) == 1 {
 				return nil, ErrDisposed
 			}
 			items = q.items.get(number)
@@ -258,7 +258,7 @@ func (q *Queue) Peek() (interface{}, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	if q.disposed {
+	if atomic.LoadInt32(&q.disposed) == 1 {
 		return nil, ErrDisposed
 	}
 
@@ -270,17 +270,17 @@ func (q *Queue) Peek() (interface{}, error) {
 	return peekItem, nil
 }
 
-// TakeUntil takes a function and returns a list of items that
+// GetUntil gets a function and returns a list of items that
 // match the checker until the checker returns false.  This does not
 // wait if there are no items in the queue.
-func (q *Queue) TakeUntil(checker func(item interface{}) bool) ([]interface{}, error) {
+func (q *Queue) GetUntil(checker func(item interface{}) bool) ([]interface{}, error) {
 	if checker == nil {
 		return nil, nil
 	}
 
 	q.lock.Lock()
 
-	if q.disposed {
+	if atomic.LoadInt32(&q.disposed) == 1 {
 		q.lock.Unlock()
 		return nil, ErrDisposed
 	}
@@ -312,7 +312,7 @@ func (q *Queue) Disposed() bool {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	return q.disposed
+	return atomic.LoadInt32(&q.disposed) == 1
 }
 
 // Dispose will dispose of this queue and returns
@@ -322,7 +322,7 @@ func (q *Queue) Dispose() []interface{} {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	q.disposed = true
+	atomic.StoreInt32(&q.disposed, 1)
 	for _, waiter := range q.waiters {
 		waiter.response.Add(1)
 		select {
@@ -352,9 +352,9 @@ func ExecuteInParallel(q *Queue, fn func(interface{})) {
 
 	q.lock.Lock() // so no one touches anything in the middle
 	// of this process
-	todo, done := uint64(len(q.items)), int64(-1)
+	length, count := uint64(len(q.items)), int64(-1)
 	// this is important or we might face an infinite loop
-	if todo == 0 {
+	if length == 0 {
 		return
 	}
 
@@ -370,8 +370,8 @@ func ExecuteInParallel(q *Queue, fn func(interface{})) {
 	for i := 0; i < numCPU; i++ {
 		go func() {
 			for {
-				index := atomic.AddInt64(&done, 1)
-				if index >= int64(todo) {
+				index := atomic.AddInt64(&count, 1)
+				if index >= int64(length) {
 					wg.Done()
 					break
 				}

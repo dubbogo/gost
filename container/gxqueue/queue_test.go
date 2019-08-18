@@ -181,6 +181,7 @@ func TestGetEmpty(t *testing.T) {
 	q := New(10)
 
 	go func() {
+		time.Sleep(time.Second)
 		q.Put(`a`)
 	}()
 
@@ -223,7 +224,7 @@ func TestMultipleGetEmpty(t *testing.T) {
 
 	if assert.Len(t, results[0], 1) && assert.Len(t, results[1], 1) {
 		assert.True(t, (results[0][0] == `a` && results[1][0] == `b`) ||
-			(results[0][0] == `b` && results[1][0] == `a`),
+				(results[0][0] == `b` && results[1][0] == `a`),
 			`The array should be a, b or b, a`)
 	}
 }
@@ -370,10 +371,10 @@ func TestPeekOnDisposedQueue(t *testing.T) {
 	assert.IsType(t, ErrDisposed, err)
 }
 
-func TestTakeUntil(t *testing.T) {
+func TestGetUntil(t *testing.T) {
 	q := New(10)
 	q.Put(`a`, `b`, `c`)
-	result, err := q.TakeUntil(func(item interface{}) bool {
+	result, err := q.GetUntil(func(item interface{}) bool {
 		return item != `c`
 	})
 
@@ -385,9 +386,9 @@ func TestTakeUntil(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestTakeUntilEmptyQueue(t *testing.T) {
+func TestGetUntilEmptyQueue(t *testing.T) {
 	q := New(10)
-	result, err := q.TakeUntil(func(item interface{}) bool {
+	result, err := q.GetUntil(func(item interface{}) bool {
 		return item != `c`
 	})
 
@@ -399,10 +400,10 @@ func TestTakeUntilEmptyQueue(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestTakeUntilThenGet(t *testing.T) {
+func TestGetUntilThenGet(t *testing.T) {
 	q := New(10)
 	q.Put(`a`, `b`, `c`)
-	takeItems, _ := q.TakeUntil(func(item interface{}) bool {
+	takeItems, _ := q.GetUntil(func(item interface{}) bool {
 		return item != `c`
 	})
 
@@ -411,10 +412,10 @@ func TestTakeUntilThenGet(t *testing.T) {
 	assert.Equal(t, []interface{}{`c`}, restItems)
 }
 
-func TestTakeUntilNoMatches(t *testing.T) {
+func TestGetUntilNoMatches(t *testing.T) {
 	q := New(10)
 	q.Put(`a`, `b`, `c`)
-	takeItems, _ := q.TakeUntil(func(item interface{}) bool {
+	takeItems, _ := q.GetUntil(func(item interface{}) bool {
 		return item != `a`
 	})
 
@@ -423,10 +424,10 @@ func TestTakeUntilNoMatches(t *testing.T) {
 	assert.Equal(t, []interface{}{`a`, `b`, `c`}, restItems)
 }
 
-func TestTakeUntilOnDisposedQueue(t *testing.T) {
+func TestGetUntilOnDisposedQueue(t *testing.T) {
 	q := New(10)
 	q.Dispose()
-	result, err := q.TakeUntil(func(item interface{}) bool {
+	result, err := q.GetUntil(func(item interface{}) bool {
 		return true
 	})
 
