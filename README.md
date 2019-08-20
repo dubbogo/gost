@@ -15,7 +15,11 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 > slice pool
 ## container
 
-* HashSet
+* gxqueue
+> Queue
+
+* gxset
+> HashSet
 
 ## math
 

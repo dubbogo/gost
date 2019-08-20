@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package container
+package gxset
 
 import (
 	"fmt"
