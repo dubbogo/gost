@@ -31,6 +31,8 @@ func TestInteger_FromString(t *testing.T) {
 		wantErr bool
 	}{
 		{`ten`, args{`10`}, false},
+		{`-ten`, args{`-10`}, false},
+		{`30digits`, args{`123456789012345678901234567890`}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
