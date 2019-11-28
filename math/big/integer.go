@@ -24,7 +24,7 @@ import (
 
 // Integer represents a integer value.
 type Integer struct {
-	big.Int
+	bigInt big.Int
 
 	// for hessian
 	Value string
@@ -36,31 +36,31 @@ func (Integer) JavaClassName() string {
 
 // FromString set data from a 10-bases number
 func (i *Integer) FromString(s string) error {
-	intPtr, ok := i.Int.SetString(s, 10)
+	intPtr, ok := i.bigInt.SetString(s, 10)
 	if !ok || intPtr == nil {
 		return fmt.Errorf("'%s' is not a 10-based number", s)
 	}
 
-	i.Int = *intPtr
+	i.bigInt = *intPtr
 	return nil
 }
 
 // FromBytes set data from a 10-bases number bytes
 func (i *Integer) FromBytes(bytes []byte) error {
-	i.Int = *i.Int.SetBytes(bytes)
+	i.bigInt = *i.bigInt.SetBytes(bytes)
 	return nil
 }
 
 // GetBigInt getter
 func (i *Integer) GetBigInt() big.Int {
-	return i.Int
+	return i.bigInt
 }
 
 // SetBigInt setter
 func (i *Integer) SetBigInt(bigInt big.Int) {
-	i.Int = bigInt
+	i.bigInt = bigInt
 }
 
 func (i *Integer) String() string {
-	return i.Int.String()
+	return i.bigInt.String()
 }
