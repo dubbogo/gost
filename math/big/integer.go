@@ -30,7 +30,7 @@ type Integer struct {
 	Value string
 }
 
-func (i *Integer) JavaClassName() string {
+func (Integer) JavaClassName() string {
 	return "java.math.BigInteger"
 }
 
