@@ -21,28 +21,33 @@ import (
 	"testing"
 )
 
-func TestInteger_FromString(t *testing.T) {
-	type args struct {
-		s string
-	}
+func TestInteger(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name       string
+		src        string
+		wantString string
+		wantErr    bool
 	}{
-		{`ten`, args{`10`}, false},
-		{`-ten`, args{`-10`}, false},
-		{`30digits`, args{`123456789012345678901234567890`}, false},
+		{`ten`, `10`, `10`, false},
+		{`-ten`, `-10`, `-10`, false},
+		{`30digits`, `123456789012345678901234567890`, `123456789012345678901234567890`, false},
+		{`invalid-x010`, `x010`, ``, true},
+		{`invalid-a010`, `a010`, ``, true},
+		{`invalid-10x`, `10x`, ``, true},
+		{`invalid-010x`, `010x`, ``, true},
+		{`special-010`, `010`, `10`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			i := &Integer{}
-			if err := i.FromString(tt.args.s); (err != nil) != tt.wantErr {
+			err := i.FromString(tt.src)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("FromString() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 
-			if got := i.String(); got != tt.args.s {
-				t.Errorf("String() = %v, want %v", got, tt.args.s)
+			if err == nil && i.String() != tt.wantString {
+				t.Errorf("String() got %v, want %v", i.String(), tt.wantString)
 			}
 		})
 	}

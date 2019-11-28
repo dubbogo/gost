@@ -18,7 +18,7 @@
 package gxbig
 
 import (
-	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -30,23 +30,35 @@ type Integer struct {
 	Value string
 }
 
-func (Integer) JavaClassName() string {
+func (i *Integer) JavaClassName() string {
 	return "java.math.BigInteger"
 }
 
+// FromString set data from a 10-bases number
 func (i *Integer) FromString(s string) error {
 	intPtr, ok := i.Int.SetString(s, 10)
 	if !ok || intPtr == nil {
-		return errors.New(``)
+		return fmt.Errorf("'%s' is not a 10-based number", s)
 	}
 
 	i.Int = *intPtr
 	return nil
 }
 
+// FromBytes set data from a 10-bases number bytes
 func (i *Integer) FromBytes(bytes []byte) error {
 	i.Int = *i.Int.SetBytes(bytes)
 	return nil
+}
+
+// GetBigInt getter
+func (i *Integer) GetBigInt() big.Int {
+	return i.Int
+}
+
+// SetBigInt setter
+func (i *Integer) SetBigInt(bigInt big.Int) {
+	i.Int = bigInt
 }
 
 func (i *Integer) String() string {
