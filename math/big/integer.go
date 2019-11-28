@@ -18,6 +18,7 @@
 package gxbig
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/big"
 )
@@ -27,7 +28,13 @@ type Integer struct {
 	bigInt big.Int
 
 	// for hessian
-	Value string
+	Signum int32
+	Mag    []int
+
+	FirstNonzeroIntNum int
+	LowestSetBit       int
+	BitLength          int
+	BitCount           int
 }
 
 func (Integer) JavaClassName() string {
@@ -45,10 +52,45 @@ func (i *Integer) FromString(s string) error {
 	return nil
 }
 
-// FromBytes set data from a 10-bases number bytes
-func (i *Integer) FromBytes(bytes []byte) error {
+// FromMag set data from a array of big-endian unsigned uint32
+// @see https://docs.oracle.com/javase/8/docs/api/java/math/BigInteger.html#BigInteger-int-byte:A-
+func (i *Integer) FromSignAndMag(signum int32, mag []int) {
+	if signum == 0 && len(mag) == 0 {
+		return
+	}
+
+	i.Signum = signum
+	i.Mag = mag
+
+	bytes := make([]byte, 4*len(i.Mag))
+	for j := 0; j < len(i.Mag); j++ {
+		binary.BigEndian.PutUint32(bytes[j*4:(j+1)*4], uint32(i.Mag[j]))
+	}
 	i.bigInt = *i.bigInt.SetBytes(bytes)
-	return nil
+
+	if i.Signum == -1 {
+		i.bigInt.Neg(&i.bigInt)
+	}
+}
+
+func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
+	signum = int32(i.bigInt.Sign())
+
+	bytes := i.bigInt.Bytes()
+	outOf4 := len(bytes) % 4
+	if outOf4 > 0 {
+		bytes = append(make([]byte, 4-outOf4), bytes...)
+	}
+
+	size := len(bytes) / 4
+
+	mag = make([]int, size)
+
+	for i := 0; i < size; i++ {
+		mag[i] = int(binary.BigEndian.Uint32(bytes[i*4 : (i+1)*4]))
+	}
+
+	return
 }
 
 // GetBigInt getter
@@ -63,4 +105,8 @@ func (i *Integer) SetBigInt(bigInt big.Int) {
 
 func (i *Integer) String() string {
 	return i.bigInt.String()
+}
+
+func (i *Integer) Bytes() []byte {
+	return i.bigInt.Bytes()
 }

@@ -18,6 +18,7 @@
 package gxbig
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -48,6 +49,51 @@ func TestInteger(t *testing.T) {
 
 			if err == nil && i.String() != tt.wantString {
 				t.Errorf("String() got %v, want %v", i.String(), tt.wantString)
+			}
+		})
+	}
+}
+
+func TestInteger_FromSignAndMag(t *testing.T) {
+	type args struct {
+		signum int32
+		mag    []int
+	}
+	tests := []struct {
+		name  string
+		digit string
+		args  args
+	}{
+		{`0`, `0`, args{0, []int{}}},
+		{`1`, `1`, args{1, []int{1}}},
+		{`2147483647`, `2147483647`, args{1, []int{2147483647}}},
+		{`4294967295`, `4294967295`, args{1, []int{4294967295}}},
+		{`4294967296`, `4294967296`, args{1, []int{1, 0}}},
+		{`4294967298`, `4294967298`, args{1, []int{1, 2}}},
+		{`1x2x3`, `18446744082299486211`, args{1, []int{1, 2, 3}}},
+		{`-1`, `-1`, args{-1, []int{1}}},
+		{`-4294967296`, `-4294967296`, args{-1, []int{1, 0}}},
+		{`-4294967298`, `-4294967298`, args{-1, []int{1, 2}}},
+		{`-1x2x3`, `-18446744082299486211`, args{-1, []int{1, 2, 3}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &Integer{}
+			i.FromSignAndMag(tt.args.signum, tt.args.mag)
+			if i.String() != tt.digit {
+				t.Errorf("digit %s got = %s", tt.digit, i.String())
+			}
+
+			s := &Integer{}
+			err := s.FromString(tt.digit)
+			if err != nil {
+				t.Error("FromString error = ", err)
+			}
+
+			sign, mag := s.GetSignAndMag()
+			if !(sign == tt.args.signum && reflect.DeepEqual(mag, tt.args.mag)) {
+				t.Error("want ", tt.args.signum, tt.args.mag,
+					"got", sign, mag)
 			}
 		})
 	}
