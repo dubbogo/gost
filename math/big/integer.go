@@ -26,6 +26,17 @@ import (
 // Integer represents a integer value.
 type Integer struct {
 	big.Int
+
+	// used in hessian encoding/decoding
+	// You Should not use it in go
+	Signum int32
+	Mag    []int
+
+	// Deprecated: compatible with java8 serialize
+	FirstNonzeroIntNum int
+	LowestSetBit       int
+	BitLength          int
+	BitCount           int
 }
 
 func (Integer) JavaClassName() string {
@@ -78,28 +89,4 @@ func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
 	}
 
 	return
-}
-
-func (i *Integer) GetIntegerStub() (stub *IntegerStub) {
-	stub = new(IntegerStub)
-	stub.Signum, stub.Mag = i.GetSignAndMag()
-	return
-}
-
-func (i *Integer) SetIntegerStub(stub *IntegerStub) {
-	i.FromSignAndMag(stub.Signum, stub.Mag)
-	return
-}
-
-// IntegerStub is used for hessian encoding and decoding
-// You Should not use it in go
-type IntegerStub struct {
-	Signum int32
-	Mag    []int
-
-	// Deprecated: compatible with java8 serialize
-	FirstNonzeroIntNum int
-	LowestSetBit       int
-	BitLength          int
-	BitCount           int
 }
