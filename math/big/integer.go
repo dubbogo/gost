@@ -27,10 +27,12 @@ import (
 type Integer struct {
 	bigInt big.Int
 
-	// for hessian
+	// only used for hessian
+	// You Should not use it in go
 	Signum int32
 	Mag    []int
 
+	// Deprecated: compatible with java8 serialize
 	FirstNonzeroIntNum int
 	LowestSetBit       int
 	BitLength          int
@@ -47,12 +49,10 @@ func (i *Integer) FromString(s string) error {
 	if !ok || intPtr == nil {
 		return fmt.Errorf("'%s' is not a 10-based number", s)
 	}
-
-	i.bigInt = *intPtr
 	return nil
 }
 
-// FromMag set data from a array of big-endian unsigned uint32
+// FromSignAndMag set data from a array of big-endian unsigned uint32, it's used in hessian decoding
 // @see https://docs.oracle.com/javase/8/docs/api/java/math/BigInteger.html#BigInteger-int-byte:A-
 func (i *Integer) FromSignAndMag(signum int32, mag []int) {
 	if signum == 0 && len(mag) == 0 {
@@ -73,6 +73,7 @@ func (i *Integer) FromSignAndMag(signum int32, mag []int) {
 	}
 }
 
+// GetSignAndMag is used in hessian encoding
 func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
 	signum = int32(i.bigInt.Sign())
 
@@ -105,8 +106,4 @@ func (i *Integer) SetBigInt(bigInt big.Int) {
 
 func (i *Integer) String() string {
 	return i.bigInt.String()
-}
-
-func (i *Integer) Bytes() []byte {
-	return i.bigInt.Bytes()
 }
