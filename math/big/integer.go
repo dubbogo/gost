@@ -26,17 +26,6 @@ import (
 // Integer represents a integer value.
 type Integer struct {
 	big.Int
-
-	// only used for hessian
-	// You Should not use it in go
-	Signum int32
-	Mag    []int
-
-	// Deprecated: compatible with java8 serialize
-	FirstNonzeroIntNum int
-	LowestSetBit       int
-	BitLength          int
-	BitCount           int
 }
 
 func (Integer) JavaClassName() string {
@@ -59,16 +48,13 @@ func (i *Integer) FromSignAndMag(signum int32, mag []int) {
 		return
 	}
 
-	i.Signum = signum
-	i.Mag = mag
-
-	bytes := make([]byte, 4*len(i.Mag))
-	for j := 0; j < len(i.Mag); j++ {
-		binary.BigEndian.PutUint32(bytes[j*4:(j+1)*4], uint32(i.Mag[j]))
+	bytes := make([]byte, 4*len(mag))
+	for j := 0; j < len(mag); j++ {
+		binary.BigEndian.PutUint32(bytes[j*4:(j+1)*4], uint32(mag[j]))
 	}
 	i.SetBytes(bytes)
 
-	if i.Signum == -1 {
+	if signum == -1 {
 		i.Neg(&i.Int)
 	}
 }
@@ -92,4 +78,28 @@ func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
 	}
 
 	return
+}
+
+func (i *Integer) GetIntegerStub() (stub *IntegerStub) {
+	stub = new(IntegerStub)
+	stub.Signum, stub.Mag = i.GetSignAndMag()
+	return
+}
+
+func (i *Integer) SetIntegerStub(stub *IntegerStub) {
+	i.FromSignAndMag(stub.Signum, stub.Mag)
+	return
+}
+
+// IntegerStub is used for hessian encoding and decoding
+// You Should not use it in go
+type IntegerStub struct {
+	Signum int32
+	Mag    []int
+
+	// Deprecated: compatible with java8 serialize
+	FirstNonzeroIntNum int
+	LowestSetBit       int
+	BitLength          int
+	BitCount           int
 }
