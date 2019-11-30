@@ -18,6 +18,7 @@
 package gxbig
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -107,5 +108,19 @@ func TestInteger_FromSignAndMag(t *testing.T) {
 					"got", sign, mag)
 			}
 		})
+	}
+}
+
+func TestInteger_Json(t *testing.T) {
+	i := new(Integer)
+	i.FromString(`1234567`)
+	bytes, err := json.Marshal(i.String())
+	if err != nil || string(bytes) != `"1234567"` {
+		t.Error(string(bytes), err)
+	}
+
+	err = json.Unmarshal([]byte(`345`), i)
+	if err != nil || i.String() != `345` {
+		t.Error(i, err)
 	}
 }

@@ -25,7 +25,7 @@ import (
 
 // Integer represents a integer value.
 type Integer struct {
-	bigInt big.Int
+	big.Int
 
 	// only used for hessian
 	// You Should not use it in go
@@ -40,16 +40,16 @@ type Integer struct {
 }
 
 func (Integer) JavaClassName() string {
-	return "java.math.BigInteger"
+	return "java.math.Integer"
 }
 
 // FromString set data from a 10-bases number
-func (i *Integer) FromString(s string) error {
-	intPtr, ok := i.bigInt.SetString(s, 10)
-	if !ok || intPtr == nil {
-		return fmt.Errorf("'%s' is not a 10-based number", s)
+func (i *Integer) FromString(s string) (err error) {
+	_, ok := i.SetString(s, 10)
+	if !ok {
+		err = fmt.Errorf("'%s' is not a 10-based number", s)
 	}
-	return nil
+	return
 }
 
 // FromSignAndMag set data from a array of big-endian unsigned uint32, it's used in hessian decoding
@@ -66,18 +66,18 @@ func (i *Integer) FromSignAndMag(signum int32, mag []int) {
 	for j := 0; j < len(i.Mag); j++ {
 		binary.BigEndian.PutUint32(bytes[j*4:(j+1)*4], uint32(i.Mag[j]))
 	}
-	i.bigInt = *i.bigInt.SetBytes(bytes)
+	i.SetBytes(bytes)
 
 	if i.Signum == -1 {
-		i.bigInt.Neg(&i.bigInt)
+		i.Neg(&i.Int)
 	}
 }
 
 // GetSignAndMag is used in hessian encoding
 func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
-	signum = int32(i.bigInt.Sign())
+	signum = int32(i.Sign())
 
-	bytes := i.bigInt.Bytes()
+	bytes := i.Bytes()
 	outOf4 := len(bytes) % 4
 	if outOf4 > 0 {
 		bytes = append(make([]byte, 4-outOf4), bytes...)
@@ -92,18 +92,4 @@ func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
 	}
 
 	return
-}
-
-// GetBigInt getter
-func (i *Integer) GetBigInt() big.Int {
-	return i.bigInt
-}
-
-// SetBigInt setter
-func (i *Integer) SetBigInt(bigInt big.Int) {
-	i.bigInt = bigInt
-}
-
-func (i *Integer) String() string {
-	return i.bigInt.String()
 }
