@@ -101,6 +101,8 @@ func (i *Integer) SetValue(value *big.Int) {
 
 func (i *Integer) String() string { return i.value.String() }
 
+func (i *Integer) Format(s fmt.State, ch rune) { i.value.Format(s, ch) }
+
 func (i *Integer) GobEncode() ([]byte, error) { return i.value.GobEncode() }
 func (i *Integer) GobDecode(buf []byte) error { return i.value.GobDecode(buf) }
 
