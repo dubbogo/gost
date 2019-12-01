@@ -1,4 +1,4 @@
-module github.com/micln/gost
+module github.com/dubbogo/gost
 
 require (
 	github.com/pkg/errors v0.8.1
