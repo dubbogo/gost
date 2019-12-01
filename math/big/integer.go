@@ -25,7 +25,7 @@ import (
 
 // Integer represents a integer value.
 type Integer struct {
-	big.Int
+	value big.Int
 
 	// used in hessian encoding/decoding
 	// You Should not use it in go
@@ -45,7 +45,7 @@ func (Integer) JavaClassName() string {
 
 // FromString set data from a 10-bases number
 func (i *Integer) FromString(s string) (err error) {
-	_, ok := i.SetString(s, 10)
+	_, ok := i.value.SetString(s, 10)
 	if !ok {
 		err = fmt.Errorf("'%s' is not a 10-based number", s)
 	}
@@ -63,18 +63,18 @@ func (i *Integer) FromSignAndMag(signum int32, mag []int) {
 	for j := 0; j < len(mag); j++ {
 		binary.BigEndian.PutUint32(bytes[j*4:(j+1)*4], uint32(mag[j]))
 	}
-	i.SetBytes(bytes)
+	i.value.SetBytes(bytes)
 
 	if signum == -1 {
-		i.Neg(&i.Int)
+		i.value.Neg(&i.value)
 	}
 }
 
 // GetSignAndMag is used in hessian encoding
 func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
-	signum = int32(i.Sign())
+	signum = int32(i.value.Sign())
 
-	bytes := i.Bytes()
+	bytes := i.value.Bytes()
 	outOf4 := len(bytes) % 4
 	if outOf4 > 0 {
 		bytes = append(make([]byte, 4-outOf4), bytes...)
@@ -90,3 +90,22 @@ func (i *Integer) GetSignAndMag() (signum int32, mag []int) {
 
 	return
 }
+
+func (i *Integer) Value() *big.Int {
+	return &i.value
+}
+
+func (i *Integer) SetValue(value *big.Int) {
+	i.value = *value
+}
+
+func (i *Integer) String() string { return i.value.String() }
+
+func (i *Integer) GobEncode() ([]byte, error) { return i.value.GobEncode() }
+func (i *Integer) GobDecode(buf []byte) error { return i.value.GobDecode(buf) }
+
+func (i *Integer) MarshalText() (text []byte, err error) { return i.value.MarshalText() }
+func (i *Integer) UnmarshalText(text []byte) error       { return i.value.UnmarshalText(text) }
+
+func (i *Integer) MarshalJSON() ([]byte, error)    { return i.value.MarshalJSON() }
+func (i *Integer) UnmarshalJSON(text []byte) error { return i.value.UnmarshalJSON(text) }
