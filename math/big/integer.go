@@ -40,7 +40,7 @@ type Integer struct {
 }
 
 func (Integer) JavaClassName() string {
-	return "java.math.Integer"
+	return "java.math.BigInteger"
 }
 
 // FromString set data from a 10-bases number
