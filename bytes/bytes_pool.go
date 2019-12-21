@@ -25,8 +25,8 @@ import (
 var ErrSizeTooLarge = errors.New(`acquired size is too large`)
 
 type BytesPool struct {
-	sizes  []int // sizes declare the cap of each pool
-	pools  []sync.Pool
+	sizes  []int // sizes declare the cap of each slot
+	slots  []sync.Pool
 	length int
 }
 
@@ -38,10 +38,10 @@ func NewBytesPool(poolSize []int) *BytesPool {
 	bp.sizes = poolSize
 	bp.length = len(bp.sizes)
 
-	bp.pools = make([]sync.Pool, bp.length)
+	bp.slots = make([]sync.Pool, bp.length)
 	for i, size := range bp.sizes {
 		size := size
-		bp.pools[i] = sync.Pool{New: func() interface{} {
+		bp.slots[i] = sync.Pool{New: func() interface{} {
 			return make([]byte, 0, size)
 		}}
 	}
@@ -67,7 +67,7 @@ func (bp *BytesPool) AcquireBytes(size int) ([]byte, error) {
 		return make([]byte, 0, size), ErrSizeTooLarge
 	}
 
-	return bp.pools[idx].Get().([]byte)[:size], nil
+	return bp.slots[idx].Get().([]byte)[:size], nil
 }
 
 func (bp *BytesPool) ReleaseBytes(buf []byte) error {
@@ -75,7 +75,7 @@ func (bp *BytesPool) ReleaseBytes(buf []byte) error {
 	if idx >= bp.length {
 		return ErrSizeTooLarge
 	}
-	bp.pools[idx].Put(buf)
+	bp.slots[idx].Put(buf)
 	return nil
 }
 
