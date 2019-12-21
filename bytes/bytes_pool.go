@@ -24,58 +24,61 @@ import (
 
 var ErrSizeTooLarge = errors.New(`acquired size is too large`)
 
-var (
-	// bufPoolSize declare the cap of each pool
-	bufPoolSize = []int{16, 1 << 10, 2 << 10, 4 << 10, 8 << 10, 16 << 10, 32 << 10, 64 << 10}
-
-	// bufPools store pools
-	bufPools []sync.Pool
-
-	// bufPoolLen calc length of pools at init
-	bufPoolLen = len(bufPoolSize)
-)
-
-func init() {
-	InitPool(bufPoolSize)
+type BytesPool struct {
+	sizes  []int // sizes declare the cap of each pool
+	pools  []sync.Pool
+	length int
 }
 
-// InitPool must called once
-func InitPool(poolSize []int) {
-	bufPoolSize = poolSize
-	bufPoolLen = len(bufPoolSize)
+var defaultBytesPool = NewBytesPool([]int{16, 1 << 10, 2 << 10, 4 << 10, 8 << 10, 16 << 10, 32 << 10, 64 << 10})
 
-	bufPools = make([]sync.Pool, len(bufPoolSize))
-	for i, size := range bufPoolSize {
+// NewBytesPool
+func NewBytesPool(poolSize []int) *BytesPool {
+	bp := &BytesPool{}
+	bp.sizes = poolSize
+	bp.length = len(bp.sizes)
+
+	bp.pools = make([]sync.Pool, bp.length)
+	for i, size := range bp.sizes {
 		size := size
-		bufPools[i] = sync.Pool{New: func() interface{} {
+		bp.pools[i] = sync.Pool{New: func() interface{} {
 			return make([]byte, 0, size)
 		}}
 	}
+	return bp
 }
 
-func findIndex(size int) int {
-	for i := 0; i < bufPoolLen; i++ {
-		if bufPoolSize[i] >= size {
+func SetDefaultBytesPool(bp *BytesPool) {
+	defaultBytesPool = bp
+}
+
+func (bp *BytesPool) findIndex(size int) int {
+	for i := 0; i < bp.length; i++ {
+		if bp.sizes[i] >= size {
 			return i
 		}
 	}
-	return bufPoolLen
+	return bp.length
 }
 
-func AcquireBytes(size int) ([]byte, error) {
-	idx := findIndex(size)
-	if idx >= bufPoolLen {
+func (bp *BytesPool) AcquireBytes(size int) ([]byte, error) {
+	idx := bp.findIndex(size)
+	if idx >= bp.length {
 		return make([]byte, 0, size), ErrSizeTooLarge
 	}
 
-	return bufPools[idx].Get().([]byte)[:size], nil
+	return bp.pools[idx].Get().([]byte)[:size], nil
 }
 
-func ReleaseBytes(buf []byte) error {
-	idx := findIndex(cap(buf))
-	if idx >= bufPoolLen {
+func (bp *BytesPool) ReleaseBytes(buf []byte) error {
+	idx := bp.findIndex(cap(buf))
+	if idx >= bp.length {
 		return ErrSizeTooLarge
 	}
-	bufPools[idx].Put(buf)
+	bp.pools[idx].Put(buf)
 	return nil
 }
+
+func AcquireBytes(size int) ([]byte, error) { return defaultBytesPool.AcquireBytes(size) }
+
+func ReleaseBytes(buf []byte) error { return defaultBytesPool.ReleaseBytes(buf) }

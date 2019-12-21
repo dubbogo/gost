@@ -5,8 +5,7 @@ import (
 )
 
 func Test_findIndex(t *testing.T) {
-	bufPoolSize = []int{16, 4 << 10, 16 << 10, 32 << 10, 64 << 10}
-	InitPool(bufPoolSize)
+	bp := NewBytesPool([]int{16, 4 << 10, 16 << 10, 32 << 10, 64 << 10})
 
 	type args struct {
 		size int
@@ -29,7 +28,7 @@ func Test_findIndex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := findIndex(tt.args.size); got != tt.want {
+			if got := bp.findIndex(tt.args.size); got != tt.want {
 				t.Errorf("[%v] findIndex() = %v, want %v", tt.args.size, got, tt.want)
 			}
 		})
