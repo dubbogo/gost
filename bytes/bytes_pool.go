@@ -22,7 +22,7 @@ import (
 	"sync"
 )
 
-var ErrSizeTooLarge = errors.New(`acquired size is too large`)
+var ErrSizeTooLarge = errors.New(`size is too large`)
 
 type BytesPool struct {
 	sizes  []int // sizes declare the cap of each slot
@@ -33,9 +33,9 @@ type BytesPool struct {
 var defaultBytesPool = NewBytesPool([]int{16, 1 << 10, 2 << 10, 4 << 10, 8 << 10, 16 << 10, 32 << 10, 64 << 10})
 
 // NewBytesPool
-func NewBytesPool(poolSize []int) *BytesPool {
+func NewBytesPool(slotSize []int) *BytesPool {
 	bp := &BytesPool{}
-	bp.sizes = poolSize
+	bp.sizes = slotSize
 	bp.length = len(bp.sizes)
 
 	bp.slots = make([]sync.Pool, bp.length)
@@ -75,6 +75,7 @@ func (bp *BytesPool) ReleaseBytes(buf []byte) error {
 	if idx >= bp.length {
 		return ErrSizeTooLarge
 	}
+
 	bp.slots[idx].Put(buf)
 	return nil
 }
