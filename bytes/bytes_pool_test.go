@@ -1,6 +1,7 @@
 package gxbytes
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -11,23 +12,22 @@ func Test_findIndex(t *testing.T) {
 		size int
 	}
 	tests := []struct {
-		name string
 		args args
 		want int
 	}{
-		{``, args{1}, 0},
-		{``, args{15}, 0},
-		{``, args{16}, 0},
-		{``, args{17}, 1},
-		{``, args{4095}, 1},
-		{``, args{4096}, 1},
-		{``, args{4097}, 2},
-		{``, args{16 << 10}, 2},
-		{``, args{64 << 10}, 4},
-		{``, args{64 << 11}, 5},
+		{args{1}, 0},
+		{args{15}, 0},
+		{args{16}, 0},
+		{args{17}, 1},
+		{args{4095}, 1},
+		{args{4096}, 1},
+		{args{4097}, 2},
+		{args{16 << 10}, 2},
+		{args{64 << 10}, 4},
+		{args{64 << 11}, 5},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprint(tt.args.size), func(t *testing.T) {
 			if got := bp.findIndex(tt.args.size); got != tt.want {
 				t.Errorf("[%v] findIndex() = %v, want %v", tt.args.size, got, tt.want)
 			}
@@ -42,7 +42,7 @@ func BenchmarkAcquireBytesSize60k(b *testing.B) { benchmarkAcquireBytes(b, 60000
 
 func benchmarkAcquireBytes(b *testing.B, size int) {
 	for i := 0; i < b.N; i++ {
-		bytes, _ := AcquireBytes(size)
+		bytes := AcquireBytes(size)
 		ReleaseBytes(bytes)
 	}
 }

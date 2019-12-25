@@ -18,12 +18,10 @@
 package gxbytes
 
 import (
-	"errors"
 	"sync"
 )
 
-var ErrSizeTooLarge = errors.New(`size is too large`)
-
+// BytesPool hold specific size []byte
 type BytesPool struct {
 	sizes  []int // sizes declare the cap of each slot
 	slots  []sync.Pool
@@ -32,7 +30,7 @@ type BytesPool struct {
 
 var defaultBytesPool = NewBytesPool([]int{16, 1 << 10, 2 << 10, 4 << 10, 8 << 10, 16 << 10, 32 << 10, 64 << 10})
 
-// NewBytesPool
+// NewBytesPool ...
 func NewBytesPool(slotSize []int) *BytesPool {
 	bp := &BytesPool{}
 	bp.sizes = slotSize
@@ -48,6 +46,7 @@ func NewBytesPool(slotSize []int) *BytesPool {
 	return bp
 }
 
+// SetDefaultBytesPool change default pool options
 func SetDefaultBytesPool(bp *BytesPool) {
 	defaultBytesPool = bp
 }
@@ -61,25 +60,29 @@ func (bp *BytesPool) findIndex(size int) int {
 	return bp.length
 }
 
-func (bp *BytesPool) AcquireBytes(size int) ([]byte, error) {
+// AcquireBytes get specific make([]byte, 0, size)
+func (bp *BytesPool) AcquireBytes(size int) []byte {
 	idx := bp.findIndex(size)
 	if idx >= bp.length {
-		return make([]byte, 0, size), ErrSizeTooLarge
+		return make([]byte, 0, size)
 	}
 
-	return bp.slots[idx].Get().([]byte)[:size], nil
+	return bp.slots[idx].Get().([]byte)[:size]
 }
 
-func (bp *BytesPool) ReleaseBytes(buf []byte) error {
+// ReleaseBytes ...
+func (bp *BytesPool) ReleaseBytes(buf []byte) {
 	idx := bp.findIndex(cap(buf))
 	if idx >= bp.length {
-		return ErrSizeTooLarge
+		return
 	}
 
 	bp.slots[idx].Put(buf)
-	return nil
+	return
 }
 
-func AcquireBytes(size int) ([]byte, error) { return defaultBytesPool.AcquireBytes(size) }
+// AcquireBytes called by defaultBytesPool
+func AcquireBytes(size int) []byte { return defaultBytesPool.AcquireBytes(size) }
 
-func ReleaseBytes(buf []byte) error { return defaultBytesPool.ReleaseBytes(buf) }
+// ReleaseBytes called by defaultBytesPool
+func ReleaseBytes(buf []byte) { defaultBytesPool.ReleaseBytes(buf) }
