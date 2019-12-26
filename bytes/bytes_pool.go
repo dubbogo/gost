@@ -28,7 +28,7 @@ type BytesPool struct {
 	length int
 }
 
-var defaultBytesPool = NewBytesPool([]int{16, 1 << 10, 2 << 10, 4 << 10, 8 << 10, 16 << 10, 32 << 10, 64 << 10})
+var defaultBytesPool = NewBytesPool([]int{512, 1 << 10, 4 << 10, 16 << 10, 64 << 10})
 
 // NewBytesPool ...
 func NewBytesPool(slotSize []int) *BytesPool {
@@ -78,7 +78,6 @@ func (bp *BytesPool) ReleaseBytes(buf []byte) {
 	}
 
 	bp.slots[idx].Put(buf)
-	return
 }
 
 // AcquireBytes called by defaultBytesPool

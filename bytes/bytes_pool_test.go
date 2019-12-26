@@ -46,3 +46,12 @@ func benchmarkAcquireBytes(b *testing.B, size int) {
 		ReleaseBytes(bytes)
 	}
 }
+
+func BenchmarkFindIndexSize8(b *testing.B)   { benchmarkfindIndex(b, 8) }
+func BenchmarkFindIndexSize60k(b *testing.B) { benchmarkfindIndex(b, 60000) }
+
+func benchmarkfindIndex(b *testing.B, size int) {
+	for i := 0; i < b.N; i++ {
+		defaultBytesPool.findIndex(size)
+	}
+}
