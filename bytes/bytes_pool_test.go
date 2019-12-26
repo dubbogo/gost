@@ -35,10 +35,10 @@ func Test_findIndex(t *testing.T) {
 	}
 }
 
-func BenchmarkAcquireBytesSize8(b *testing.B)   { benchmarkAcquireBytes(b, 8) }
 func BenchmarkAcquireBytesSize32(b *testing.B)  { benchmarkAcquireBytes(b, 32) }
 func BenchmarkAcquireBytesSize10k(b *testing.B) { benchmarkAcquireBytes(b, 10000) }
 func BenchmarkAcquireBytesSize60k(b *testing.B) { benchmarkAcquireBytes(b, 60000) }
+func BenchmarkAcquireBytesSize70k(b *testing.B) { benchmarkAcquireBytes(b, 70000) }
 
 func benchmarkAcquireBytes(b *testing.B, size int) {
 	for i := 0; i < b.N; i++ {
