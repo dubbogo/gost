@@ -84,9 +84,9 @@ func WithTaskPoolTaskQueueNumber(number int) TaskPoolOption {
 /////////////////////////////////////////
 
 // task t
-type runnable func()
+type runnable func() (interface{}, error)
 
-type consum func()
+type consum func(interface{}, error)
 
 type task struct {
 	run          runnable
@@ -159,9 +159,9 @@ func (p *TaskPool) run(id int, q chan *task) error {
 
 		case t, ok = <-q:
 			if ok {
-				t.run()
+				r, e := t.run()
 				if t.whenComplete != nil {
-					t.whenComplete()
+					t.whenComplete(r, e)
 				}
 			}
 		}

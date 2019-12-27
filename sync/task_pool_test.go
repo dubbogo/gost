@@ -21,6 +21,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewTaskPool(t *testing.T) {
@@ -30,8 +33,9 @@ func TestNewTaskPool(t *testing.T) {
 	taskPool := NewTaskPool(WithTaskPoolTaskPoolSize(10))
 
 	for i := 0; i < count; i++ {
-		taskPool.AddTask(func() {
+		taskPool.AddTask(func() (interface{}, error) {
 			group.Done()
+			return nil, nil
 		})
 	}
 	group.Wait()
@@ -47,9 +51,13 @@ func TestNewTaskPoolWithCallBack(t *testing.T) {
 	taskPool := NewTaskPool(WithTaskPoolTaskPoolSize(10))
 
 	for i := 0; i < count; i++ {
-		taskPool.AddCallbackTask(func() {
+		taskPool.AddCallbackTask(func() (interface{}, error) {
 			group.Done()
-		}, func() {
+			return "test", errors.New("error")
+		}, func(r interface{}, e error) {
+			assert.EqualError(t, e, "error")
+			s := r.(string)
+			assert.Equal(t, s, "test")
 			callbackGroup.Done()
 		})
 	}
