@@ -170,11 +170,17 @@ func (p *TaskPool) run(id int, q chan *task) error {
 
 // add task
 func (p *TaskPool) AddTask(t runnable) {
+	if t == nil {
+		return
+	}
 	p.AddCallbackTask(t, nil)
 }
 
 // add task with callback
 func (p *TaskPool) AddCallbackTask(t runnable, c consum) {
+	if t == nil {
+		return
+	}
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
 
 	select {
