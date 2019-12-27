@@ -164,7 +164,7 @@ func (p *TaskPool) run(id int, q chan task) error {
 
 // add task
 func (p *TaskPool) AddTask(t task) {
-	if t==nil{
+	if t == nil {
 		return
 	}
 
@@ -179,11 +179,11 @@ func (p *TaskPool) AddTask(t task) {
 
 // add task with callback
 func (p *TaskPool) AddCallbackTask(r runnable, c callback) {
-	if r==nil{
+	if r == nil {
 		return
 	}
 	p.AddTask(func() {
-		if c!=nil{
+		if c != nil {
 			c(r())
 			return
 		}

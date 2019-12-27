@@ -33,7 +33,7 @@ func TestNewTaskPool(t *testing.T) {
 	taskPool := NewTaskPool(WithTaskPoolTaskPoolSize(10))
 
 	for i := 0; i < count; i++ {
-		taskPool.AddTask(func()  {
+		taskPool.AddTask(func() {
 			group.Done()
 		})
 	}
