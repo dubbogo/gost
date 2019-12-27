@@ -84,21 +84,18 @@ func WithTaskPoolTaskQueueNumber(number int) TaskPoolOption {
 /////////////////////////////////////////
 
 // task t
+type task func()
+
 type runnable func() (interface{}, error)
 
-type consum func(interface{}, error)
-
-type task struct {
-	run          runnable
-	whenComplete consum
-}
+type callback func(interface{}, error)
 
 // task pool: manage task ts
 type TaskPool struct {
 	TaskPoolOptions
 
 	idx    uint32 // round robin index
-	qArray []chan *task
+	qArray []chan task
 	wg     sync.WaitGroup
 
 	once sync.Once
@@ -116,12 +113,12 @@ func NewTaskPool(opts ...TaskPoolOption) *TaskPool {
 
 	p := &TaskPool{
 		TaskPoolOptions: tOpts,
-		qArray:          make([]chan *task, tOpts.tQNumber),
+		qArray:          make([]chan task, tOpts.tQNumber),
 		done:            make(chan struct{}),
 	}
 
 	for i := 0; i < p.tQNumber; i++ {
-		p.qArray[i] = make(chan *task, p.tQLen)
+		p.qArray[i] = make(chan task, p.tQLen)
 	}
 	p.start()
 
@@ -139,12 +136,12 @@ func (p *TaskPool) start() {
 }
 
 // worker
-func (p *TaskPool) run(id int, q chan *task) error {
+func (p *TaskPool) run(id int, q chan task) error {
 	defer p.wg.Done()
 
 	var (
 		ok bool
-		t  *task
+		t  task
 	)
 
 	for {
@@ -159,35 +156,39 @@ func (p *TaskPool) run(id int, q chan *task) error {
 
 		case t, ok = <-q:
 			if ok {
-				r, e := t.run()
-				if t.whenComplete != nil {
-					t.whenComplete(r, e)
-				}
+				t()
 			}
 		}
 	}
 }
 
 // add task
-func (p *TaskPool) AddTask(t runnable) {
-	if t == nil {
+func (p *TaskPool) AddTask(t task) {
+	if t==nil{
 		return
 	}
-	p.AddCallbackTask(t, nil)
-}
 
-// add task with callback
-func (p *TaskPool) AddCallbackTask(t runnable, c consum) {
-	if t == nil {
-		return
-	}
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
 
 	select {
 	case <-p.done:
 		return
-	case p.qArray[id] <- &task{run: t, whenComplete: c}:
+	case p.qArray[id] <- t:
 	}
+}
+
+// add task with callback
+func (p *TaskPool) AddCallbackTask(r runnable, c callback) {
+	if r==nil{
+		return
+	}
+	p.AddTask(func() {
+		if c!=nil{
+			c(r())
+			return
+		}
+		r()
+	})
 }
 
 // stop all tasks
