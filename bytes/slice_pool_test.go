@@ -77,31 +77,3 @@ func TestSlicePoolLargeBytes(t *testing.T) {
 		pool.Put(bp)
 	}
 }
-
-func TestBytesSlot(t *testing.T) {
-	pool := NewSlicePool()
-
-	if pool.slot(pool.minSize-1) != 0 {
-		t.Errorf("Expect get the 0 slot")
-	}
-
-	if pool.slot(pool.minSize) != 0 {
-		t.Errorf("Expect get the 0 slot")
-	}
-
-	if pool.slot(pool.minSize+1) != 1 {
-		t.Errorf("Expect get the 1 slot")
-	}
-
-	if pool.slot(pool.maxSize-1) != maxShift-minShift {
-		t.Errorf("Expect get the %d slot", maxShift-minShift)
-	}
-
-	if pool.slot(pool.maxSize) != maxShift-minShift {
-		t.Errorf("Expect get the %d slot", maxShift-minShift)
-	}
-
-	if pool.slot(pool.maxSize+1) != errSlot {
-		t.Errorf("Expect get errSlot")
-	}
-}
