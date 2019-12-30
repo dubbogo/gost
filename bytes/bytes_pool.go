@@ -72,8 +72,9 @@ func (bp *BytesPool) AcquireBytes(size int) []byte {
 
 // ReleaseBytes ...
 func (bp *BytesPool) ReleaseBytes(buf []byte) {
-	idx := bp.findIndex(cap(buf))
-	if idx >= bp.length {
+	bufCap := cap(buf)
+	idx := bp.findIndex(bufCap)
+	if idx >= bp.length || bp.sizes[idx] != bufCap {
 		return
 	}
 
