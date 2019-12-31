@@ -165,7 +165,7 @@ func (p *TaskPool) run(id int, q chan task) error {
 // add task
 func (p *TaskPool) AddTask(t task) {
 	if t == nil {
-		return
+		panic("task cannot be null!!")
 	}
 
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
@@ -180,14 +180,13 @@ func (p *TaskPool) AddTask(t task) {
 // add task with callback
 func (p *TaskPool) AddCallbackTask(r runnable, c callback) {
 	if r == nil {
-		return
+		panic("runnable cannot be null!!")
 	}
 	p.AddTask(func() {
+		i, e := r()
 		if c != nil {
-			c(r())
-			return
+			c(i, e)
 		}
-		r()
 	})
 }
 
