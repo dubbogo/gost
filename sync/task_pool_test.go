@@ -20,7 +20,6 @@ package gxsync
 import (
 	"sync"
 	"testing"
-	"time"
 )
 
 import (
@@ -64,15 +63,4 @@ func TestNewTaskPoolWithCallBack(t *testing.T) {
 	}
 	group.Wait()
 	callbackGroup.Wait()
-}
-
-func TestNewTaskPoolWithCNil(t *testing.T) {
-	count := 5
-
-	taskPool := NewTaskPool(WithTaskPoolTaskPoolSize(10))
-
-	for i := 0; i < count; i++ {
-		taskPool.AddCallbackTask(nil, nil)
-	}
-	time.Sleep(1 * time.Second)
 }
