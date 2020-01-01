@@ -26,13 +26,13 @@ import (
 )
 
 func TestFloat64(t *testing.T) {
-	assert.True(t, CompareFloat64(12.3334, 12.3344, 0.01))
-	assert.True(t, CompareFloat64(12.3334, 12.32981, 0.01))
-	assert.False(t, CompareFloat64(12.3334, 12.0325, 0.01))
+	assert.True(t, DeltaCompareFloat64(12.3334, 12.3344, 0.01))
+	assert.True(t, DeltaCompareFloat64(12.3334, 12.32981, 0.01))
+	assert.False(t, DeltaCompareFloat64(12.3334, 12.0325, 0.01))
 }
 
 func TestCompareFloat32(t *testing.T) {
-	assert.True(t, CompareFloat32(12.3334, 12.3344, 0.01))
-	assert.True(t, CompareFloat32(12.3334, 12.32981, 0.01))
-	assert.False(t, CompareFloat64(12.3334, 12.0325, 0.01))
+	assert.True(t, DeltaCompareFloat32(12.3334, 12.3344, 0.01))
+	assert.True(t, DeltaCompareFloat32(12.3334, 12.32981, 0.01))
+	assert.False(t, DeltaCompareFloat64(12.3334, 12.0325, 0.01))
 }

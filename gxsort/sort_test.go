@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package math
+package gxsort
 
 import (
 	"testing"

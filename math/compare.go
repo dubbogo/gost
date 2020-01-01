@@ -18,14 +18,14 @@
 package math
 
 // equivalent to math.Abs(expected - actual) <= delta
-func CompareFloat64(expected float64, actual float64, delta float64) bool {
+func DeltaCompareFloat64(expected float64, actual float64, delta float64) bool {
 	if expected > actual {
 		return expected-actual <= delta
 	}
 	return actual-expected <= delta
 }
 
-func CompareFloat32(expected float32, actual float32, delta float32) bool {
+func DeltaCompareFloat32(expected float32, actual float32, delta float32) bool {
 	if expected > actual {
 		return expected-actual <= delta
 	}
