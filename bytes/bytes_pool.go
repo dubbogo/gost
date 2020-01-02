@@ -67,7 +67,7 @@ func (bp *BytesPool) AcquireBytes(size int) []byte {
 		return make([]byte, 0, size)
 	}
 
-	return bp.slots[idx].Get().([]byte)[:size]
+	return bp.slots[idx].Get().([]byte)[:0]
 }
 
 // ReleaseBytes ...
