@@ -52,13 +52,12 @@ func NewSlicePool() *SlicePool {
 
 // Get returns *[]byte from SlicePool
 func (p *SlicePool) Get(size int) *[]byte {
-	b := p.AcquireBytes(size)
-	return &b
+	return p.AcquireBytes(size)
 }
 
 // Put returns *[]byte to SlicePool
-func (p *SlicePool) Put(buf *[]byte) {
-	p.ReleaseBytes(*buf)
+func (p *SlicePool) Put(bufp *[]byte) {
+	p.ReleaseBytes(bufp)
 }
 
 // GetBytes returns *[]byte from SlicePool

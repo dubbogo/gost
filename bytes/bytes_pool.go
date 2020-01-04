@@ -40,7 +40,8 @@ func NewBytesPool(slotSize []int) *BytesPool {
 	for i, size := range bp.sizes {
 		size := size
 		bp.slots[i] = sync.Pool{New: func() interface{} {
-			return make([]byte, 0, size)
+			buf := make([]byte, 0, size)
+			return &buf
 		}}
 	}
 	return bp
@@ -61,28 +62,31 @@ func (bp *BytesPool) findIndex(size int) int {
 }
 
 // AcquireBytes get specific make([]byte, 0, size)
-func (bp *BytesPool) AcquireBytes(size int) []byte {
+func (bp *BytesPool) AcquireBytes(size int) *[]byte {
 	idx := bp.findIndex(size)
 	if idx >= bp.length {
-		return make([]byte, 0, size)
+		buf := make([]byte, 0, size)
+		return &buf
 	}
 
-	return bp.slots[idx].Get().([]byte)[:size]
+	bufp := bp.slots[idx].Get().(*[]byte)
+	buf := (*bufp)[:size]
+	return &buf
 }
 
 // ReleaseBytes ...
-func (bp *BytesPool) ReleaseBytes(buf []byte) {
-	bufCap := cap(buf)
+func (bp *BytesPool) ReleaseBytes(bufp *[]byte) {
+	bufCap := cap(*bufp)
 	idx := bp.findIndex(bufCap)
 	if idx >= bp.length || bp.sizes[idx] != bufCap {
 		return
 	}
 
-	bp.slots[idx].Put(buf)
+	bp.slots[idx].Put(bufp)
 }
 
 // AcquireBytes called by defaultBytesPool
-func AcquireBytes(size int) []byte { return defaultBytesPool.AcquireBytes(size) }
+func AcquireBytes(size int) *[]byte { return defaultBytesPool.AcquireBytes(size) }
 
 // ReleaseBytes called by defaultBytesPool
-func ReleaseBytes(buf []byte) { defaultBytesPool.ReleaseBytes(buf) }
+func ReleaseBytes(bufp *[]byte) { defaultBytesPool.ReleaseBytes(bufp) }
