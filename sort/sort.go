@@ -18,33 +18,41 @@
 package gxsort
 
 import (
-	"testing"
+	"sort"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-func TestSortInt32(t *testing.T) {
-	data := []int32{3, 5, 1, 9, 0, 2, 2}
-	SortInt32(data)
-	assert.Equal(t, int32(0), data[0])
-	assert.Equal(t, int32(1), data[1])
-	assert.Equal(t, int32(2), data[2])
-	assert.Equal(t, int32(2), data[3])
-	assert.Equal(t, int32(3), data[4])
-	assert.Equal(t, int32(5), data[5])
-	assert.Equal(t, int32(9), data[6])
+func Int64(slice []int64) {
+	sort.Sort(Int64Slice(slice))
 }
 
-func TestSortInt64(t *testing.T) {
-	data := []int64{3, 5, 1, 9, 0, 2, 2}
-	SortInt64(data)
-	assert.Equal(t, int64(0), data[0])
-	assert.Equal(t, int64(1), data[1])
-	assert.Equal(t, int64(2), data[2])
-	assert.Equal(t, int64(2), data[3])
-	assert.Equal(t, int64(3), data[4])
-	assert.Equal(t, int64(5), data[5])
-	assert.Equal(t, int64(9), data[6])
+func Int32(slice []int32) {
+	sort.Sort(Int32Slice(slice))
+}
+
+type Int64Slice []int64
+
+func (p Int64Slice) Len() int {
+	return len(p)
+}
+
+func (p Int64Slice) Less(i, j int) bool {
+	return p[i] < p[j]
+}
+
+func (p Int64Slice) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+type Int32Slice []int32
+
+func (p Int32Slice) Len() int {
+	return len(p)
+}
+
+func (p Int32Slice) Less(i, j int) bool {
+	return p[i] < p[j]
+}
+
+func (p Int32Slice) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
 }
