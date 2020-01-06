@@ -15,10 +15,10 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 > slice pool
 ## container
 
-* gxqueue
+* queue
 > Queue
 
-* gxset
+* set
 > HashSet
 
 ## math
@@ -31,7 +31,7 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 ## strings
 
-* IsNil 
+* IsNil
 > check a var is nil or not.
 
 ## time
