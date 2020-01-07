@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package math
+package gxmath
 
 // equivalent to math.Abs(expected - actual) <= delta
 func DeltaCompareFloat64(expected float64, actual float64, delta float64) bool {
