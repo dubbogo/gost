@@ -18,6 +18,7 @@
 package gxnet
 
 import (
+	"net"
 	"testing"
 )
 
@@ -29,4 +30,27 @@ func TestGetLocalIP(t *testing.T) {
 	ip, err := GetLocalIP()
 	assert.NoError(t, err)
 	t.Log(ip)
+}
+
+func TestIsSameAddr(t *testing.T) {
+	addr1 := net.TCPAddr{
+		IP:   []byte("192.168.0.1"),
+		Port: 80,
+		Zone: "cn/shanghai",
+	}
+	addr2 := net.TCPAddr{
+		IP:   []byte("192.168.0.2"),
+		Port: 80,
+		Zone: "cn/shanghai",
+	}
+
+	assert.True(t, IsSameAddr(&addr1, &addr1))
+	assert.False(t, IsSameAddr(&addr1, &addr2))
+
+	addr1.IP = []byte("2001:4860:0:2001::68")
+	addr1.Zone = ""
+
+	addr2.IP = []byte("2001:4860:0000:2001:0000:0000:0000:0068")
+	addr2.Zone = ""
+	assert.True(t, IsSameAddr(&addr1, &addr1))
 }

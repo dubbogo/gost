@@ -122,3 +122,26 @@ func isValidNetworkInterface(face net.Interface) bool {
 
 	return true
 }
+
+// refer from https://github.com/facebookarchive/grace/blob/master/gracenet/net.go#L180
+func IsSameAddr(addr1, addr2 net.Addr) bool {
+	if addr1.Network() != addr2.Network() {
+		return false
+	}
+
+	addr1s := addr1.String()
+	addr2s := addr2.String()
+	if addr1s == addr2s {
+		return true
+	}
+
+	// This allows for ipv6 vs ipv4 local addresses to compare as equal. This
+	// scenario is common when listening on localhost.
+	const ipv6prefix = "[::]"
+	addr1s = strings.TrimPrefix(addr1s, ipv6prefix)
+	addr2s = strings.TrimPrefix(addr2s, ipv6prefix)
+	const ipv4prefix = "0.0.0.0"
+	addr1s = strings.TrimPrefix(addr1s, ipv4prefix)
+	addr2s = strings.TrimPrefix(addr2s, ipv4prefix)
+	return addr1s == addr2s
+}
