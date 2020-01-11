@@ -48,3 +48,15 @@ func TestSortInt64(t *testing.T) {
 	assert.Equal(t, int64(5), data[5])
 	assert.Equal(t, int64(9), data[6])
 }
+
+func TestSortUint32(t *testing.T) {
+	data := []uint32{3, 5, 1, 9, 0, 2, 2}
+	Uint32(data)
+	assert.Equal(t, uint32(0), data[0])
+	assert.Equal(t, uint32(1), data[1])
+	assert.Equal(t, uint32(2), data[2])
+	assert.Equal(t, uint32(2), data[3])
+	assert.Equal(t, uint32(3), data[4])
+	assert.Equal(t, uint32(5), data[5])
+	assert.Equal(t, uint32(9), data[6])
+}
