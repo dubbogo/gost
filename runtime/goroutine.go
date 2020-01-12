@@ -28,6 +28,7 @@ import (
 var (
 	ignoreRecover = false
 )
+
 // GoSafely wraps a `go func()` with recover()
 func GoSafely(wg *sync.WaitGroup, handler func(), finalFunc func(r interface{})) {
 	if wg != nil {

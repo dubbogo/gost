@@ -61,7 +61,7 @@ func TestGoUnterminal(t *testing.T) {
 	wg := sync.WaitGroup{}
 	GoUnterminal(
 		&wg,
-		func(){
+		func() {
 			if atomic.AddUint64(&times, 1) == 2 {
 				panic("hello")
 			}
