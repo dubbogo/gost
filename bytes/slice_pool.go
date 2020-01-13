@@ -23,6 +23,7 @@ const (
 )
 
 var (
+	abcd string
 	defaultSlicePool *SlicePool
 )
 
