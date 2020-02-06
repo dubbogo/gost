@@ -71,11 +71,11 @@ func TestGoUnterminated(t *testing.T) {
 		},
 	)
 	wg.Wait()
-	assert.True(t, times == 3)
+	assert.True(t, atomic.LoadUint64(&times) == 3)
 
 	GoUnterminated(nil, false, func() {
 		times++
 	})
 	time.Sleep(1e9)
-	assert.True(t, times == 4)
+	assert.True(t, atomic.LoadUint64(&times) == 4)
 }
