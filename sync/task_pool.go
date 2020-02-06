@@ -33,9 +33,9 @@ const (
 /////////////////////////////////////////
 
 type TaskPoolOptions struct {
-	tQLen      int // task queue length
-	tQNumber   int // task queue number
-	tQPoolSize int // task pool size
+	tQLen           int // task queue length
+	tQSizePerWorker int // task queue number
+	tQPoolSize      int // task pool size
 }
 
 func (o *TaskPoolOptions) validate() {
@@ -47,12 +47,12 @@ func (o *TaskPoolOptions) validate() {
 		o.tQLen = defaultTaskQLen
 	}
 
-	if o.tQNumber < 1 {
-		o.tQNumber = defaultTaskQNumber
+	if o.tQSizePerWorker < 1 {
+		o.tQSizePerWorker = defaultTaskQNumber
 	}
 
-	if o.tQNumber > o.tQPoolSize {
-		o.tQNumber = o.tQPoolSize
+	if o.tQSizePerWorker > o.tQPoolSize {
+		o.tQSizePerWorker = o.tQPoolSize
 	}
 }
 
@@ -75,7 +75,7 @@ func WithTaskPoolTaskQueueLength(length int) TaskPoolOption {
 // @number is the task queue number
 func WithTaskPoolTaskQueueNumber(number int) TaskPoolOption {
 	return func(o *TaskPoolOptions) {
-		o.tQNumber = number
+		o.tQSizePerWorker = number
 	}
 }
 
@@ -91,7 +91,7 @@ type TaskPool struct {
 	TaskPoolOptions
 
 	idx    uint32 // round robin index
-	qArray []chan task
+	shared []chan task
 	wg     sync.WaitGroup
 
 	once sync.Once
@@ -109,12 +109,12 @@ func NewTaskPool(opts ...TaskPoolOption) *TaskPool {
 
 	p := &TaskPool{
 		TaskPoolOptions: tOpts,
-		qArray:          make([]chan task, tOpts.tQNumber),
+		shared:          make([]chan task, tOpts.tQSizePerWorker),
 		done:            make(chan struct{}),
 	}
 
-	for i := 0; i < p.tQNumber; i++ {
-		p.qArray[i] = make(chan task, p.tQLen)
+	for i := 0; i < p.tQSizePerWorker; i++ {
+		p.shared[i] = make(chan task, p.tQLen)
 	}
 	p.start()
 
@@ -126,7 +126,7 @@ func (p *TaskPool) start() {
 	for i := 0; i < p.tQPoolSize; i++ {
 		p.wg.Add(1)
 		workerID := i
-		q := p.qArray[workerID%p.tQNumber]
+		q := p.shared[workerID%p.tQSizePerWorker]
 		go p.run(int(workerID), q)
 	}
 }
@@ -160,12 +160,12 @@ func (p *TaskPool) run(id int, q chan task) error {
 
 // add task
 func (p *TaskPool) AddTask(t task) {
-	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
+	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQSizePerWorker)
 
 	select {
 	case <-p.done:
 		return
-	case p.qArray[id] <- t:
+	case p.shared[id] <- t:
 	}
 }
 
@@ -195,7 +195,7 @@ func (p *TaskPool) IsClosed() bool {
 func (p *TaskPool) Close() {
 	p.stop()
 	p.wg.Wait()
-	for i := range p.qArray {
-		close(p.qArray[i])
+	for i := range p.shared {
+		close(p.shared[i])
 	}
 }
