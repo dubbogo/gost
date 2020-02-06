@@ -33,6 +33,7 @@ func TestGoSafe(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	GoSafely(&wg,
+		false,
 		func() {
 			panic("hello")
 		},
@@ -45,6 +46,7 @@ func TestGoSafe(t *testing.T) {
 	assert.True(t, times == 2)
 
 	GoSafely(nil,
+		false,
 		func() {
 			panic("hello")
 		},
@@ -56,11 +58,12 @@ func TestGoSafe(t *testing.T) {
 	assert.True(t, times == 3)
 }
 
-func TestGoUnterminal(t *testing.T) {
+func TestGoUnterminated(t *testing.T) {
 	times := uint64(1)
 	wg := sync.WaitGroup{}
-	GoUnterminal(
+	GoUnterminated(
 		&wg,
+		false,
 		func() {
 			if atomic.AddUint64(&times, 1) == 2 {
 				panic("hello")
@@ -70,7 +73,7 @@ func TestGoUnterminal(t *testing.T) {
 	wg.Wait()
 	assert.True(t, times == 3)
 
-	GoUnterminal(nil, func() {
+	GoUnterminated(nil, false, func() {
 		times++
 	})
 	time.Sleep(1e9)

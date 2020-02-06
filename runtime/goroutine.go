@@ -25,12 +25,8 @@ import (
 	"time"
 )
 
-var (
-	ignoreRecover = false
-)
-
 // GoSafely wraps a `go func()` with recover()
-func GoSafely(wg *sync.WaitGroup, handler func(), finalFunc func(r interface{})) {
+func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), finalFunc func(r interface{})) {
 	if wg != nil {
 		wg.Add(1)
 	}
@@ -70,13 +66,15 @@ func GoSafely(wg *sync.WaitGroup, handler func(), finalFunc func(r interface{}))
 	}()
 }
 
-func GoUnterminal(wg *sync.WaitGroup, handle func()) {
+// GoUnterminated is used for which goroutine wanna long live as its process.
+func GoUnterminated(wg *sync.WaitGroup, ignoreRecover bool, handle func()) {
 	GoSafely(wg,
+		ignoreRecover,
 		func() {
 			handle()
 		},
 		func(r interface{}) {
-			GoUnterminal(wg, handle)
+			GoUnterminated(wg, ignoreRecover, handle)
 		},
 	)
 }

@@ -9,3 +9,5 @@ script:
   - go fmt ./... && [[ -z `git status -s` ]]
   - GO111MODULE=on && go mod vendor && go test ./... -bench . -race -v
 
+notifications:
+   webhooks: https://oapi.dingtalk.com/robot/send?access_token=a58715037800dfbfd6f9441db4032ffbfca17eb80a90ee1ef8cb56fc7813ac5e
