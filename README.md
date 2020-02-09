@@ -25,6 +25,13 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 * Decimal
 
+## runtime
+
+* GoSafely 
+> Using `go` in a safe way.
+* GoUnterminated
+> Run a goroutine in a safe way whose task is long live as the whole process life time.
+
 ## sync
 
 * TaskPool
