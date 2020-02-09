@@ -75,7 +75,7 @@ func TestGoUnterminated(t *testing.T) {
 	assert.True(t, atomic.LoadUint64(&times) == 3)
 
 	GoUnterminated(func() {
-		times++
+		atomic.AddUint64(&times, 1)
 	},
 		nil,
 		false,
