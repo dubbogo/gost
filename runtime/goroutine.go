@@ -67,12 +67,17 @@ func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), finalFunc 
 }
 
 // GoUnterminated is used for which goroutine wanna long live as its process.
-func GoUnterminated(wg *sync.WaitGroup, ignoreRecover bool, handle func()) {
+// @period: sleep time duration after panic to defeat @handle panic so frequently. if it is not positive,
+//          the @handle will be invoked asap after panic.
+func GoUnterminated(handle func(), wg *sync.WaitGroup, ignoreRecover bool, period time.Duration) {
 	GoSafely(wg,
 		ignoreRecover,
 		handle,
 		func(r interface{}) {
-			GoUnterminated(wg, ignoreRecover, handle)
+		   if period > 0 {
+		   	time.Sleep(period)
+		   }
+			GoUnterminated(handle, wg, ignoreRecover, period)
 		},
 	)
 }

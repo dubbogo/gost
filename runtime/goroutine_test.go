@@ -62,20 +62,26 @@ func TestGoUnterminated(t *testing.T) {
 	times := uint64(1)
 	wg := sync.WaitGroup{}
 	GoUnterminated(
-		&wg,
-		false,
 		func() {
 			if atomic.AddUint64(&times, 1) == 2 {
 				panic("hello")
 			}
 		},
+		&wg,
+		false,
+		1e8,
+
 	)
 	wg.Wait()
 	assert.True(t, atomic.LoadUint64(&times) == 3)
 
-	GoUnterminated(nil, false, func() {
+	GoUnterminated(func() {
 		times++
-	})
+	},
+	nil,
+	false,
+	1e8,
+	)
 	time.Sleep(1e9)
 	assert.True(t, atomic.LoadUint64(&times) == 4)
 }
