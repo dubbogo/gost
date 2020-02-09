@@ -74,9 +74,9 @@ func GoUnterminated(handle func(), wg *sync.WaitGroup, ignoreRecover bool, perio
 		ignoreRecover,
 		handle,
 		func(r interface{}) {
-		   if period > 0 {
-		   	time.Sleep(period)
-		   }
+			if period > 0 {
+				time.Sleep(period)
+			}
 			GoUnterminated(handle, wg, ignoreRecover, period)
 		},
 	)
