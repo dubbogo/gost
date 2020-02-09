@@ -70,9 +70,7 @@ func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), finalFunc 
 func GoUnterminated(wg *sync.WaitGroup, ignoreRecover bool, handle func()) {
 	GoSafely(wg,
 		ignoreRecover,
-		func() {
-			handle()
-		},
+		handle,
 		func(r interface{}) {
 			GoUnterminated(wg, ignoreRecover, handle)
 		},
