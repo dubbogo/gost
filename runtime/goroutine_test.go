@@ -43,7 +43,7 @@ func TestGoSafe(t *testing.T) {
 	)
 
 	wg.Wait()
-	assert.True(t, times == 2)
+	assert.True(t, atomic.LoadInt32(&times) == 2)
 
 	GoSafely(nil,
 		false,
