@@ -29,7 +29,7 @@ import (
 )
 
 func TestGoSafe(t *testing.T) {
-	times := 1
+	times := int32(1)
 
 	wg := sync.WaitGroup{}
 	GoSafely(&wg,
@@ -38,7 +38,7 @@ func TestGoSafe(t *testing.T) {
 			panic("hello")
 		},
 		func(r interface{}) {
-			times++
+			atomic.AddInt32(&times, 1)
 		},
 	)
 
@@ -51,11 +51,11 @@ func TestGoSafe(t *testing.T) {
 			panic("hello")
 		},
 		func(r interface{}) {
-			times++
+			atomic.AddInt32(&times, 1)
 		},
 	)
 	time.Sleep(1e9)
-	assert.True(t, times == 3)
+	assert.True(t, atomic.LoadInt32(&times) == 3)
 }
 
 func TestGoUnterminated(t *testing.T) {
