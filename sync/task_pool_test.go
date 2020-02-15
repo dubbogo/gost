@@ -2,21 +2,54 @@ package gxsync
 
 import (
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 )
 
-func BenchmarkTaskPool_AddTask(b *testing.B) {
+func TestTaskPool(t *testing.T) {
+	numCPU := runtime.NumCPU()
+	taskCnt := numCPU * numCPU * 1000
+
 	tp := NewTaskPool(
-		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
-		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		// WithTaskPoolTaskQueueLength(1),
+		WithTaskPoolTaskPoolSize(numCPU),
+		WithTaskPoolTaskQueueNumber(numCPU),
+		WithTaskPoolTaskQueueLength(numCPU),
 	)
 
 	var cnt int64 = 0
 	task := func() {
 		atomic.AddInt64(&cnt, 1)
-		// time.Sleep(1 * time.Microsecond)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < numCPU*numCPU; i++ {
+		wg.Add(1)
+		go func() {
+			for i := 0; i < 1000; i++ {
+				tp.AddTask(task)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	tp.Close()
+
+	if taskCnt != int(cnt) {
+		t.Error("want ", taskCnt, " got ", cnt)
+	}
+}
+
+func BenchmarkTaskPool_CPUTask(b *testing.B) {
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
+		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
+		WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+	)
+
+	var cnt int64 = 0
+	task := func() {
+		atomic.AddInt64(&cnt, 1)
 	}
 
 	b.RunParallel(func(pb *testing.PB) {
@@ -24,7 +57,4 @@ func BenchmarkTaskPool_AddTask(b *testing.B) {
 			tp.AddTask(task)
 		}
 	})
-	// tp.Close()
-
-	b.Log(runtime.NumCPU(), b.N, cnt)
 }
