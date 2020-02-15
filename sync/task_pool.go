@@ -172,6 +172,7 @@ func (p *TaskPool) AddTask(t task) {
 	}
 }
 
+// add task to queues or do it immediately
 func (p *TaskPool) AddTaskAlways(t task) {
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
 
@@ -185,6 +186,7 @@ func (p *TaskPool) AddTaskAlways(t task) {
 	}
 }
 
+// add task to idea queue
 func (p *TaskPool) AddTaskBalance(t task) {
 	length := len(p.qArray)
 	for {

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func newCountTask() (func(), *int64) {
@@ -44,7 +45,7 @@ func TestTaskPool(t *testing.T) {
 	}
 }
 
-func BenchmarkTaskPool_CPUTask(b *testing.B) {
+func BenchmarkTaskPool_CountTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
@@ -78,4 +79,107 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 		})
 	})
 
+}
+
+func fib(n int) int {
+	if n < 3 {
+		return 1
+	}
+	return fib(n-1) + fib(n-2)
+}
+
+// cpu-intensive task
+func BenchmarkTaskPool_CPUTask(b *testing.B) {
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
+		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
+		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+	)
+
+	newCPUTask := func() (func(), *int64) {
+		var cnt int64
+		return func() {
+			atomic.AddInt64(&cnt, int64(fib(22)))
+		}, &cnt
+	}
+
+	b.Run(`fib`, func(b *testing.B) {
+		t, _ := newCPUTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				t()
+			}
+		})
+	})
+
+	b.Run(`AddTask`, func(b *testing.B) {
+		task, _ := newCPUTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTask(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskAlways`, func(b *testing.B) {
+		task, _ := newCPUTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskAlways(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskBalance`, func(b *testing.B) {
+		task, _ := newCPUTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskBalance(task)
+			}
+		})
+	})
+
+}
+
+// IO-intensive task
+func BenchmarkTaskPool_IOTask(b *testing.B) {
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
+		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
+		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+	)
+
+	newIOTask := func() (func(), *int64) {
+		var cnt int64
+		return func() {
+			time.Sleep(700 * time.Microsecond)
+		}, &cnt
+	}
+
+	b.Run(`AddTask`, func(b *testing.B) {
+		task, _ := newIOTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTask(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskAlways`, func(b *testing.B) {
+		task, _ := newIOTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskAlways(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskBalance`, func(b *testing.B) {
+		task, _ := newIOTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskBalance(task)
+			}
+		})
+	})
 }
