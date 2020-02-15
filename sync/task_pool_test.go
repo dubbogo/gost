@@ -45,6 +45,11 @@ func TestTaskPool(t *testing.T) {
 	}
 }
 
+//
+//
+//BenchmarkTaskPool_CountTask/AddTask-8         	 2659934	       438 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkTaskPool_CountTask/AddTaskAlways-8   	 2513872	       473 ns/op	       1 B/op	       0 allocs/op
+//BenchmarkTaskPool_CountTask/AddTaskBalance-8  	 4198764	       285 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_CountTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
@@ -89,6 +94,11 @@ func fib(n int) int {
 }
 
 // cpu-intensive task
+//
+//BenchmarkTaskPool_CPUTask/fib-8         	   71898	     16181 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkTaskPool_CPUTask/AddTask-8     	   77358	     16678 ns/op	       0 B/op	       0 allocs/op
+//BenchmarkTaskPool_CPUTask/AddTaskAlways-8    78813	     13119 ns/op	     150 B/op	       0 allocs/op
+//BenchmarkTaskPool_CPUTask/AddTaskBalance-8   69908	     18694 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_CPUTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
@@ -142,6 +152,10 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 }
 
 // IO-intensive task
+//
+// BenchmarkTaskPool_IOTask/AddTask-8         	   10000	    109137 ns/op	       1 B/op	       0 allocs/op
+// BenchmarkTaskPool_IOTask/AddTaskAlways-8   	 1827568	       600 ns/op	      87 B/op	       1 allocs/op
+// BenchmarkTaskPool_IOTask/AddTaskBalance-8  	   13706	     91523 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_IOTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
