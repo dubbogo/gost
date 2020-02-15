@@ -7,26 +7,30 @@ import (
 	"testing"
 )
 
+func newCountTask() (func(), *int64) {
+	var cnt int64
+	return func() {
+		atomic.AddInt64(&cnt, 1)
+	}, &cnt
+}
+
 func TestTaskPool(t *testing.T) {
 	numCPU := runtime.NumCPU()
-	taskCnt := numCPU * numCPU * 1000
+	taskCnt := int64(numCPU * numCPU * 10)
 
 	tp := NewTaskPool(
-		WithTaskPoolTaskPoolSize(numCPU),
+		WithTaskPoolTaskPoolSize(numCPU/2),
 		WithTaskPoolTaskQueueNumber(numCPU),
-		WithTaskPoolTaskQueueLength(numCPU),
+		WithTaskPoolTaskQueueLength(1),
 	)
 
-	var cnt int64 = 0
-	task := func() {
-		atomic.AddInt64(&cnt, 1)
-	}
+	task, cnt := newCountTask()
 
 	var wg sync.WaitGroup
 	for i := 0; i < numCPU*numCPU; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < 1000; i++ {
+			for j := 0; j < 10; j++ {
 				tp.AddTask(task)
 			}
 			wg.Done()
@@ -35,8 +39,8 @@ func TestTaskPool(t *testing.T) {
 	wg.Wait()
 	tp.Close()
 
-	if taskCnt != int(cnt) {
-		t.Error("want ", taskCnt, " got ", cnt)
+	if taskCnt != *cnt {
+		t.Error("want ", taskCnt, " got ", *cnt)
 	}
 }
 
@@ -44,17 +48,34 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 
-	var cnt int64 = 0
-	task := func() {
-		atomic.AddInt64(&cnt, 1)
-	}
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			tp.AddTask(task)
-		}
+	b.Run(`AddTask`, func(b *testing.B) {
+		task, _ := newCountTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTask(task)
+			}
+		})
 	})
+
+	b.Run(`AddTaskAlways`, func(b *testing.B) {
+		task, _ := newCountTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskAlways(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskBalance`, func(b *testing.B) {
+		task, _ := newCountTask()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				tp.AddTaskBalance(task)
+			}
+		})
+	})
+
 }

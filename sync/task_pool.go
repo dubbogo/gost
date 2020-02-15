@@ -19,6 +19,7 @@ package gxsync
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 )
@@ -33,9 +34,9 @@ const (
 /////////////////////////////////////////
 
 type TaskPoolOptions struct {
-	tQLen      int // task queue length
-	tQNumber   int // task queue number
-	tQPoolSize int // task pool size
+	tQLen      int // task queue length. buffer size per queue
+	tQNumber   int // task queue number. number of queue
+	tQPoolSize int // task pool size. number of workers
 }
 
 func (o *TaskPoolOptions) validate() {
@@ -160,12 +161,46 @@ func (p *TaskPool) run(id int, q chan task) error {
 
 // add task
 func (p *TaskPool) AddTask(t task) {
+	idx := atomic.AddUint32(&p.idx, 1)
+	id := idx % uint32(p.tQNumber)
+
+	select {
+	case <-p.done:
+		return
+	case p.qArray[id] <- t:
+		//log.Println(idx)
+	}
+}
+
+func (p *TaskPool) AddTaskAlways(t task) {
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
 
 	select {
 	case <-p.done:
 		return
 	case p.qArray[id] <- t:
+		return
+	default:
+		go t()
+	}
+}
+
+func (p *TaskPool) AddTaskBalance(t task) {
+	length := len(p.qArray)
+	for {
+		i := rand.Intn(length)
+		if p.tryAddTaskTo(t, i) {
+			break
+		}
+	}
+}
+
+func (p *TaskPool) tryAddTaskTo(t task, i int) bool {
+	select {
+	case p.qArray[i] <- t:
+		return true
+	default:
+		return false
 	}
 }
 
