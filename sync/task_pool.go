@@ -159,7 +159,7 @@ func (p *TaskPool) run(id int, q chan task) error {
 	}
 }
 
-// add task
+// AddTask wait idle worker add task
 func (p *TaskPool) AddTask(t task) {
 	idx := atomic.AddUint32(&p.idx, 1)
 	id := idx % uint32(p.tQNumber)
@@ -168,7 +168,6 @@ func (p *TaskPool) AddTask(t task) {
 	case <-p.done:
 		return
 	case p.qArray[id] <- t:
-		//log.Println(idx)
 	}
 }
 
@@ -187,14 +186,19 @@ func (p *TaskPool) AddTaskAlways(t task) {
 }
 
 // AddTaskBalance add task to idea queue
+// do it immediately when no idea queue
 func (p *TaskPool) AddTaskBalance(t task) {
 	length := len(p.qArray)
-	for {
+
+	// try len/2 times to lookup idea queue
+	for i := 0; i*2 < length; i++ {
 		i := rand.Intn(length)
 		if p.tryAddTaskTo(t, i) {
-			break
+			return
 		}
 	}
+
+	go t()
 }
 
 func (p *TaskPool) tryAddTaskTo(t task, i int) bool {

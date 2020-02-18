@@ -1,6 +1,7 @@
 package gxsync
 
 import (
+	"math/rand"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -45,11 +46,6 @@ func TestTaskPool(t *testing.T) {
 	}
 }
 
-//
-//
-//BenchmarkTaskPool_CountTask/AddTask-8         	 2659934	       438 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkTaskPool_CountTask/AddTaskAlways-8   	 2513872	       473 ns/op	       1 B/op	       0 allocs/op
-//BenchmarkTaskPool_CountTask/AddTaskBalance-8  	 4198764	       285 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_CountTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
@@ -94,11 +90,6 @@ func fib(n int) int {
 }
 
 // cpu-intensive task
-//
-//BenchmarkTaskPool_CPUTask/fib-8         	   71898	     16181 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkTaskPool_CPUTask/AddTask-8     	   77358	     16678 ns/op	       0 B/op	       0 allocs/op
-//BenchmarkTaskPool_CPUTask/AddTaskAlways-8    78813	     13119 ns/op	     150 B/op	       0 allocs/op
-//BenchmarkTaskPool_CPUTask/AddTaskBalance-8   69908	     18694 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_CPUTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
@@ -152,10 +143,6 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 }
 
 // IO-intensive task
-//
-// BenchmarkTaskPool_IOTask/AddTask-8         	   10000	    109137 ns/op	       1 B/op	       0 allocs/op
-// BenchmarkTaskPool_IOTask/AddTaskAlways-8   	 1827568	       600 ns/op	      87 B/op	       1 allocs/op
-// BenchmarkTaskPool_IOTask/AddTaskBalance-8  	   13706	     91523 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkTaskPool_IOTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
@@ -197,3 +184,69 @@ func BenchmarkTaskPool_IOTask(b *testing.B) {
 		})
 	})
 }
+
+func BenchmarkTaskPool_RandomTask(b *testing.B) {
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
+		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
+		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+	)
+
+	newRandomTask := func() (func(), *int64) {
+		c := rand.Intn(4)
+		tasks := []func(){
+			func() { _ = fib(rand.Intn(20)) },
+			func() { t, _ := newCountTask(); t() },
+			func() { runtime.Gosched() },
+			func() { time.Sleep(time.Duration(rand.Int63n(100)) * time.Microsecond) },
+		}
+		return tasks[c], nil
+	}
+
+	b.Run(`AddTask`, func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				task, _ := newRandomTask()
+				tp.AddTask(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskAlways`, func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				task, _ := newRandomTask()
+				tp.AddTaskAlways(task)
+			}
+		})
+	})
+
+	b.Run(`AddTaskBalance`, func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				task, _ := newRandomTask()
+				tp.AddTaskBalance(task)
+			}
+		})
+	})
+}
+
+/*
+
+pkg: github.com/dubbogo/gost/sync
+BenchmarkTaskPool_CountTask/AddTask-8         	 2872177	       380 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_CountTask/AddTaskAlways-8   	 2769730	       455 ns/op	       1 B/op	       0 allocs/op
+BenchmarkTaskPool_CountTask/AddTaskBalance-8  	 4630167	       248 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_CPUTask/fib-8               	   73975	     16524 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_CPUTask/AddTask-8           	   72525	     18160 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_CPUTask/AddTaskAlways-8     	  606813	     16464 ns/op	      40 B/op	       0 allocs/op
+BenchmarkTaskPool_CPUTask/AddTaskBalance-8    	  137926	     17646 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_IOTask/AddTask-8            	   10000	    108520 ns/op	       0 B/op	       0 allocs/op
+BenchmarkTaskPool_IOTask/AddTaskAlways-8      	 1000000	      1236 ns/op	      95 B/op	       1 allocs/op
+BenchmarkTaskPool_IOTask/AddTaskBalance-8     	 1518144	       673 ns/op	      63 B/op	       0 allocs/op
+BenchmarkTaskPool_RandomTask/AddTask-8        	  497055	      2517 ns/op	       6 B/op	       0 allocs/op
+BenchmarkTaskPool_RandomTask/AddTaskAlways-8  	 2511391	       415 ns/op	      21 B/op	       0 allocs/op
+BenchmarkTaskPool_RandomTask/AddTaskBalance-8 	 1381711	       868 ns/op	      17 B/op	       0 allocs/op
+PASS
+
+*/
