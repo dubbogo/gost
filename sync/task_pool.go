@@ -20,8 +20,11 @@ package gxsync
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"sync"
 	"sync/atomic"
+
+	gxruntime "github.com/dubbogo/gost/runtime"
 )
 
 const (
@@ -128,8 +131,22 @@ func (p *TaskPool) start() {
 		p.wg.Add(1)
 		workerID := i
 		q := p.qArray[workerID%p.tQNumber]
-		go p.run(int(workerID), q)
+		p.safeRun(workerID, q)
 	}
+}
+
+func (p *TaskPool) safeRun(workerID int, q chan task) {
+	gxruntime.GoSafely(nil, false,
+		func() {
+			err := p.run(int(workerID), q)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "gost/TaskPool.run error:%s", err.Error())
+			}
+		},
+		// catch handler
+		func(rec interface{}) {
+			p.safeRun(workerID, q)
+		})
 }
 
 // worker
@@ -181,7 +198,7 @@ func (p *TaskPool) AddTaskAlways(t task) {
 	case p.qArray[id] <- t:
 		return
 	default:
-		go t()
+		p.goSafely(t)
 	}
 }
 
@@ -192,13 +209,13 @@ func (p *TaskPool) AddTaskBalance(t task) {
 
 	// try len/2 times to lookup idea queue
 	for i := 0; i*2 < length; i++ {
-		i := rand.Intn(length)
-		if p.tryAddTaskTo(t, i) {
+		id := rand.Intn(length)
+		if p.tryAddTaskTo(t, id) {
 			return
 		}
 	}
 
-	go t()
+	p.goSafely(t)
 }
 
 func (p *TaskPool) tryAddTaskTo(t task, i int) bool {
@@ -208,6 +225,10 @@ func (p *TaskPool) tryAddTaskTo(t task, i int) bool {
 	default:
 		return false
 	}
+}
+
+func (p *TaskPool) goSafely(fn func()) {
+	gxruntime.GoSafely(nil, false, fn, nil)
 }
 
 // stop all tasks
