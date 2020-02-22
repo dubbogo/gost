@@ -18,11 +18,11 @@ func newCountTask() (func(), *int64) {
 
 func TestTaskPool(t *testing.T) {
 	numCPU := runtime.NumCPU()
-	taskCnt := int64(numCPU * numCPU * 10)
+	taskCnt := int64(numCPU * numCPU * 100)
 
 	tp := NewTaskPool(
-		WithTaskPoolTaskPoolSize(numCPU/2),
-		WithTaskPoolTaskQueueNumber(numCPU),
+		WithTaskPoolTaskPoolSize(1),
+		WithTaskPoolTaskQueueNumber(1),
 		WithTaskPoolTaskQueueLength(1),
 	)
 
@@ -32,8 +32,11 @@ func TestTaskPool(t *testing.T) {
 	for i := 0; i < numCPU*numCPU; i++ {
 		wg.Add(1)
 		go func() {
-			for j := 0; j < 10; j++ {
-				tp.AddTask(task)
+			for j := 0; j < 100; j++ {
+				ok := tp.AddTask(task)
+				if !ok {
+					t.Log(j)
+				}
 			}
 			wg.Done()
 		}()

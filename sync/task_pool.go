@@ -19,8 +19,8 @@ package gxsync
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
-	"os"
 	"sync"
 	"sync/atomic"
 
@@ -140,7 +140,8 @@ func (p *TaskPool) safeRun(workerID int, q chan task) {
 		func() {
 			err := p.run(int(workerID), q)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "gost/TaskPool.run error:%s", err.Error())
+				// log error to stderr
+				log.Printf("gost/TaskPool.run error: %s", err.Error())
 			}
 		},
 		// catch handler
@@ -177,14 +178,17 @@ func (p *TaskPool) run(id int, q chan task) error {
 }
 
 // AddTask wait idle worker add task
-func (p *TaskPool) AddTask(t task) {
+// return false when the pool is stop
+func (p *TaskPool) AddTask(t task) (ok bool) {
 	idx := atomic.AddUint32(&p.idx, 1)
 	id := idx % uint32(p.tQNumber)
 
 	select {
 	case <-p.done:
-		return
-	case p.qArray[id] <- t:
+		return false
+	default:
+		p.qArray[id] <- t
+		return true
 	}
 }
 
