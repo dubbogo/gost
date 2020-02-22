@@ -197,8 +197,6 @@ func (p *TaskPool) AddTaskAlways(t task) {
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
 
 	select {
-	case <-p.done:
-		return
 	case p.qArray[id] <- t:
 		return
 	default:
