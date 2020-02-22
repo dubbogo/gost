@@ -213,22 +213,15 @@ func (p *TaskPool) AddTaskBalance(t task) {
 
 	// try len/2 times to lookup idle queue
 	for i := 0; i < length/2; i++ {
-		id := rand.Intn(length)
-		if p.tryAddTaskTo(t, id) {
+		select {
+		case p.qArray[rand.Intn(length)] <- t:
 			return
+		default:
+			continue
 		}
 	}
 
 	p.goSafely(t)
-}
-
-func (p *TaskPool) tryAddTaskTo(t task, i int) bool {
-	select {
-	case p.qArray[i] <- t:
-		return true
-	default:
-		return false
-	}
 }
 
 func (p *TaskPool) goSafely(fn func()) {
