@@ -202,13 +202,13 @@ func (p *TaskPool) AddTaskAlways(t task) {
 	}
 }
 
-// AddTaskBalance add task to idea queue
-// do it immediately when no idea queue
+// AddTaskBalance add task to idle queue
+// do it immediately when no idle queue
 func (p *TaskPool) AddTaskBalance(t task) {
 	length := len(p.qArray)
 
-	// try len/2 times to lookup idea queue
-	for i := 0; i*2 < length; i++ {
+	// try len/2 times to lookup idle queue
+	for i := 0; i < length/2; i++ {
 		id := rand.Intn(length)
 		if p.tryAddTaskTo(t, id) {
 			return
