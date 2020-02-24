@@ -23,7 +23,9 @@ import (
 	"math/rand"
 	"sync"
 	"sync/atomic"
+)
 
+import (
 	gxruntime "github.com/dubbogo/gost/runtime"
 )
 
