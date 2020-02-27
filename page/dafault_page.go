@@ -27,30 +27,38 @@ type DefaultPage struct {
 	hasNext       bool
 }
 
+// GetOffSet will return the offset
 func (d *DefaultPage) GetOffset() int {
 	return d.requestOffset
 }
 
+// GetPageSize will return the page size
 func (d *DefaultPage) GetPageSize() int {
 	return d.pageSize
 }
 
+// GetTotalPages will return the number of total pages
 func (d *DefaultPage) GetTotalPages() int {
 	return d.totalPages
 }
 
+// GetData will return the data
 func (d *DefaultPage) GetData() []interface{} {
 	return d.data
 }
 
+// GetDataSize will return the size of data.
+// it's len(GetData())
 func (d *DefaultPage) GetDataSize() int {
 	return len(d.GetData())
 }
 
+// HasNext will return whether has next page
 func (d *DefaultPage) HasNext() bool {
 	return d.hasNext
 }
 
+// HasData will return whether this page has data.
 func (d *DefaultPage) HasData() bool {
 	return d.GetDataSize() > 0
 }
