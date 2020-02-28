@@ -63,6 +63,7 @@ func (d *DefaultPage) HasData() bool {
 	return d.GetDataSize() > 0
 }
 
+// NewDefaultPage will create an instance
 func NewDefaultPage(requestOffset int, pageSize int,
 	data []interface{}, totalSize int) *DefaultPage {
 
