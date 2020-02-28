@@ -45,3 +45,7 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 Timer optimization through time-wheel.
 
+## page
+
+Page for pagination. It contains the most common functions like offset, pagesize.
+
