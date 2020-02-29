@@ -146,10 +146,8 @@ func (p *TaskPool) safeRun(workerID int, q chan task) {
 				log.Printf("gost/TaskPool.run error: %s", err.Error())
 			}
 		},
-		// catch handler
-		func(rec interface{}) {
-			p.safeRun(workerID, q)
-		})
+		nil,
+	)
 }
 
 // worker
