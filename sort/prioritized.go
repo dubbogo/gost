@@ -19,5 +19,6 @@ package gxsort
 
 // Prioritized is the abstraction of priority.
 type Prioritized interface {
+	// GetPriority will return the priority
 	GetPriority() int
 }
