@@ -17,8 +17,8 @@
 
 package gxpage
 
-// DefaultPage is the default implementation of Page interface
-type DefaultPage struct {
+// Page is the default implementation of Page interface
+type Page struct {
 	requestOffset int
 	pageSize      int
 	totalSize     int
@@ -28,44 +28,44 @@ type DefaultPage struct {
 }
 
 // GetOffSet will return the offset
-func (d *DefaultPage) GetOffset() int {
+func (d *Page) Offset() int {
 	return d.requestOffset
 }
 
 // GetPageSize will return the page size
-func (d *DefaultPage) GetPageSize() int {
+func (d *Page) GetPageSize() int {
 	return d.pageSize
 }
 
 // GetTotalPages will return the number of total pages
-func (d *DefaultPage) GetTotalPages() int {
+func (d *Page) GetTotalPages() int {
 	return d.totalPages
 }
 
 // GetData will return the data
-func (d *DefaultPage) GetData() []interface{} {
+func (d *Page) GetData() []interface{} {
 	return d.data
 }
 
 // GetDataSize will return the size of data.
 // it's len(GetData())
-func (d *DefaultPage) GetDataSize() int {
+func (d *Page) GetDataSize() int {
 	return len(d.GetData())
 }
 
 // HasNext will return whether has next page
-func (d *DefaultPage) HasNext() bool {
+func (d *Page) HasNext() bool {
 	return d.hasNext
 }
 
 // HasData will return whether this page has data.
-func (d *DefaultPage) HasData() bool {
+func (d *Page) HasData() bool {
 	return d.GetDataSize() > 0
 }
 
 // NewDefaultPage will create an instance
 func NewDefaultPage(requestOffset int, pageSize int,
-	data []interface{}, totalSize int) *DefaultPage {
+	data []interface{}, totalSize int) *Page {
 
 	remain := totalSize % pageSize
 	totalPages := totalSize / pageSize
@@ -75,7 +75,7 @@ func NewDefaultPage(requestOffset int, pageSize int,
 
 	hasNext := totalSize-requestOffset-pageSize > 0
 
-	return &DefaultPage{
+	return &Page{
 		requestOffset: requestOffset,
 		pageSize:      pageSize,
 		data:          data,
