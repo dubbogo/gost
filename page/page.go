@@ -28,7 +28,7 @@ type Page struct {
 }
 
 // GetOffSet will return the offset
-func (d *Page) Offset() int {
+func (d *Page) GetOffset() int {
 	return d.requestOffset
 }
 

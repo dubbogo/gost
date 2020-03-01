@@ -17,11 +17,11 @@
 
 package gxpage
 
-// Page is the abstraction for pagination usage.
+// Pager is the abstraction for pagination usage.
 type Pager interface {
 
-	// OffSet will return the offset
-	Offset() int
+	// GetOffset will return the offset
+	GetOffset() int
 
 	// GetPageSize will return the page size
 	GetPageSize() int

@@ -30,7 +30,7 @@ func TestNewDefaultPage(t *testing.T) {
 	page := NewDefaultPage(121, 10, data, 499)
 
 	assert.Equal(t, 10, page.GetDataSize())
-	assert.Equal(t, 121, page.Offset())
+	assert.Equal(t, 121, page.GetOffset())
 	assert.Equal(t, 10, page.GetPageSize())
 	assert.Equal(t, 50, page.GetTotalPages())
 	assert.Equal(t, data, page.GetData())
