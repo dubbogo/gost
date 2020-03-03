@@ -27,7 +27,7 @@ import (
 
 func TestNewDefaultPage(t *testing.T) {
 	data := make([]interface{}, 10)
-	page := NewDefaultPage(121, 10, data, 499)
+	page := New(121, 10, data, 499)
 
 	assert.Equal(t, 10, page.GetDataSize())
 	assert.Equal(t, 121, page.GetOffset())
@@ -37,6 +37,6 @@ func TestNewDefaultPage(t *testing.T) {
 	assert.True(t, page.HasNext())
 	assert.True(t, page.HasData())
 
-	page = NewDefaultPage(492, 10, data, 499)
+	page = New(492, 10, data, 499)
 	assert.False(t, page.HasNext())
 }
