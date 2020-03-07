@@ -5,7 +5,7 @@ go:
 
 script:
   - go fmt ./... && [[ -z `git status -s` ]]
-  - GO111MODULE=on && go mod vendor && go test ./... -bench . -race -v
+  - GO111MODULE=on && go mod vendor && go test ./... -bench . -race -v -coverprofile=coverage.txt
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
