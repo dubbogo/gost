@@ -48,6 +48,8 @@ func RegSplit(text string, regexSplit string) []string {
 	return result
 }
 
+// IsMatchPattern is used to determine whether pattern
+// and value match with wildcards currently supported *
 func IsMatchPattern(pattern string, value string) bool {
 	if "*" == pattern {
 		return true
