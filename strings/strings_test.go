@@ -32,3 +32,15 @@ func Test_RegSplit(t *testing.T) {
 	assert.Equal(t, "jsonrpc://127.0.0.1", strings[1])
 	assert.Equal(t, "registry://3.2.1.3?registry=zookeeper", strings[2])
 }
+
+func TestIsMatchPattern(t *testing.T) {
+	assert.Equal(t, true, IsMatchPattern("*", "value"))
+	assert.Equal(t, true, IsMatchPattern("", ""))
+	assert.Equal(t, false, IsMatchPattern("", "value"))
+	assert.Equal(t, true, IsMatchPattern("value", "value"))
+	assert.Equal(t, true, IsMatchPattern("v*", "value"))
+	assert.Equal(t, true, IsMatchPattern("*ue", "value"))
+	assert.Equal(t, true, IsMatchPattern("*e", "value"))
+	assert.Equal(t, true, IsMatchPattern("v*e", "value"))
+	assert.Equal(t, true, IsMatchPattern("val*e", "value"))
+}
