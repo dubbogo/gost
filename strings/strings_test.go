@@ -42,4 +42,5 @@ func TestIsMatchPattern(t *testing.T) {
 	assert.Equal(t, true, IsMatchPattern("*ue", "value"))
 	assert.Equal(t, true, IsMatchPattern("*e", "value"))
 	assert.Equal(t, true, IsMatchPattern("v*e", "value"))
+	assert.Equal(t, true, IsMatchPattern("val*e", "value"))
 }

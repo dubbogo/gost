@@ -70,10 +70,10 @@ func IsMatchPattern(pattern string, value string) bool {
 		return strings.HasPrefix(value, pattern[0:i])
 	case 0:
 		// "*" is at the beginning
-		return strings.HasSuffix(value, pattern[i+1:])
+		return strings.HasSuffix(value, pattern[1:])
 	default:
 		// "*" is in the middle
-		prefix := pattern[0:1]
+		prefix := pattern[0:i]
 		suffix := pattern[i+1:]
 		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
 	}
