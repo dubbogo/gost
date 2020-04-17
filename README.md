@@ -15,6 +15,7 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 * SlicePool
 > slice pool
+
 ## container
 
 * queue
@@ -27,10 +28,18 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 
 * Decimal
 
+## net
+
+* GetLocalIP() (string, error)
+* IsSameAddr(addr1, addr2 net.Addr) bool
+* ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) 
+* ListenOnUDPRandomPort(ip string) (*net.UDPConn, error)
+
 ## runtime
 
 * GoSafely 
 > Using `go` in a safe way.
+
 * GoUnterminated
 > Run a goroutine in a safe way whose task is long live as the whole process life time.
 

@@ -20,7 +20,9 @@ package gxnet
 import (
 	"net"
 	"strings"
+)
 
+import (
 	perrors "github.com/pkg/errors"
 )
 
