@@ -26,11 +26,7 @@ import (
 )
 
 // GoSafely wraps a `go func()` with recover()
-<<<<<<< HEAD
-func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), finalFunc func(r interface{})) {
-=======
 func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), catchFunc func(r interface{})) {
->>>>>>> 705a827b7f002fa93888ae66fffb4b9305a9e7ff
 	if wg != nil {
 		wg.Add(1)
 	}
@@ -41,11 +37,7 @@ func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), catchFunc 
 					fmt.Fprintf(os.Stderr, "%s goroutine panic: %v\n%s\n",
 						time.Now(), r, string(debug.Stack()))
 				}
-<<<<<<< HEAD
-				if finalFunc != nil {
-=======
 				if catchFunc != nil {
->>>>>>> 705a827b7f002fa93888ae66fffb4b9305a9e7ff
 					if wg != nil {
 						wg.Add(1)
 					}
@@ -62,11 +54,7 @@ func GoSafely(wg *sync.WaitGroup, ignoreRecover bool, handler func(), catchFunc 
 								wg.Done()
 							}
 						}()
-<<<<<<< HEAD
-						finalFunc(r)
-=======
 						catchFunc(r)
->>>>>>> 705a827b7f002fa93888ae66fffb4b9305a9e7ff
 					}()
 				}
 			}
