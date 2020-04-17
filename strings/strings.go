@@ -20,6 +20,7 @@ package gxstrings
 import (
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 func IsNil(i interface{}) bool {
@@ -45,4 +46,35 @@ func RegSplit(text string, regexSplit string) []string {
 	}
 	result[len(indexes)] = text[lastStart:]
 	return result
+}
+
+// IsMatchPattern is used to determine whether pattern
+// and value match with wildcards currently supported *
+func IsMatchPattern(pattern string, value string) bool {
+	if "*" == pattern {
+		return true
+	}
+	if len(pattern) == 0 && len(value) == 0 {
+		return true
+	}
+	if len(pattern) == 0 || len(value) == 0 {
+		return false
+	}
+	i := strings.LastIndex(pattern, "*")
+	switch i {
+	case -1:
+		// doesn't find "*"
+		return value == pattern
+	case len(pattern) - 1:
+		// "*" is at the end
+		return strings.HasPrefix(value, pattern[0:i])
+	case 0:
+		// "*" is at the beginning
+		return strings.HasSuffix(value, pattern[1:])
+	default:
+		// "*" is in the middle
+		prefix := pattern[0:i]
+		suffix := pattern[i+1:]
+		return strings.HasPrefix(value, prefix) && strings.HasSuffix(value, suffix)
+	}
 }

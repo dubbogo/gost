@@ -19,8 +19,14 @@ package gxsync
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
 	"sync"
 	"sync/atomic"
+)
+
+import (
+	gxruntime "github.com/dubbogo/gost/runtime"
 )
 
 const (
@@ -33,9 +39,9 @@ const (
 /////////////////////////////////////////
 
 type TaskPoolOptions struct {
-	tQLen      int // task queue length
-	tQNumber   int // task queue number
-	tQPoolSize int // task pool size
+	tQLen      int // task queue length. buffer size per queue
+	tQNumber   int // task queue number. number of queue
+	tQPoolSize int // task pool size. number of workers
 }
 
 func (o *TaskPoolOptions) validate() {
@@ -127,8 +133,21 @@ func (p *TaskPool) start() {
 		p.wg.Add(1)
 		workerID := i
 		q := p.qArray[workerID%p.tQNumber]
-		go p.run(int(workerID), q)
+		p.safeRun(workerID, q)
 	}
+}
+
+func (p *TaskPool) safeRun(workerID int, q chan task) {
+	gxruntime.GoSafely(nil, false,
+		func() {
+			err := p.run(int(workerID), q)
+			if err != nil {
+				// log error to stderr
+				log.Printf("gost/TaskPool.run error: %s", err.Error())
+			}
+		},
+		nil,
+	)
 }
 
 // worker
@@ -158,15 +177,53 @@ func (p *TaskPool) run(id int, q chan task) error {
 	}
 }
 
-// add task
-func (p *TaskPool) AddTask(t task) {
-	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
+// AddTask wait idle worker add task
+// return false when the pool is stop
+func (p *TaskPool) AddTask(t task) (ok bool) {
+	idx := atomic.AddUint32(&p.idx, 1)
+	id := idx % uint32(p.tQNumber)
 
 	select {
 	case <-p.done:
-		return
-	case p.qArray[id] <- t:
+		return false
+	default:
+		p.qArray[id] <- t
+		return true
 	}
+}
+
+// AddTaskAlways add task to queues or do it immediately
+func (p *TaskPool) AddTaskAlways(t task) {
+	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
+
+	select {
+	case p.qArray[id] <- t:
+		return
+	default:
+		p.goSafely(t)
+	}
+}
+
+// AddTaskBalance add task to idle queue
+// do it immediately when no idle queue
+func (p *TaskPool) AddTaskBalance(t task) {
+	length := len(p.qArray)
+
+	// try len/2 times to lookup idle queue
+	for i := 0; i < length/2; i++ {
+		select {
+		case p.qArray[rand.Intn(length)] <- t:
+			return
+		default:
+			continue
+		}
+	}
+
+	p.goSafely(t)
+}
+
+func (p *TaskPool) goSafely(fn func()) {
+	gxruntime.GoSafely(nil, false, fn, nil)
 }
 
 // stop all tasks
