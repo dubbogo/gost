@@ -19,6 +19,7 @@ package gxnet
 
 import (
 	"net"
+	"strings"
 	"testing"
 )
 
@@ -53,4 +54,36 @@ func TestIsSameAddr(t *testing.T) {
 	addr2.IP = []byte("2001:4860:0000:2001:0000:0000:0000:0068")
 	addr2.Zone = ""
 	assert.True(t, IsSameAddr(&addr1, &addr1))
+}
+
+func TestListenOnTCPRandomPort(t *testing.T) {
+	l, err := ListenOnTCPRandomPort("")
+	assert.Nil(t, err)
+	t.Logf("a tcp server listen on a random addr:%s", l.Addr())
+	l.Close()
+
+	localIP, err := GetLocalIP()
+	if err == nil {
+		l, err = ListenOnTCPRandomPort(localIP)
+		assert.Nil(t, err)
+		assert.True(t, strings.Contains(l.Addr().String(), localIP))
+		t.Logf("a tcp server listen on a random addr:%s", l.Addr())
+		l.Close()
+	}
+}
+
+func TestListenOnUDPRandomPort(t *testing.T) {
+	l, err := ListenOnUDPRandomPort("")
+	assert.Nil(t, err)
+	t.Logf("a udp peer listen on a random addr:%s", l.LocalAddr())
+	l.Close()
+
+	localIP, err := GetLocalIP()
+	if err == nil {
+		l, err = ListenOnUDPRandomPort(localIP)
+		assert.Nil(t, err)
+		assert.True(t, strings.Contains(l.LocalAddr().String(), localIP))
+		t.Logf("a udp server listen on a random addr:%s", l.LocalAddr())
+		l.Close()
+	}
 }
