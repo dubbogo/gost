@@ -89,79 +89,79 @@ func TestListenOnUDPRandomPort(t *testing.T) {
 }
 
 func TestMatchIpIpv4Equal(t *testing.T) {
-	flag := MatchIp("192.168.0.1:8080", "192.168.0.1", "8080")
+	flag := MatchIP("192.168.0.1:8080", "192.168.0.1", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "192.168.0.1", "8080")
+	flag = MatchIP("*", "192.168.0.1", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "192.168.0.1", "")
+	flag = MatchIP("*", "192.168.0.1", "")
 	assert.True(t, flag)
 
-	flag = MatchIp("*.*.*.*", "192.168.0.1", "8080")
+	flag = MatchIP("*.*.*.*", "192.168.0.1", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "", "")
+	flag = MatchIP("*", "", "")
 	assert.False(t, flag)
 }
 
 func TestMatchIpIpv4Subnet(t *testing.T) {
-	flag := MatchIp("206.0.68.0/23", "206.0.68.123", "8080")
+	flag := MatchIP("206.0.68.0/23", "206.0.68.123", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("206.0.68.0/23", "207.0.69.123", "8080")
+	flag = MatchIP("206.0.68.0/23", "207.0.69.123", "8080")
 	assert.False(t, flag)
 }
 
 func TestMatchIpIpv4Range(t *testing.T) {
-	flag := MatchIp("206.*.68.0", "206.0.68.0", "8080")
+	flag := MatchIP("206.*.68.0", "206.0.68.0", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("206.*.68.0", "206.0.69.0", "8080")
+	flag = MatchIP("206.*.68.0", "206.0.69.0", "8080")
 	assert.False(t, flag)
 
-	flag = MatchIp("206.0.68-69.0", "206.0.68.0", "8080")
+	flag = MatchIP("206.0.68-69.0", "206.0.68.0", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("206.0.68-69.0", "206.0.70.0", "8080")
+	flag = MatchIP("206.0.68-69.0", "206.0.70.0", "8080")
 	assert.False(t, flag)
 }
 
 func TestMatchIpIpv6Equal(t *testing.T) {
-	flag := MatchIp("[1fff:0:a88:85a3::ac1f]:8080", "1fff:0:a88:85a3::ac1f", "8080")
+	flag := MatchIP("[1fff:0:a88:85a3::ac1f]:8080", "1fff:0:a88:85a3::ac1f", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "1fff:0:a88:85a3::ac1f", "8080")
+	flag = MatchIP("*", "1fff:0:a88:85a3::ac1f", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "1fff:0:a88:85a3::ac1f", "")
+	flag = MatchIP("*", "1fff:0:a88:85a3::ac1f", "")
 	assert.True(t, flag)
 
-	flag = MatchIp("*.*.*.*", "1fff:0:a88:85a3::ac1f", "8080")
+	flag = MatchIP("*.*.*.*", "1fff:0:a88:85a3::ac1f", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("*", "", "")
+	flag = MatchIP("*", "", "")
 	assert.False(t, flag)
 }
 
 func TestMatchIpIpv6Subnet(t *testing.T) {
-	flag := MatchIp("1fff:0:a88:85a3::ac1f/64", "1fff:0000:0a88:85a3:0000:0000:0000:0000", "8080")
+	flag := MatchIP("1fff:0:a88:85a3::ac1f/64", "1fff:0000:0a88:85a3:0000:0000:0000:0000", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("1fff:0:a88:85a3::ac1f/64", "2fff:0000:0a88:85a3:0000:0000:0000:0000", "8080")
+	flag = MatchIP("1fff:0:a88:85a3::ac1f/64", "2fff:0000:0a88:85a3:0000:0000:0000:0000", "8080")
 	assert.False(t, flag)
 }
 
 func TestMatchIpIpv6Range(t *testing.T) {
-	flag := MatchIp("234e:0:4567:0:0:0:3d:*", "234e:0:4567:0:0:0:3d:4", "8080")
+	flag := MatchIP("234e:0:4567:0:0:0:3d:*", "234e:0:4567:0:0:0:3d:4", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("234e:0:4567:0:0:0:3d:*", "234e:0:4567:0:0:0:2d:4", "8080")
+	flag = MatchIP("234e:0:4567:0:0:0:3d:*", "234e:0:4567:0:0:0:2d:4", "8080")
 	assert.False(t, flag)
 
-	flag = MatchIp("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:1", "8080")
+	flag = MatchIP("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:1", "8080")
 	assert.True(t, flag)
 
-	flag = MatchIp("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:3", "8080")
+	flag = MatchIP("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:3", "8080")
 	assert.False(t, flag)
 }

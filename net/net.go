@@ -33,8 +33,9 @@ var (
 )
 
 const (
-	AnyhostValue       = "0.0.0.0"
+	// Ipv4SplitCharacter use for slipt Ipv4
 	Ipv4SplitCharacter = "."
+	// Ipv6SplitCharacter use for slipt Ipv6
 	Ipv6SplitCharacter = ":"
 )
 
@@ -184,17 +185,17 @@ func ListenOnUDPRandomPort(ip string) (*net.UDPConn, error) {
 	return net.ListenUDP("udp4", &localAddr)
 }
 
-// MatchIp is used to determine whether @pattern and @host:@port match, It's supports subnet/range
-func MatchIp(pattern, host, port string) bool {
+// MatchIP is used to determine whether @pattern and @host:@port match, It's supports subnet/range
+func MatchIP(pattern, host, port string) bool {
 	// if the pattern is subnet format, it will not be allowed to config port param in pattern.
 	if strings.Contains(pattern, "/") {
 		_, subnet, _ := net.ParseCIDR(pattern)
 		return subnet != nil && subnet.Contains(net.ParseIP(host))
 	}
-	return matchIpRange(pattern, host, port)
+	return matchIPRange(pattern, host, port)
 }
 
-func matchIpRange(pattern, host, port string) bool {
+func matchIPRange(pattern, host, port string) bool {
 	if pattern == "" || host == "" {
 		log.Print("Illegal Argument pattern or hostName. Pattern:" + pattern + ", Host:" + host)
 		return false
@@ -249,9 +250,9 @@ func matchIpRange(pattern, host, port string) bool {
 				log.Print("There is wrong format of ip Address: " + mask[i])
 				return false
 			}
-			min := getNumOfIpSegment(rangeNumStrs[0], isIpv4)
-			max := getNumOfIpSegment(rangeNumStrs[1], isIpv4)
-			ip := getNumOfIpSegment(ipAddress[i], isIpv4)
+			min := getNumOfIPSegment(rangeNumStrs[0], isIpv4)
+			max := getNumOfIPSegment(rangeNumStrs[1], isIpv4)
+			ip := getNumOfIPSegment(ipAddress[i], isIpv4)
 			if ip < min || ip > max {
 				return false
 			}
@@ -303,7 +304,7 @@ func getPatternHostAndPort(pattern string, isIpv4 bool) []string {
 	return result
 }
 
-func getNumOfIpSegment(ipSegment string, isIpv4 bool) int {
+func getNumOfIPSegment(ipSegment string, isIpv4 bool) int {
 	if isIpv4 {
 		ipSeg, _ := strconv.Atoi(ipSegment)
 		return ipSeg
