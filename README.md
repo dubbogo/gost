@@ -24,6 +24,10 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 * set
 > HashSet
 
+## log
+
+> output log with color and provides pretty format string
+
 ## math
 
 * Decimal
@@ -34,6 +38,9 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 * IsSameAddr(addr1, addr2 net.Addr) bool
 * ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) 
 * ListenOnUDPRandomPort(ip string) (*net.UDPConn, error)
+
+## page
+> Page for pagination. It contains the most common functions like offset, pagesize.
 
 ## runtime
 
@@ -60,10 +67,4 @@ A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
 > check a var is nil or not.
 
 ## time
-
-Timer optimization through time-wheel.
-
-## page
-
-Page for pagination. It contains the most common functions like offset, pagesize.
-
+> Timer optimization through time-wheel.
