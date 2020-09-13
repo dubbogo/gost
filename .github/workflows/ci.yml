@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: "*"
+
+jobs:
+  build:
+    name: ${{ matrix.os }} - Go${{ matrix.go_version }} - JDK${{ matrix.jdk_version }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        go_version:
+          - 1.12
+    env:
+      DING_TOKEN: f42cc4772f122801778da35466f588404521bed7154e7b88d189ecef7412e4dc
+      DING_SIGN: SEC4a84c8febbb93764dc68481730e6bcf5efdf953804a40f40a2005dc4e30a83c1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go ${{ matrix.go_version }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go_version }}
+      id: go
+
+    - name: Cache Go Dependence
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: ${{ runner.os }}-go-
+
+    - name: Go Fmt
+      run: go fmt ./... && [[ -z `git status -s` ]]
+
+    - name: Go Test
+      run: GO111MODULE=on && go mod vendor && go test ./... -bench . -race -v -coverprofile=coverage.txt
+
+    - name: Coverage
+      run: bash <(curl -s https://codecov.io/bash)
+
+      # Because the contexts of push and PR are different, there are two Notify.
+      # Notifications are triggered only in the apache/dubbo-go repository.
+    - name: DingTalk Message Notify only Push
+      uses: zcong1993/actions-ding@v3.0.1
+      # Whether job is successful or not, always () is always true.
+      if: |
+        always() &&
+        github.event_name == 'push' &&
+        github.repository == 'apache/dubbo-go-hessian2'
+      with:
+        # DingDing bot token
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
+        # Post Body to send
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "Github Actions",
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: ${{ github.ref }} \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n > SHA: [${{ github.sha }}](${{ github.event.compare }})"
+            }
+          }
+
+    - name: DingTalk Message Notify only PR
+      uses: zcong1993/actions-ding@v3.0.1
+      if: |
+        always() &&
+        github.event_name == 'pull_request' &&
+        github.repository == 'apache/dubbo-go-hessian2'
+      with:
+        dingToken: ${{ env.DING_TOKEN }}
+        secret: ${{ env.DING_SIGN }}
+        body: |
+          {
+            "msgtype": "markdown",
+            "markdown": {
+                "title": "Github Actions",
+                "text": "## Github Actions \n - name: CI \n - repository: ${{ github.repository }} \n - pr_title: **${{ github.event.pull_request.title }}** \n - trigger: ${{ github.actor }} \n - event: ${{ github.event_name }} \n - ref: [${{ github.ref }}](${{ github.event.pull_request._links.html.href }}) \n - status: [${{ job.status	}}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) \n - environment: ${{ runner.os }} \n > SHA: [${{ github.sha }}](${{ github.event.pull_request._links.html.href }})"
+            }
+          }
