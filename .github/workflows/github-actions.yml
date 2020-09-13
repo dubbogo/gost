@@ -17,7 +17,7 @@ jobs:
         os:
           - ubuntu-latest
         go_version:
-          - 1.12
+          - 1.13
     env:
       DING_TOKEN: f42cc4772f122801778da35466f588404521bed7154e7b88d189ecef7412e4dc
       DING_SIGN: SEC4a84c8febbb93764dc68481730e6bcf5efdf953804a40f40a2005dc4e30a83c1
@@ -48,14 +48,14 @@ jobs:
       run: bash <(curl -s https://codecov.io/bash)
 
       # Because the contexts of push and PR are different, there are two Notify.
-      # Notifications are triggered only in the apache/dubbo-go repository.
+      # Notifications are triggered only in the dubbogo/gost repository.
     - name: DingTalk Message Notify only Push
       uses: zcong1993/actions-ding@v3.0.1
       # Whether job is successful or not, always () is always true.
       if: |
         always() &&
         github.event_name == 'push' &&
-        github.repository == 'apache/dubbo-go-hessian2'
+        github.repository == 'dubbogo/gost'
       with:
         # DingDing bot token
         dingToken: ${{ env.DING_TOKEN }}
@@ -75,7 +75,7 @@ jobs:
       if: |
         always() &&
         github.event_name == 'pull_request' &&
-        github.repository == 'apache/dubbo-go-hessian2'
+        github.repository == 'dubbogo/gost'
       with:
         dingToken: ${{ env.DING_TOKEN }}
         secret: ${{ env.DING_SIGN }}
