@@ -249,9 +249,19 @@ func (p *TaskPool) IsClosed() bool {
 	}
 }
 
+// Close close, terminate task
 func (p *TaskPool) Close() {
 	p.stop()
 	p.wg.Wait()
+	for i := range p.qArray {
+		close(p.qArray[i])
+	}
+}
+
+// CloseTillTaskComplete close till task complete
+func (p *TaskPool) CloseTillTaskComplete() {
+	p.wg.Wait()
+	p.stop()
 	for i := range p.qArray {
 		close(p.qArray[i])
 	}
