@@ -254,19 +254,16 @@ func (p *TaskPool) IsClosed() bool {
 	}
 }
 
-// Close close, terminate task
-func (p *TaskPool) Close() {
-	p.stop()
-	p.wg.Wait()
-	for i := range p.qArray {
-		close(p.qArray[i])
+// Close close, if closeImmediately is true, terminate task,
+// else, close till all tasks are completed.
+func (p *TaskPool) Close(closeImmediately bool) {
+	if closeImmediately {
+		p.stop()
+		p.wg.Wait()
+	} else {
+		p.wg.Wait()
+		p.stop()
 	}
-}
-
-// CloseTillTaskComplete close till task complete
-func (p *TaskPool) CloseTillTaskComplete() {
-	p.wg.Wait()
-	p.stop()
 	for i := range p.qArray {
 		close(p.qArray[i])
 	}

@@ -21,7 +21,7 @@ func newCountTaskAndRespite() (func(), *int64) {
 	var cnt int64
 	return func() {
 		atomic.AddInt64(&cnt, 1)
-		time.Sleep(10*time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}, &cnt
 }
 
@@ -51,7 +51,7 @@ func TestTaskPool(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	tp.Close()
+	tp.Close(true)
 
 	if taskCnt != *cnt {
 		t.Error("want ", taskCnt, " got ", *cnt)
@@ -85,9 +85,9 @@ func TestTaskPool_Close(t *testing.T) {
 	}
 	wg.Wait()
 	// close immediately, so taskCnt not equal *cnt
-	tp.Close()
+	tp.Close(true)
 
-	assert.NotEqual(t,taskCnt,*cnt)
+	assert.NotEqual(t, taskCnt, *cnt)
 }
 
 func TestTaskPool_CloseTillTaskComplete(t *testing.T) {
@@ -117,9 +117,9 @@ func TestTaskPool_CloseTillTaskComplete(t *testing.T) {
 	}
 	wg.Wait()
 	// wait till all task completed, so taskCnt should equal *cnt
-	tp.CloseTillTaskComplete()
+	tp.Close(false)
 
-	assert.Equal(t,taskCnt,*cnt)
+	assert.Equal(t, taskCnt, *cnt)
 }
 
 func BenchmarkTaskPool_CountTask(b *testing.B) {
