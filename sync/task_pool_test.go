@@ -60,7 +60,7 @@ func TestTaskPool(t *testing.T) {
 
 func TestTaskPool_Close(t *testing.T) {
 	numCPU := runtime.NumCPU()
-	taskCnt := int64(numCPU * 100)
+	taskCnt := int64(numCPU * numCPU * 100)
 
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(1),
@@ -71,7 +71,7 @@ func TestTaskPool_Close(t *testing.T) {
 	task, cnt := newCountTaskAndRespite()
 
 	var wg sync.WaitGroup
-	for i := 0; i < numCPU; i++ {
+	for i := 0; i < numCPU*numCPU; i++ {
 		wg.Add(1)
 		go func() {
 			for j := 0; j < 100; j++ {
@@ -92,7 +92,7 @@ func TestTaskPool_Close(t *testing.T) {
 
 func TestTaskPool_CloseTillTaskComplete(t *testing.T) {
 	numCPU := runtime.NumCPU()
-	taskCnt := int64(numCPU * 100)
+	taskCnt := int64(numCPU * numCPU * 100)
 
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(1),
@@ -103,7 +103,7 @@ func TestTaskPool_CloseTillTaskComplete(t *testing.T) {
 	task, cnt := newCountTaskAndRespite()
 
 	var wg sync.WaitGroup
-	for i := 0; i < numCPU; i++ {
+	for i := 0; i < numCPU*numCPU; i++ {
 		wg.Add(1)
 		go func() {
 			for j := 0; j < 100; j++ {
