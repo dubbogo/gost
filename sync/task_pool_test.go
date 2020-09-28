@@ -1,6 +1,7 @@
 package gxsync
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"runtime"
 	"sync"
@@ -13,6 +14,14 @@ func newCountTask() (func(), *int64) {
 	var cnt int64
 	return func() {
 		atomic.AddInt64(&cnt, 1)
+	}, &cnt
+}
+
+func newCountTaskAndRespite() (func(), *int64) {
+	var cnt int64
+	return func() {
+		atomic.AddInt64(&cnt, 1)
+		time.Sleep(10*time.Millisecond)
 	}, &cnt
 }
 
@@ -47,6 +56,70 @@ func TestTaskPool(t *testing.T) {
 	if taskCnt != *cnt {
 		t.Error("want ", taskCnt, " got ", *cnt)
 	}
+}
+
+func TestTaskPool_Close(t *testing.T) {
+	numCPU := runtime.NumCPU()
+	taskCnt := int64(numCPU * 100)
+
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(1),
+		WithTaskPoolTaskQueueNumber(5),
+		WithTaskPoolTaskQueueLength(1),
+	)
+
+	task, cnt := newCountTaskAndRespite()
+
+	var wg sync.WaitGroup
+	for i := 0; i < numCPU; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 100; j++ {
+				ok := tp.AddTask(task)
+				if !ok {
+					t.Log(j)
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	// close immediately, so taskCnt not equal *cnt
+	tp.Close()
+
+	assert.NotEqual(t,taskCnt,*cnt)
+}
+
+func TestTaskPool_CloseTillTaskComplete(t *testing.T) {
+	numCPU := runtime.NumCPU()
+	taskCnt := int64(numCPU * 100)
+
+	tp := NewTaskPool(
+		WithTaskPoolTaskPoolSize(1),
+		WithTaskPoolTaskQueueNumber(5),
+		WithTaskPoolTaskQueueLength(1),
+	)
+
+	task, cnt := newCountTaskAndRespite()
+
+	var wg sync.WaitGroup
+	for i := 0; i < numCPU; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 100; j++ {
+				ok := tp.AddTask(task)
+				if !ok {
+					t.Log(j)
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	// wait till all task completed, so taskCnt should equal *cnt
+	tp.CloseTillTaskComplete()
+
+	assert.Equal(t,taskCnt,*cnt)
 }
 
 func BenchmarkTaskPool_CountTask(b *testing.B) {

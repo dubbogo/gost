@@ -130,7 +130,6 @@ func NewTaskPool(opts ...TaskPoolOption) *TaskPool {
 // start task pool
 func (p *TaskPool) start() {
 	for i := 0; i < p.tQPoolSize; i++ {
-		p.wg.Add(1)
 		workerID := i
 		q := p.qArray[workerID%p.tQNumber]
 		p.safeRun(workerID, q)
@@ -152,8 +151,6 @@ func (p *TaskPool) safeRun(workerID int, q chan task) {
 
 // worker
 func (p *TaskPool) run(id int, q chan task) error {
-	defer p.wg.Done()
-
 	var (
 		ok bool
 		t  task
@@ -162,7 +159,9 @@ func (p *TaskPool) run(id int, q chan task) error {
 	for {
 		select {
 		case <-p.done:
-			if 0 < len(q) {
+			length := len(q)
+			if 0 < length {
+				p.wg.Add(-length)
 				return fmt.Errorf("task worker %d exit now while its task buffer length %d is greater than 0",
 					id, len(q))
 			}
@@ -171,7 +170,10 @@ func (p *TaskPool) run(id int, q chan task) error {
 
 		case t, ok = <-q:
 			if ok {
-				t()
+				func() {
+					defer p.wg.Done()
+					t()
+				}()
 			}
 		}
 	}
@@ -187,6 +189,7 @@ func (p *TaskPool) AddTask(t task) (ok bool) {
 	case <-p.done:
 		return false
 	default:
+		p.wg.Add(1)
 		p.qArray[id] <- t
 		return true
 	}
@@ -195,6 +198,7 @@ func (p *TaskPool) AddTask(t task) (ok bool) {
 // AddTaskAlways add task to queues or do it immediately
 func (p *TaskPool) AddTaskAlways(t task) {
 	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
+	p.wg.Add(1)
 
 	select {
 	case p.qArray[id] <- t:
@@ -211,6 +215,7 @@ func (p *TaskPool) AddTaskBalance(t task) {
 
 	// try len/2 times to lookup idle queue
 	for i := 0; i < length/2; i++ {
+		p.wg.Add(1)
 		select {
 		case p.qArray[rand.Intn(length)] <- t:
 			return
