@@ -1,13 +1,16 @@
 package gxsync
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func newCountTask() (func(), *int64) {
