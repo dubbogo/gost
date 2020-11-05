@@ -21,8 +21,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 import (
@@ -171,7 +174,15 @@ func (p *TaskPool) run(id int, q chan task) error {
 
 		case t, ok = <-q:
 			if ok {
-				t()
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							fmt.Fprintf(os.Stderr, "%s goroutine panic: %v\n%s\n",
+								time.Now(), r, string(debug.Stack()))
+						}
+					}()
+					t()
+				}()
 			}
 		}
 	}
