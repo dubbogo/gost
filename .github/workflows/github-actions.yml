@@ -66,7 +66,7 @@ jobs:
       run: bash <(curl -s https://codecov.io/bash)
 
     - name: Hello world
-      run: echo Hello world ${{ secrets.PROXY_DING_TOKEN }} ${{ secrets.PROXY_DING_SIGN }}
+      run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}
 
       # Because the contexts of push and PR are different, there are two Notify.
       # Notifications are triggered only in the dubbogo/gost repository.
