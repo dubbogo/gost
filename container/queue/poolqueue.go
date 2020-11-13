@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//refs:https://github.com/golang/go/blob/2333c6299f340a5f76a73a4fec6db23ffa388e97/src/sync/poolqueue.go
 package gxqueue
 
 import (

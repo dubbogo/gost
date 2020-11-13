@@ -15,14 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//refs:https://github.com/golang/go/blob/2333c6299f340a5f76a73a4fec6db23ffa388e97/src/sync/pool_test.go
 package gxqueue
 
 import (
-	"github.com/stretchr/testify/assert"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreatePoolDequeue(t *testing.T) {
@@ -35,6 +39,7 @@ func TestCreatePoolDequeue(t *testing.T) {
 	_, err = NewPoolDequeue(8)
 	assert.NoError(t, err)
 }
+
 func TestPoolDequeue(t *testing.T) {
 	const P = 10
 	var N int = 2e6
