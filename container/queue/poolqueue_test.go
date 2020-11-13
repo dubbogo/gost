@@ -25,21 +25,21 @@ import (
 	"testing"
 )
 
-func TestCreatePoolDequeue(t *testing.T){
-	_ , err := NewPoolDequeue(15)
+func TestCreatePoolDequeue(t *testing.T) {
+	_, err := NewPoolDequeue(15)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_ , err = NewPoolDequeue(18)
+	_, err = NewPoolDequeue(18)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_ , err = NewPoolDequeue(24)
+	_, err = NewPoolDequeue(24)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_ , err = NewPoolDequeue(8)
+	_, err = NewPoolDequeue(8)
 	assert.NoError(t, err)
 }
 func TestPoolDequeue(t *testing.T) {
 	const P = 10
 	var N int = 2e6
-	d , err := NewPoolDequeue(16)
-	if err != nil{
+	d, err := NewPoolDequeue(16)
+	if err != nil {
 		t.Errorf("create poolDequeue fail")
 	}
 	if testing.Short() {

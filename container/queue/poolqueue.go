@@ -199,7 +199,7 @@ func (d *poolDequeue) PopTail() (interface{}, bool) {
 }
 
 func NewPoolDequeue(n int) (*poolDequeue, error) {
-	if n & (n - 1) != 0{
+	if n&(n-1) != 0 {
 		return nil, errors.New("the size of pool must be a power of 2")
 	}
 	d := &poolDequeue{
