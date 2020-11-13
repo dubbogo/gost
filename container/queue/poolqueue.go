@@ -198,6 +198,7 @@ func (d *poolDequeue) PopTail() (interface{}, bool) {
 	return val, true
 }
 
+// NewPoolDequeue new a poolDequeue instance.
 func NewPoolDequeue(n int) (*poolDequeue, error) {
 	if n&(n-1) != 0 {
 		return nil, errors.New("the size of pool must be a power of 2")
