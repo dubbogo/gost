@@ -24,6 +24,13 @@ import (
 	"unsafe"
 )
 
+// SPMCLockFreeQ is a lock-free queue.
+type SPMCLockFreeQ interface {
+	PushHead(val interface{}) bool
+	PopHead() (interface{}, bool)
+	PopTail() (interface{}, bool)
+}
+
 // poolDequeue is a lock-free fixed-size single-producer,
 // multi-consumer queue. The single producer can both push and pop
 // from the head, and consumers can pop from the tail.
@@ -199,8 +206,8 @@ func (d *poolDequeue) PopTail() (interface{}, bool) {
 	return val, true
 }
 
-// NewPoolDequeue new a poolDequeue instance.
-func NewPoolDequeue(n int) (*poolDequeue, error) {
+// NewSPMCLockFreeQ new a SPMCLockFreeQ instance.
+func NewSPMCLockFreeQ(n int) (SPMCLockFreeQ, error) {
 	if n&(n-1) != 0 {
 		return nil, errors.New("the size of pool must be a power of 2")
 	}
