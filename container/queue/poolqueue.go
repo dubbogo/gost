@@ -24,6 +24,12 @@ import (
 	"unsafe"
 )
 
+type PoolDequeue interface {
+	PushHead(val interface{}) bool
+	PopHead() (interface{}, bool)
+	PopTail() (interface{}, bool)
+}
+
 // poolDequeue is a lock-free fixed-size single-producer,
 // multi-consumer queue. The single producer can both push and pop
 // from the head, and consumers can pop from the tail.
