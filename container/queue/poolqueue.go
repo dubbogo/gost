@@ -24,7 +24,7 @@ import (
 	"unsafe"
 )
 
-type PoolDequeue interface {
+type SPMCLockFreeQ interface {
 	PushHead(val interface{}) bool
 	PopHead() (interface{}, bool)
 	PopTail() (interface{}, bool)
