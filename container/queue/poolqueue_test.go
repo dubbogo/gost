@@ -23,27 +23,25 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreatePoolDequeue(t *testing.T) {
-	_, err := NewPoolDequeue(15)
+	_, err := NewSPMCLockFreeQ(15)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_, err = NewPoolDequeue(18)
+	_, err = NewSPMCLockFreeQ(18)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_, err = NewPoolDequeue(24)
+	_, err = NewSPMCLockFreeQ(24)
 	assert.EqualError(t, err, "the size of pool must be a power of 2")
-	_, err = NewPoolDequeue(8)
+	_, err = NewSPMCLockFreeQ(8)
 	assert.NoError(t, err)
 }
 
 func TestPoolDequeue(t *testing.T) {
 	const P = 10
 	var N int = 2e6
-	d, err := NewPoolDequeue(16)
+	d, err := NewSPMCLockFreeQ(16)
 	if err != nil {
 		t.Errorf("create poolDequeue fail")
 	}
