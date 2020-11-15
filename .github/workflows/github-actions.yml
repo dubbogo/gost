@@ -5,6 +5,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: "*"
+  pull_request_target:
+    branches: "*"
 
 jobs:
   build:
@@ -38,14 +40,33 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: ${{ runner.os }}-go-
 
+    - name: Get dependencies
+      run: |
+        if [ -f Gopkg.toml ]; then
+            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+            dep ensure
+        else
+            go get -v -t -d ./...
+        fi
+
     - name: Go Fmt
       run: go fmt ./... && [[ -z `git status -s` ]]
+
+    - name: License Check
+      run: |
+        go fmt ./... && [[ -z `git status -s` ]]
+        sh before_validate_license.sh
+        chmod u+x /tmp/tools/license/license-header-checker
+        /tmp/tools/license/license-header-checker -v -a -r -i vendor  /tmp/tools/license/license.txt . go  && [[ -z `git status -s` ]]
 
     - name: Go Test
       run: GO111MODULE=on && go mod vendor && go test ./... -bench . -race -v -coverprofile=coverage.txt
 
     - name: Coverage
       run: bash <(curl -s https://codecov.io/bash)
+
+    - name: Hello world
+      run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}
 
       # Because the contexts of push and PR are different, there are two Notify.
       # Notifications are triggered only in the dubbogo/gost repository.
