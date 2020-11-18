@@ -35,6 +35,7 @@ import (
 
 type task func()
 
+// GenericTaskPool represents an generic task pool.
 type GenericTaskPool interface {
 	// AddTask wait idle worker add task
 	AddTask(t task) bool
@@ -64,7 +65,7 @@ type TaskPool struct {
 	done chan struct{}
 }
 
-// build a task pool
+// NewTaskPool build a task pool
 func NewTaskPool(opts ...TaskPoolOption) GenericTaskPool {
 	var tOpts TaskPoolOptions
 	for _, opt := range opts {
@@ -226,6 +227,7 @@ type taskPoolSimple struct {
 	sem  chan struct{}
 }
 
+// NewTaskPoolSimple build a simple task pool
 func NewTaskPoolSimple(size int) GenericTaskPool {
 	if size < 1 {
 		size = runtime.NumCPU() * 100
