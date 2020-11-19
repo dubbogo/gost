@@ -13,7 +13,7 @@ const (
 // Task Pool Options
 /////////////////////////////////////////
 
-// TaskPoolOption is optional settings for task pool
+// TaskPoolOptions is optional settings for task pool
 type TaskPoolOptions struct {
 	tQLen      int // task queue length. buffer size per queue
 	tQNumber   int // task queue number. number of queue
@@ -40,7 +40,7 @@ func (o *TaskPoolOptions) validate() {
 
 type TaskPoolOption func(*TaskPoolOptions)
 
-// WithTaskPoolTaskQueueLength set @size of the task queue pool size
+// WithTaskPoolTaskPoolSize set @size of the task queue pool size
 func WithTaskPoolTaskPoolSize(size int) TaskPoolOption {
 	return func(o *TaskPoolOptions) {
 		o.tQPoolSize = size

@@ -43,7 +43,10 @@ type GenericTaskPool interface {
 	AddTaskAlways(t task)
 	// AddTaskBalance add task to idle queue
 	AddTaskBalance(t task)
+	// Close use to close the task pool
 	Close()
+	// IsClosed use to check pool status.
+	IsClosed() bool
 }
 
 func goSafely(fn func()) {
@@ -277,5 +280,7 @@ func (p *taskPoolSimple) worker(t task) {
 }
 
 func (p *taskPoolSimple) Close() {}
+
+func (p *taskPoolSimple) IsClosed() bool { return false }
 
 func (p *taskPoolSimple) AddTaskBalance(t task) { p.AddTaskAlways(t) }
