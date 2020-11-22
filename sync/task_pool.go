@@ -228,6 +228,11 @@ func (p *TaskPool) Close() {
 type taskPoolSimple struct {
 	work chan task
 	sem  chan struct{}
+
+	wg sync.WaitGroup
+
+	once sync.Once
+	done chan struct{}
 }
 
 // NewTaskPoolSimple build a simple task pool
@@ -238,13 +243,23 @@ func NewTaskPoolSimple(size int) GenericTaskPool {
 	return &taskPoolSimple{
 		work: make(chan task),
 		sem:  make(chan struct{}, size),
+		done: make(chan struct{}),
 	}
 }
 
 func (p *taskPoolSimple) AddTask(t task) bool {
 	select {
+	case <-p.done:
+		return false
+	default:
+	}
+
+	select {
+	case <-p.done:
+		return false
 	case p.work <- t:
 	case p.sem <- struct{}{}:
+		p.wg.Add(1)
 		go p.worker(t)
 	}
 	return true
@@ -259,6 +274,7 @@ func (p *taskPoolSimple) AddTaskAlways(t task) {
 	select {
 	case p.work <- t:
 	case p.sem <- struct{}{}:
+		p.wg.Add(1)
 		go p.worker(t)
 	default:
 		goSafely(t)
@@ -271,16 +287,42 @@ func (p *taskPoolSimple) worker(t task) {
 			fmt.Fprintf(os.Stderr, "%s goroutine panic: %v\n%s\n",
 				time.Now(), r, string(debug.Stack()))
 		}
+		p.wg.Done()
 		<-p.sem
 	}()
-	for {
+	t()
+	for t := range p.work {
 		t()
-		t = <-p.work
 	}
 }
 
-func (p *taskPoolSimple) Close() {}
+// stop all tasks
+func (p *taskPoolSimple) stop() {
+	select {
+	case <-p.done:
+		return
+	default:
+		p.once.Do(func() {
+			close(p.done)
+			close(p.work)
+		})
+	}
+}
 
-func (p *taskPoolSimple) IsClosed() bool { return false }
+func (p *taskPoolSimple) Close() {
+	p.stop()
+	// wait until all tasks done
+	p.wg.Wait()
+}
+
+// check whether the session has been closed.
+func (p *taskPoolSimple) IsClosed() bool {
+	select {
+	case <-p.done:
+		return true
+	default:
+		return false
+	}
+}
 
 func (p *taskPoolSimple) AddTaskBalance(t task) { p.AddTaskAlways(t) }
