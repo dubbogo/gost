@@ -267,6 +267,12 @@ func (p *taskPoolSimple) AddTask(t task) bool {
 
 func (p *taskPoolSimple) AddTaskAlways(t task) {
 	select {
+	case <-p.done:
+		return
+	default:
+	}
+
+	select {
 	case p.work <- t:
 		return
 	default:
