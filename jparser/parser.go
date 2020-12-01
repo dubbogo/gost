@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package jsonStructParser
+package jparser
 
 import (
 	"fmt"
@@ -44,19 +44,19 @@ func newJSONStructParser() *jsonStructParser {
 	}
 }
 
+// JsonFile2Interface parse json @filePath to interface
+func JsonFile2Interface(filePath string) (interface{}, error) {
+	defer func() {
+		defaultJSONStructParser = newJSONStructParser()
+	}()
+	return defaultJSONStructParser.JSONFilePath2Struct(filePath)
+}
+
 func init() {
 	defaultJSONStructParser = newJSONStructParser()
 }
 
 var defaultJSONStructParser *jsonStructParser
-
-// JsonFile2Interface parse json @file to interface
-func JsonFile2Interface(file []byte) (interface{}, error) {
-	defer func() {
-		defaultJSONStructParser = newJSONStructParser()
-	}()
-	return defaultJSONStructParser.Jsonfile2Struct(string(file))
-}
 
 func RemoveTargetNameField(v interface{}, targetName string) interface{} {
 	defer func() {
@@ -168,8 +168,8 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 	return s
 }
 
-// Jsonfile2Struct read file from @filePath and parse data to interface
-func (jsp *jsonStructParser) Jsonfile2Struct(filePath string) (interface{}, error) {
+// JSONFilePath2Struct read file from @filePath and parse data to interface
+func (jsp *jsonStructParser) JSONFilePath2Struct(filePath string) (interface{}, error) {
 	jsonData, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
