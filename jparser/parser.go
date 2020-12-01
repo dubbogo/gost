@@ -29,6 +29,7 @@ import (
 	"github.com/buger/jsonparser"
 )
 
+// HessianRegisterPair define the pair to register to hessian
 type HessianRegisterPair struct {
 	JavaClassName string
 	Obj           interface{}
