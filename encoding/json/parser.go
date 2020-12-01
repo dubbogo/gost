@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package jparser
+package json
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+)
 
+import (
 	"github.com/buger/jsonparser"
+	perrors "github.com/pkg/errors"
 )
 
 // HessianRegisterPair define the pair to register to hessian
@@ -78,8 +80,12 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 	case jsonparser.Object: // sub interface parse
 		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
+		javaClassName, err := getJavaClassName(subObj)
+		if err != nil {
+			return err
+		}
 		jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
-			JavaClassName: getJavaClassName(subObj),
+			JavaClassName: javaClassName,
 			Obj:           subObj,
 		})
 		jsp.structFields = append(jsp.structFields, reflect.StructField{
@@ -217,15 +223,14 @@ func (jsp *jsonStructParser) removeTargetNameField(v interface{}, targetName str
 	return newi.Addr().Interface()
 }
 
-func getJavaClassName(pkg interface{}) string {
+func getJavaClassName(pkg interface{}) (string, error) {
 	val := reflect.ValueOf(pkg).Elem()
 	typ := reflect.TypeOf(pkg).Elem()
 	nums := val.NumField()
 	for i := 0; i < nums; i++ {
 		if typ.Field(i).Name == "JavaClassName" {
-			return val.Field(i).String()
+			return val.Field(i).String(), nil
 		}
 	}
-	fmt.Println("error: JavaClassName not found")
-	return ""
+	return "", perrors.Errorf("JavaClassName field not found error")
 }

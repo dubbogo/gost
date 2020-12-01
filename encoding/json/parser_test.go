@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package jparser
+package json
 
 import (
 	"testing"
@@ -28,6 +28,7 @@ import (
 func Test_newJsonStructParser(t *testing.T) {
 	path := "./user.json"
 	jParser := newJSONStructParser()
-	_, err := jParser.JSONFilePath2Struct(path)
+	hessianPair, _, err := jParser.jsonFilePath2Struct(path)
+	assert.NotEmpty(t, hessianPair)
 	assert.Nil(t, err)
 }
