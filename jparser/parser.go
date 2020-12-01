@@ -26,30 +26,36 @@ import (
 	"strings"
 	"time"
 
-	hessian2 "github.com/apache/dubbo-go-hessian2"
 	"github.com/buger/jsonparser"
 )
 
+type HessianRegisterPair struct {
+	JavaClassName string
+	Obj           interface{}
+}
+
 type jsonStructParser struct {
-	structFields   []reflect.StructField
-	valueMap       map[string]string
-	subObjValueMap map[string]reflect.Value
+	structFields        []reflect.StructField
+	hessianRegisterPair []HessianRegisterPair
+	valueMap            map[string]string
+	subObjValueMap      map[string]reflect.Value
 }
 
 func newJSONStructParser() *jsonStructParser {
 	return &jsonStructParser{
-		structFields:   make([]reflect.StructField, 0),
-		valueMap:       make(map[string]string),
-		subObjValueMap: make(map[string]reflect.Value),
+		structFields:        make([]reflect.StructField, 0),
+		valueMap:            make(map[string]string),
+		hessianRegisterPair: make([]HessianRegisterPair, 0),
+		subObjValueMap:      make(map[string]reflect.Value),
 	}
 }
 
-// JsonFile2Interface parse json @filePath to interface
-func JsonFile2Interface(filePath string) (interface{}, error) {
+// JSONFile2Interface parse json @filePath to interface
+func JSONFile2Interface(filePath string) ([]HessianRegisterPair, interface{}, error) {
 	defer func() {
 		defaultJSONStructParser = newJSONStructParser()
 	}()
-	return defaultJSONStructParser.JSONFilePath2Struct(filePath)
+	return defaultJSONStructParser.jsonFilePath2Struct(filePath)
 }
 
 func init() {
@@ -58,11 +64,12 @@ func init() {
 
 var defaultJSONStructParser *jsonStructParser
 
+// RemoveTargetNameField remove target file in @v
 func RemoveTargetNameField(v interface{}, targetName string) interface{} {
 	defer func() {
 		defaultJSONStructParser = newJSONStructParser()
 	}()
-	return defaultJSONStructParser.RemoveTargetNameField(v, targetName)
+	return defaultJSONStructParser.removeTargetNameField(v, targetName)
 }
 
 func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
@@ -70,20 +77,27 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 	case jsonparser.Object: // 嵌套子结构
 		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
-		hessian2.RegisterPOJOMapping(getJavaClassName(subObj), subObj)
+		jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
+			JavaClassName: getJavaClassName(subObj),
+			Obj:           subObj,
+		})
 		jsp.structFields = append(jsp.structFields, reflect.StructField{
 			Name: string(key),
 			Type: reflect.TypeOf(subObj),
 		})
 		jsp.subObjValueMap[string(key)] = reflect.ValueOf(subObj)
-	case jsonparser.Array: //数组结构
-		newParser := newJSONStructParser()
-		subObj := newParser.json2Struct(value)
-		hessian2.RegisterPOJOMapping(getJavaClassName(subObj), subObj) // TODO 目前存在问题
-		jsp.structFields = append(jsp.structFields, reflect.StructField{
-			Name: string(key),
-			Type: reflect.TypeOf(subObj),
-		})
+
+	case jsonparser.Array: //数组结构  TODO slice解析
+		//newParser := newJSONStructParser()
+		//subObj := newParser.json2Struct(value)
+		//jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
+		//	JavaClassName: getJavaClassName(subObj),
+		//	Obj:           subObj,
+		//})
+		//jsp.structFields = append(jsp.structFields, reflect.StructField{
+		//	Name: string(key),
+		//	Type: reflect.TypeOf(subObj),
+		//})
 
 	case jsonparser.String: // 正常结构
 		// "type@value"
@@ -168,17 +182,17 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 	return s
 }
 
-// JSONFilePath2Struct read file from @filePath and parse data to interface
-func (jsp *jsonStructParser) JSONFilePath2Struct(filePath string) (interface{}, error) {
+// jsonFilePath2Struct read file from @filePath and parse data to interface
+func (jsp *jsonStructParser) jsonFilePath2Struct(filePath string) ([]HessianRegisterPair, interface{}, error) {
 	jsonData, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return []HessianRegisterPair{}, nil, err
 	}
-	return jsp.json2Struct(jsonData), nil
+	return jsp.hessianRegisterPair, jsp.json2Struct(jsonData), nil
 }
 
-// RemoveTargetNameField remove origin interface @v's target field by @targetName
-func (jsp *jsonStructParser) RemoveTargetNameField(v interface{}, targetName string) interface{} {
+// removeTargetNameField remove origin interface @v's target field by @targetName
+func (jsp *jsonStructParser) removeTargetNameField(v interface{}, targetName string) interface{} {
 	typ := reflect.TypeOf(v).Elem()
 	val := reflect.ValueOf(v).Elem()
 	nums := val.NumField()

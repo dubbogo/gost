@@ -1,7 +1,6 @@
 module github.com/dubbogo/gost
 
 require (
-	github.com/apache/dubbo-go-hessian2 v1.8.0-rc1
 	github.com/buger/jsonparser v1.0.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
