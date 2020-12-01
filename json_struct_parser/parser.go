@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package json_struct_parser
+package jsonStructParser
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ type jsonStructParser struct {
 	subObjValueMap map[string]reflect.Value
 }
 
-func newJsonStructParser() *jsonStructParser {
+func newJSONStructParser() *jsonStructParser {
 	return &jsonStructParser{
 		structFields:   make([]reflect.StructField, 0),
 		valueMap:       make(map[string]string),
@@ -45,29 +45,30 @@ func newJsonStructParser() *jsonStructParser {
 }
 
 func init() {
-	defaultJsonStructParser = newJsonStructParser()
+	defaultJSONStructParser = newJSONStructParser()
 }
 
-var defaultJsonStructParser *jsonStructParser
+var defaultJSONStructParser *jsonStructParser
 
-func JsonFile2Interface(path string) (interface{}, error) {
+// JsonFile2Interface parse json @file to interface
+func JsonFile2Interface(file []byte) (interface{}, error) {
 	defer func() {
-		defaultJsonStructParser = newJsonStructParser()
+		defaultJSONStructParser = newJSONStructParser()
 	}()
-	return defaultJsonStructParser.Jsonfile2Struct(path)
+	return defaultJSONStructParser.Jsonfile2Struct(string(file))
 }
 
 func RemoveTargetNameField(v interface{}, targetName string) interface{} {
 	defer func() {
-		defaultJsonStructParser = newJsonStructParser()
+		defaultJSONStructParser = newJSONStructParser()
 	}()
-	return defaultJsonStructParser.RemoveTargetNameField(v, targetName)
+	return defaultJSONStructParser.RemoveTargetNameField(v, targetName)
 }
 
 func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
 	switch dataType {
 	case jsonparser.Object: // 嵌套子结构
-		newParser := newJsonStructParser()
+		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
 		hessian2.RegisterPOJOMapping(getJavaClassName(subObj), subObj)
 		jsp.structFields = append(jsp.structFields, reflect.StructField{
@@ -76,7 +77,7 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 		})
 		jsp.subObjValueMap[string(key)] = reflect.ValueOf(subObj)
 	case jsonparser.Array: //数组结构
-		newParser := newJsonStructParser()
+		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
 		hessian2.RegisterPOJOMapping(getJavaClassName(subObj), subObj) // TODO 目前存在问题
 		jsp.structFields = append(jsp.structFields, reflect.StructField{

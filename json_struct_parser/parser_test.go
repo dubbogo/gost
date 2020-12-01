@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package json_struct_parser
+package jsonStructParser
 
 import (
 	"testing"
