@@ -75,7 +75,7 @@ func RemoveTargetNameField(v interface{}, targetName string) interface{} {
 
 func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
 	switch dataType {
-	case jsonparser.Object: // 嵌套子结构
+	case jsonparser.Object: // sub interface parse
 		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
 		jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
@@ -88,7 +88,7 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 		})
 		jsp.subObjValueMap[string(key)] = reflect.ValueOf(subObj)
 
-	case jsonparser.Array: //数组结构  TODO slice解析
+	case jsonparser.Array: // TODO slice parse
 		//newParser := newJSONStructParser()
 		//subObj := newParser.json2Struct(value)
 		//jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
@@ -100,7 +100,7 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 		//	Type: reflect.TypeOf(subObj),
 		//})
 
-	case jsonparser.String: // 正常结构
+	case jsonparser.String: // normal struct parse
 		// "type@value"
 		arr := strings.Split(string(value), "@")
 		var userDefinedType reflect.Type
