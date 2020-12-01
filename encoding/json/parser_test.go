@@ -27,8 +27,7 @@ import (
 
 func Test_newJsonStructParser(t *testing.T) {
 	path := "./user.json"
-	jParser := newJSONStructParser()
-	hessianPair, _, err := jParser.jsonFilePath2Struct(path)
+	hessianPair, _, err := File2Interface(gitpath)
 	assert.NotEmpty(t, hessianPair)
 	assert.Nil(t, err)
 }

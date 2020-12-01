@@ -53,8 +53,8 @@ func newJSONStructParser() *jsonStructParser {
 	}
 }
 
-// JSONFile2Interface parse json @filePath to interface
-func JSONFile2Interface(filePath string) ([]HessianRegisterPair, interface{}, error) {
+// File2Interface parse json @filePath to interface
+func File2Interface(filePath string) ([]HessianRegisterPair, interface{}, error) {
 	defer func() {
 		defaultJSONStructParser = newJSONStructParser()
 	}()
