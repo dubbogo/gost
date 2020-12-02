@@ -226,7 +226,7 @@ func (p *TaskPool) Close() {
 // Task Pool Simple
 /////////////////////////////////////////
 type taskPoolSimple struct {
-	work chan task // task channel
+	work chan task     // task channel
 	sem  chan struct{} // gr pool size
 
 	wg sync.WaitGroup
@@ -238,7 +238,7 @@ type taskPoolSimple struct {
 // NewTaskPoolSimple build a simple task pool
 func NewTaskPoolSimple(size int) GenericTaskPool {
 	if size < 1 {
-		size = runtime.NumCPU() * 100
+		size = runtime.GOMAXPROCS(-1) * 100
 	}
 	return &taskPoolSimple{
 		work: make(chan task),
