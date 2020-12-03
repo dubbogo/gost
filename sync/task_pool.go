@@ -226,8 +226,8 @@ func (p *TaskPool) Close() {
 // Task Pool Simple
 /////////////////////////////////////////
 type taskPoolSimple struct {
-	work chan task
-	sem  chan struct{}
+	work chan task     // task channel
+	sem  chan struct{} // gr pool size
 
 	wg sync.WaitGroup
 
@@ -238,7 +238,7 @@ type taskPoolSimple struct {
 // NewTaskPoolSimple build a simple task pool
 func NewTaskPoolSimple(size int) GenericTaskPool {
 	if size < 1 {
-		size = runtime.NumCPU() * 100
+		size = runtime.GOMAXPROCS(-1) * 100
 	}
 	return &taskPoolSimple{
 		work: make(chan task),
@@ -274,15 +274,19 @@ func (p *taskPoolSimple) AddTaskAlways(t task) {
 
 	select {
 	case p.work <- t:
+		// exec @t in gr pool
 		return
 	default:
 	}
 	select {
 	case p.work <- t:
+		// exec @t in gr pool
 	case p.sem <- struct{}{}:
+		// add a gr to the gr pool
 		p.wg.Add(1)
 		go p.worker(t)
 	default:
+		// gen a gr temporarily
 		goSafely(t)
 	}
 }
