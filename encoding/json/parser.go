@@ -46,10 +46,10 @@ type jsonStructParser struct {
 
 func newJSONStructParser() *jsonStructParser {
 	return &jsonStructParser{
-		structFields:        make([]reflect.StructField, 0),
-		valueMap:            make(map[string]string),
-		hessianRegisterPair: make([]HessianRegisterPair, 0),
-		subObjValueMap:      make(map[string]reflect.Value),
+		structFields:        make([]reflect.StructField, 0, 16),
+		valueMap:            make(map[string]string, 8),
+		hessianRegisterPair: make([]HessianRegisterPair, 0, 16),
+		subObjValueMap:      make(map[string]reflect.Value, 8),
 	}
 }
 
