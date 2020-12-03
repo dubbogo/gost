@@ -18,6 +18,7 @@
 package gxruntime
 
 import (
+	"github.com/pbnjay/memory"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -38,6 +39,16 @@ var (
 const (
 	cgroupMemLimitPath = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
 )
+
+// GetCPUNum gets current os's cpu number
+func GetCPUNum() int {
+	return runtime.NumCPU()
+}
+
+// GetMemoryLimit gets current os's memory size in bytes
+func GetMemoryLimit() int {
+	return int(memory.TotalMemory())
+}
 
 // GetThreadNum gets current process's thread number
 func GetThreadNum() int {
