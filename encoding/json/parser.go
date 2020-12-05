@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	"github.com/buger/jsonparser"
+	"github.com/dubbogo/jsonparser"
 	perrors "github.com/pkg/errors"
 )
 
