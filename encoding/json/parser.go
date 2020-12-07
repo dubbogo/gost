@@ -37,6 +37,7 @@ type HessianRegisterPair struct {
 	Obj           interface{}
 }
 
+// jsonStructParser can use reflect to create arbitrary interface{} of go, from user defined json file.
 type jsonStructParser struct {
 	structFields        []reflect.StructField
 	hessianRegisterPair []HessianRegisterPair
@@ -44,6 +45,7 @@ type jsonStructParser struct {
 	subObjValueMap      map[string]reflect.Value
 }
 
+// newJSONStructParser create a new json struct parser
 func newJSONStructParser() *jsonStructParser {
 	return &jsonStructParser{
 		structFields:        make([]reflect.StructField, 0, 16),
@@ -53,7 +55,7 @@ func newJSONStructParser() *jsonStructParser {
 	}
 }
 
-// File2Interface parse json @filePath to interface
+// File2Interface first read json byte from @filePath, and parse it to interface
 func File2Interface(filePath string) ([]HessianRegisterPair, interface{}, error) {
 	defer func() {
 		defaultJSONStructParser = newJSONStructParser()
@@ -77,7 +79,8 @@ func RemoveTargetNameField(v interface{}, targetName string) interface{} {
 
 func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
 	switch dataType {
-	case jsonparser.Object: // sub interface parse
+	case jsonparser.Object:
+		// parse sub interface, use a new parser to deal with it the same way
 		newParser := newJSONStructParser()
 		subObj := newParser.json2Struct(value)
 		javaClassName, err := getJavaClassName(subObj)
@@ -141,13 +144,19 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 	return nil
 }
 
+// json2Struct parse data from json file to user defined interface
 func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
+	// first: call ObjectEach to parse jsonData to reflect.StructField item
 	if err := jsonparser.ObjectEach(jsonData, jsp.cb); err != nil {
 		log.Println("jsonparser.ObjectEach error = ", err)
 	}
+
+	// second: parse structField to reflectType
 	typ := reflect.StructOf(jsp.structFields)
 	v := reflect.New(typ).Elem()
 	newty := reflect.TypeOf(v.Addr().Interface()).Elem()
+
+	// finally: traverse each json field, and set user defined value
 	for i := 0; i < typ.NumField(); i++ {
 		valStr, ok1 := jsp.valueMap[newty.Field(i).Name]
 		subObj, ok2 := jsp.subObjValueMap[newty.Field(i).Name]
@@ -180,7 +189,6 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 			if valStr == "true" || valStr == "1" {
 				v.Field(i).SetBool(true)
 			}
-
 		default:
 			log.Println("warning val: ", valStr, " in value is not supported")
 		}
@@ -223,6 +231,7 @@ func (jsp *jsonStructParser) removeTargetNameField(v interface{}, targetName str
 	return newi.Addr().Interface()
 }
 
+// getJavaClassName can read field JavaClassName of interface{}, used in cli-tool to do hessian registry
 func getJavaClassName(pkg interface{}) (string, error) {
 	val := reflect.ValueOf(pkg).Elem()
 	typ := reflect.TypeOf(pkg).Elem()
