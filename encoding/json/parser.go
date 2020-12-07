@@ -139,7 +139,8 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 			Type: userDefinedType,
 		})
 	default:
-		log.Println("warning: dataType ", string(value), " in json is not supported")
+		log.Printf("error: dataType %s in json is not supported", string(value))
+		return perrors.Errorf("dataType %s in json is not supported", string(value))
 	}
 	return nil
 }
@@ -190,7 +191,8 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 				v.Field(i).SetBool(true)
 			}
 		default:
-			log.Println("warning val: ", valStr, " in value is not supported")
+			log.Printf("error: val %s in value is not supported", valStr)
+			return perrors.Errorf("val %s in value is not supported", valStr)
 		}
 	}
 	s := v.Addr().Interface()
