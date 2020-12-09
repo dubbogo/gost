@@ -44,7 +44,7 @@ func TestSysStat(t *testing.T) {
 
 	size := 100 * 1024 * 1024
 	arr := make([]byte, size)
-	for idx, _ := range arr {
+	for idx := range arr {
 		arr[idx] = byte(idx / 255)
 	}
 	memoryStat, err := GetProcessMemoryStat()

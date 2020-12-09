@@ -49,7 +49,7 @@ func GetCPUNum() int {
 	return runtime.NumCPU()
 }
 
-// GetMemoryLimit gets current os's memory size in bytes
+// GetMemoryStat gets current os's memory size in bytes
 func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
 	stat, err := mem.VirtualMemory()
 	if err != nil {
@@ -59,6 +59,7 @@ func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
 	return stat.Total, stat.Used, stat.Free, stat.UsedPercent
 }
 
+// IsCgroup checks whether current os is a container or not
 func IsCgroup() bool {
 	ok, _ := gxfilepath.Exists(cgroupMemLimitPath)
 	if ok {
@@ -68,6 +69,7 @@ func IsCgroup() bool {
 	return false
 }
 
+// GetCgroupMemoryLimit returns a container's total memory in bytes
 func GetCgroupMemoryLimit() (uint64, error) {
 	return readUint(cgroupMemLimitPath)
 }
