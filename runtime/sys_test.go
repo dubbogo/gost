@@ -22,7 +22,6 @@ import (
 	"time"
 )
 
-
 func TestSysStat(t *testing.T) {
 	t.Logf("current os cpu number %d", GetCPUNum())
 	total, used, free, usedPercent := GetMemoryStat()
@@ -77,4 +76,3 @@ func TestSysStat(t *testing.T) {
 		t.Logf("GetCgroupProcessMemoryPercent(ps:%d) = %+v", CurrentPID, memoryPercent)
 	}
 }
-

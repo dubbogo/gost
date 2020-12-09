@@ -31,7 +31,7 @@ import (
 func TestGoSafe(t *testing.T) {
 	times := int32(1)
 
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	GoSafely(&wg,
 		false,
 		func() {
@@ -60,7 +60,7 @@ func TestGoSafe(t *testing.T) {
 
 func TestGoUnterminated(t *testing.T) {
 	times := uint64(1)
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	GoUnterminated(
 		func() {
 			if atomic.AddUint64(&times, 1) == 2 {

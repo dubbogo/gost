@@ -81,8 +81,9 @@ func TestTaskPoolSimple(t *testing.T) {
 	}
 	wg.Wait()
 
-	if taskCnt != atomic.LoadInt64(cnt) {
-		t.Error("want ", taskCnt, " got ", *cnt)
+	cntValue := atomic.LoadInt64(cnt)
+	if taskCnt != cntValue {
+		t.Error("want ", taskCnt, " got ", cntValue)
 	}
 }
 
