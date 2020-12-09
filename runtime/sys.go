@@ -32,6 +32,10 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+import (
+	"github.com/dubbogo/gost/path/filepath"
+)
+
 var (
 	CurrentPID = os.Getpid()
 )
@@ -55,20 +59,8 @@ func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
 	return stat.Total, stat.Used, stat.Free, stat.UsedPercent
 }
 
-// exists returns whether the given file or directory exists
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
 func IsCgroup() bool {
-	ok, _ := exists(cgroupMemLimitPath)
+	ok, _ := gxfilepath.Exists(cgroupMemLimitPath)
 	if ok {
 		return true
 	}
