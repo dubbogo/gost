@@ -64,7 +64,7 @@ func (d *Page) HasData() bool {
 }
 
 // New will create an instance
-func New(requestOffset int, pageSize int,
+func NewPage(requestOffset int, pageSize int,
 	data []interface{}, totalSize int) *Page {
 
 	remain := totalSize % pageSize
