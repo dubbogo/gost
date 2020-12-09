@@ -18,7 +18,6 @@
 package gxruntime
 
 import (
-	"github.com/pbnjay/memory"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -29,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -46,8 +46,34 @@ func GetCPUNum() int {
 }
 
 // GetMemoryLimit gets current os's memory size in bytes
-func GetMemoryLimit() int {
-	return int(memory.TotalMemory())
+func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
+	stat, err := mem.VirtualMemory()
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+
+	return stat.Total, stat.Used, stat.Free, stat.UsedPercent
+}
+
+// exists returns whether the given file or directory exists
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil { return true, nil }
+	if os.IsNotExist(err) { return false, nil }
+	return false, err
+}
+
+func IsCgroup() bool {
+	ok, _ := exists(cgroupMemLimitPath)
+	if ok {
+		return true
+	}
+
+	return false
+}
+
+func GetCgroupMemoryLimit() (uint64, error) {
+	return readUint(cgroupMemLimitPath)
 }
 
 // GetThreadNum gets current process's thread number
@@ -133,10 +159,6 @@ func readUint(path string) (uint64, error) {
 		return 0, err
 	}
 	return parseUint(strings.TrimSpace(string(v)), 10, 64)
-}
-
-func GetCgroupMemoryLimit() (uint64, error) {
-	return readUint(cgroupMemLimitPath)
 }
 
 // GetCgroupProcessMemoryPercent gets current process's memory usage percent in cgroup env
