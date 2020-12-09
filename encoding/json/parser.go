@@ -98,17 +98,6 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 		jsp.subObjValueMap[string(key)] = reflect.ValueOf(subObj)
 
 	case jsonparser.Array: // TODO slice parse
-		//newParser := newJSONStructParser()
-		//subObj := newParser.json2Struct(value)
-		//jsp.hessianRegisterPair = append(jsp.hessianRegisterPair, HessianRegisterPair{
-		//	JavaClassName: getJavaClassName(subObj),
-		//	Obj:           subObj,
-		//})
-		//jsp.structFields = append(jsp.structFields, reflect.StructField{
-		//	Name: string(key),
-		//	Type: reflect.TypeOf(subObj),
-		//})
-
 	case jsonparser.String: // normal struct parse
 		// "type@value"
 		arr := strings.Split(string(value), "@")
@@ -129,7 +118,8 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 		case "bool":
 			userDefinedType = reflect.TypeOf(false)
 		default:
-			log.Println("warning: val", string(value), " in json is not supported")
+			log.Printf("error: dataType %s in json is not supported\n", string(value))
+			return perrors.Errorf("dataType %s in json is not supported", string(value))
 		}
 		if len(arr) > 1 {
 			jsp.valueMap[string(key)] = arr[1]
@@ -139,7 +129,7 @@ func (jsp *jsonStructParser) cb(key []byte, value []byte, dataType jsonparser.Va
 			Type: userDefinedType,
 		})
 	default:
-		log.Printf("error: dataType %s in json is not supported", string(value))
+		log.Printf("error: dataType %s in json is not supported\n", string(value))
 		return perrors.Errorf("dataType %s in json is not supported", string(value))
 	}
 	return nil
@@ -191,7 +181,7 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 				v.Field(i).SetBool(true)
 			}
 		default:
-			log.Printf("error: val %s in value is not supported", valStr)
+			log.Printf("error: val %s in value is not supported\n", valStr)
 			return perrors.Errorf("val %s in value is not supported", valStr)
 		}
 	}
