@@ -12,6 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.20.11-0.20201116082039-2fb5da2f2449+incompatible
 	github.com/stretchr/testify v1.6.1
+	go.uber.org/atomic v1.7.0
 )
 
 go 1.13
