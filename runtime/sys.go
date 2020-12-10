@@ -28,7 +28,12 @@ import (
 )
 
 import (
+	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/process"
+)
+
+import (
+	"github.com/dubbogo/gost/path/filepath"
 )
 
 var (
@@ -38,6 +43,36 @@ var (
 const (
 	cgroupMemLimitPath = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
 )
+
+// GetCPUNum gets current os's cpu number
+func GetCPUNum() int {
+	return runtime.NumCPU()
+}
+
+// GetMemoryStat gets current os's memory size in bytes
+func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
+	stat, err := mem.VirtualMemory()
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+
+	return stat.Total, stat.Used, stat.Free, stat.UsedPercent
+}
+
+// IsCgroup checks whether current os is a container or not
+func IsCgroup() bool {
+	ok, _ := gxfilepath.Exists(cgroupMemLimitPath)
+	if ok {
+		return true
+	}
+
+	return false
+}
+
+// GetCgroupMemoryLimit returns a container's total memory in bytes
+func GetCgroupMemoryLimit() (uint64, error) {
+	return readUint(cgroupMemLimitPath)
+}
 
 // GetThreadNum gets current process's thread number
 func GetThreadNum() int {
@@ -122,10 +157,6 @@ func readUint(path string) (uint64, error) {
 		return 0, err
 	}
 	return parseUint(strings.TrimSpace(string(v)), 10, 64)
-}
-
-func GetCgroupMemoryLimit() (uint64, error) {
-	return readUint(cgroupMemLimitPath)
 }
 
 // GetCgroupProcessMemoryPercent gets current process's memory usage percent in cgroup env

@@ -63,8 +63,8 @@ func (d *Page) HasData() bool {
 	return d.GetDataSize() > 0
 }
 
-// New will create an instance
-func New(requestOffset int, pageSize int,
+// NewPage will create an instance
+func NewPage(requestOffset int, pageSize int,
 	data []interface{}, totalSize int) *Page {
 
 	remain := totalSize % pageSize
