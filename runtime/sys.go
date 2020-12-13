@@ -127,6 +127,9 @@ func GetProcessMemoryStat() (uint64, error) {
 	}
 
 	memInfo, err := p.MemoryInfo()
+	if err != nil {
+		return 0, err
+	}
 
 	return memInfo.RSS, nil
 }

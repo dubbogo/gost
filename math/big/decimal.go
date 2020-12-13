@@ -60,12 +60,12 @@ const (
 	DivFracIncr = 4
 
 	// ModeHalfEven rounds normally.
-	ModeHalfEven RoundMode = 5
+	ModeHalfEven = RoundMode(5)
 	// Truncate just truncates the decimal.
-	ModeTruncate RoundMode = 10
+	ModeTruncate = RoundMode(10)
 	// Ceiling is not supported now.
-	modeCeiling     RoundMode = 0
-	maxDecimalScale           = 30
+	modeCeiling     = RoundMode(0)
+	maxDecimalScale = int32(30)
 )
 
 var (
@@ -1173,7 +1173,7 @@ with the correct -1/0/+1 result
                 7E F2 04 C7 2D FB 2D
 */
 func (d *Decimal) ToBin(precision, frac int) ([]byte, error) {
-	if precision > digitsPerWord*maxWordBufLen || precision < 0 || frac > maxDecimalScale || frac < 0 {
+	if precision > digitsPerWord*maxWordBufLen || precision < 0 || frac > int(maxDecimalScale) || frac < 0 {
 		return nil, ErrBadNumber
 	}
 	var err error
@@ -1773,10 +1773,12 @@ func doAdd(from1, from2, to *Decimal) error {
 	stop = 0
 	if wordsInt1 > wordsInt2 {
 		idx1 = wordsInt1 - wordsInt2
-		dec1, dec2 = from1, from2
+		// dec1, dec2 = from1, from2
+		dec1 = from1
 	} else {
 		idx1 = wordsInt2 - wordsInt1
-		dec1, dec2 = from2, from1
+		// dec1, dec2 = from2, from1
+		dec1 = from2
 	}
 	for idx1 > stop {
 		idxTo--
@@ -1853,7 +1855,8 @@ func DecimalMul(from1, from2, to *Decimal) error {
 		tmp1        = wordsIntTo
 		tmp2        = wordsFracTo
 	)
-	to.resultFrac = myMinInt8(from1.resultFrac+from2.resultFrac, maxDecimalScale)
+	// to.resultFrac = myMinInt8(from1.resultFrac+from2.resultFrac, maxDecimalScale)
+	to.resultFrac = myMinInt8(from1.resultFrac+from2.resultFrac, int8(30))
 	wordsIntTo, wordsFracTo, err = fixWordCntError(wordsIntTo, wordsFracTo)
 	to.negative = from1.negative != from2.negative
 	to.digitsFrac = from1.digitsFrac + from2.digitsFrac
@@ -1967,7 +1970,8 @@ func DecimalMul(from1, from2, to *Decimal) error {
 // to       - quotient
 // fracIncr - increment of fraction
 func DecimalDiv(from1, from2, to *Decimal, fracIncr int) error {
-	to.resultFrac = myMinInt8(from1.resultFrac+int8(fracIncr), maxDecimalScale)
+	// to.resultFrac = myMinInt8(from1.resultFrac+int8(fracIncr), int8(maxDecimalScale))
+	to.resultFrac = myMinInt8(from1.resultFrac+int8(fracIncr), int8(30))
 	return doDivMod(from1, from2, to, nil, fracIncr)
 }
 

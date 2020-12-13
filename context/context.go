@@ -21,8 +21,10 @@ import (
 	"context"
 )
 
+type ValueContextKeyType int32
+
 var (
-	defaultCtxKey = 1
+	defaultCtxKey = ValueContextKeyType(1)
 )
 
 type Values struct {

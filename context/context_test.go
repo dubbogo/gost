@@ -18,6 +18,7 @@
 package gxcontext
 
 import (
+	"context"
 	"testing"
 )
 
@@ -26,7 +27,7 @@ import (
 )
 
 func TestValuesContext_General(t *testing.T) {
-	vc := NewValuesContext(nil)
+	vc := NewValuesContext(context.Background())
 	assert.NotNil(t, vc)
 
 	key := "hello"

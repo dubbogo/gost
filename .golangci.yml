@@ -32,12 +32,12 @@ linters-settings:
     disabled-checks:
       - wrapperFunc
 
-linters:
-  enable-all: true
-  disable:
-    - maligned
-    - prealloc
-    - gochecknoglobals
+# linters:
+#   enable-all: true
+#   disable:
+#     - maligned
+#     - prealloc
+#     - gochecknoglobals
 
 run:
   skip-dirs:

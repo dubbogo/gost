@@ -264,7 +264,7 @@ func TestShift(t *testing.T) {
 		for _, ca := range tests {
 			var dec Decimal
 			err := dec.FromBytes([]byte(ca.input))
-			//assert.Equal(t, err, IsNil)
+			assert.Nil(t, err)
 			//origin := dec
 			err = dec.Shift(ca.shift)
 			assert.Equal(t, err, ca.err)
