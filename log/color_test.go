@@ -29,3 +29,7 @@ func TestColorLog(t *testing.T) {
 	CWarn("%s", "/test/group%3Dbjtelecom%26protocol%3Dpb%26role%3DSRT_Provider%26service%3Dshopping%26version%3D1.0.1")
 	CError("Error")
 }
+
+func TestCPrintfln(t *testing.T) {
+	CPrintfln(NRed, "%s", "/test/group%3Dbjtelecom%26protocol%3Dpb%26role%3DSRT_Provider%26service%3Dshopping%26version%3D1.0.1")
+}
