@@ -19,7 +19,6 @@
 package gxtime
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -28,96 +27,6 @@ import (
 	gxlog "github.com/dubbogo/gost/log"
 )
 
-// 每个函数单独进行测试，否则timer number会不准确，因为ticker相关的timer会用于运行下去
-func TestNewTicker(t *testing.T) {
-	var (
-		num int
-		wg  sync.WaitGroup
-		//xassert *assert.Assertions
-	)
-
-	Init()
-
-	f := func(d time.Duration, num int) {
-		var (
-			cw    CountWatch
-			index int
-		)
-		defer func() {
-			gxlog.CInfo("duration %d loop %d, timer costs:%dms", d, num, cw.Count()/1e6)
-			wg.Done()
-		}()
-
-		cw.Start()
-
-		for range NewTicker(d).C {
-			index++
-			//gxlog.CInfo("idx:%d, tick:%s", index, t)
-			if index >= num {
-				return
-			}
-		}
-	}
-
-	num = 6
-	//xassert = assert.New(t)
-	wg.Add(num)
-	go f(TimeSecondDuration(1.5), 10)
-	go f(TimeSecondDuration(2.51), 10)
-	go f(TimeSecondDuration(1.5), 40)
-	go f(TimeSecondDuration(0.15), 200)
-	go f(TimeSecondDuration(3), 20)
-	go f(TimeSecondDuration(63), 1)
-	time.Sleep(TimeSecondDuration(0.001))
-	//xassert.Equal(defaultTimerWheel.TimerNumber(), num, "")
-	wg.Wait()
-}
-
-func TestTick(t *testing.T) {
-	var (
-		num int
-		wg  sync.WaitGroup
-		//xassert *assert.Assertions
-	)
-
-	Init()
-
-	f := func(d time.Duration, num int) {
-		var (
-			cw    CountWatch
-			index int
-		)
-		defer func() {
-			gxlog.CInfo("duration %d loop %d, timer costs:%dms", d, num, cw.Count()/1e6)
-			wg.Done()
-		}()
-
-		cw.Start()
-
-		// for t := range Tick(d)
-		for range Tick(d) {
-			index++
-			//gxlog.CInfo("idx:%d, tick:%s", index, t)
-			if index >= num {
-				return
-			}
-		}
-	}
-
-	num = 6
-	//xassert = assert.New(t)
-	wg.Add(num)
-	go f(TimeSecondDuration(1.5), 10)
-	go f(TimeSecondDuration(2.51), 10)
-	go f(TimeSecondDuration(1.5), 40)
-	go f(TimeSecondDuration(0.15), 200)
-	go f(TimeSecondDuration(3), 20)
-	go f(TimeSecondDuration(63), 1)
-	time.Sleep(0.001e9)
-	//xassert.Equal(defaultTimerWheel.TimerNumber(), num, "") // 只能单独运行ut时这个判断才成立
-	wg.Wait()
-}
-
 func TestTickFunc(t *testing.T) {
 	var (
 		//num     int
@@ -125,7 +34,7 @@ func TestTickFunc(t *testing.T) {
 		//xassert *assert.Assertions
 	)
 
-	Init()
+	InitDefaultTimerWheel()
 
 	f := func() {
 		gxlog.CInfo("timer costs:%dms", cw.Count()/1e6)
@@ -174,7 +83,7 @@ func TestTicker_Stop(t *testing.T) {
 		//xassert assert.Assertions
 	)
 
-	Init()
+	InitDefaultTimerWheel()
 
 	f := func() {
 		gxlog.CInfo("timer costs:%dms", cw.Count()/1e6)

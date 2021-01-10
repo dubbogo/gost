@@ -20,7 +20,7 @@ package gxtime
 
 import (
 	"container/list"
-	"fmt"
+	"errors"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -32,15 +32,21 @@ import (
 )
 
 var (
-	ErrTimeChannelFull   = fmt.Errorf("timer channel full")
-	ErrTimeChannelClosed = fmt.Errorf("timer channel closed")
+	// nolint
+	ErrTimeChannelFull = errors.New("timer channel full")
+	// nolint
+	ErrTimeChannelClosed = errors.New("timer channel closed")
 )
 
-// Init initializes a default timer wheel
-func Init() {
+// InitDefaultTimerWheel initializes a default timer wheel
+func InitDefaultTimerWheel() {
 	defaultTimerWheelOnce.Do(func() {
 		defaultTimerWheel = NewTimerWheel()
 	})
+}
+
+func GetDefaultTimerWheel() *TimerWheel {
+	return defaultTimerWheel
 }
 
 // Now returns the current time.
@@ -65,14 +71,9 @@ const (
 	maxMinute = 60
 	maxHour   = 24
 	maxDay    = 31
-	// ticker interval不能设置到这种精度，
-	// 实际运行时ticker的时间间隔会在1.001ms上下浮动,
-	// 当ticker interval小于1ms的时候，会导致TimerWheel.hand
-	// 和timeWheel.inc不增长，造成时间错乱：例如本来
-	// 1.5s运行的函数在持续2.1s之后才被执行
-	// minDiff = 1.001 * MS
-	minDiff       = 10e6
-	maxTimerLevel = 5
+	// the time accuracy is millisecond.
+	minTickerInterval = 10e6
+	maxTimerLevel     = 5
 )
 
 func msNum(expire int64) int64     { return expire / int64(time.Millisecond) }
@@ -173,8 +174,9 @@ type TimerWheel struct {
 // NewTimerWheel returns a @TimerWheel object.
 func NewTimerWheel() *TimerWheel {
 	w := &TimerWheel{
-		clock:  atomic.LoadInt64(&curGxTime),
-		ticker: time.NewTicker(time.Duration(minDiff)), // 这个精度如果太低，会影响curGxTime，进而影响timerNode的trig的值
+		clock: atomic.LoadInt64(&curGxTime),
+		// in fact, the minimum time accuracy is 10ms.
+		ticker: time.NewTicker(time.Duration(minTickerInterval)),
 		timerQ: make(chan timerNodeAction, timerNodeQueueSize),
 	}
 	w.start = w.clock
@@ -213,14 +215,14 @@ func NewTimerWheel() *TimerWheel {
 				break LOOP
 
 			case nodeAction, qFlag = <-w.timerQ:
-				// 此处只用一个channel，保证对同一个timer操作的顺序性
+				// just one w.timerQ channel to ensure the exec sequence of timer event.
 				if qFlag {
 					switch {
 					case nodeAction.action == ADD_TIMER:
 						w.number.Add(1)
 						w.insertTimerNode(nodeAction.node)
 					case nodeAction.action == DEL_TIMER:
-						w.number.Add(1)
+						w.number.Add(-1)
 						w.deleteTimerNode(nodeAction.node)
 					case nodeAction.action == RESET_TIMER:
 						// log.CInfo("node action:%#v", nodeAction)
@@ -263,7 +265,6 @@ func (w *TimerWheel) run() {
 		clock int64
 		err   error
 		node  timerNode
-		//slot  *gxxorlist.XorList
 		slot  *list.List
 		array []timerNode
 	)
@@ -278,7 +279,7 @@ func (w *TimerWheel) run() {
 		}
 
 		err = node.timerRun(node.ID, UnixNano2Time(clock), node.arg)
-		if err == nil && node.typ == eTimerLoop {
+		if err == nil && node.typ == TimerLoop {
 			array = append(array, node)
 			// w.insertTimerNode(node)
 		} else {
@@ -443,7 +444,7 @@ func (w *TimerWheel) timerUpdate(curTime time.Time) int {
 	clock = atomic.LoadInt64(&w.clock)
 	diff = now - clock
 	diff += w.deltaDiff(clock)
-	if diff < minDiff*0.7 {
+	if diff < minTickerInterval*0.7 {
 		return -1
 	}
 	atomic.StoreInt64(&w.clock, now)
@@ -493,19 +494,27 @@ func (w *TimerWheel) Close() {
 type TimerType int32
 
 const (
-	eTimerOnce TimerType = 0x1 << 0
-	eTimerLoop TimerType = 0x1 << 1
+	TimerOnce TimerType = 0x1 << 0
+	TimerLoop TimerType = 0x1 << 1
 )
 
-// AddTimer returns a timer struct obj.
-// 异步通知timerWheel添加一个timer，有可能失败
-func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period int64, arg interface{}) (*Timer, error) {
+// AddTimer adds a timer asynchronously and returns a timer struct obj. It returns error if it failed.
+//
+// Attention that @f may block the timer gr. So u should create a gr to exec ur function asynchronously
+// if it may take a long time.
+//
+// args:
+//   @f: timer function.
+//   @typ: timer type
+//   @period: timer loop interval. its unit is nanosecond.
+//   @arg: timer argument which is used by @f.
+func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, arg interface{}) (*Timer, error) {
 	if !w.enable.Load() {
 		return nil, ErrTimeChannelClosed
 	}
 
 	t := &Timer{w: w}
-	node := newTimerNode(f, typ, period, arg)
+	node := newTimerNode(f, typ, int64(period), arg)
 	select {
 	case w.timerQ <- timerNodeAction{node: node, action: ADD_TIMER}:
 		t.ID = node.ID
@@ -562,7 +571,7 @@ func (w *TimerWheel) NewTimer(d time.Duration) *Timer {
 		C: c,
 	}
 
-	timer, err := w.AddTimer(sendTime, eTimerOnce, int64(d), c)
+	timer, err := w.AddTimer(sendTime, TimerOnce, d, c)
 	if err == nil {
 		t.ID = timer.ID
 		t.w = timer.w
@@ -595,7 +604,7 @@ func goFunc(_ TimerID, _ time.Time, arg interface{}) error {
 // in its own goroutine. It returns a Timer that can
 // be used to cancel the call using its Stop method.
 func (w *TimerWheel) AfterFunc(d time.Duration, f func()) *Timer {
-	t, _ := w.AddTimer(goFunc, eTimerOnce, int64(d), f)
+	t, _ := w.AddTimer(goFunc, TimerOnce, d, f)
 
 	return t
 }
@@ -619,7 +628,7 @@ func (w *TimerWheel) Sleep(d time.Duration) {
 func (w *TimerWheel) NewTicker(d time.Duration) *Ticker {
 	c := make(chan time.Time, 1)
 
-	timer, err := w.AddTimer(sendTime, eTimerLoop, int64(d), c)
+	timer, err := w.AddTimer(sendTime, TimerLoop, d, c)
 	if err == nil {
 		timer.C = c
 		return (*Ticker)(timer)
@@ -631,7 +640,7 @@ func (w *TimerWheel) NewTicker(d time.Duration) *Ticker {
 
 // TickFunc returns a Ticker
 func (w *TimerWheel) TickFunc(d time.Duration, f func()) *Ticker {
-	t, err := w.AddTimer(goFunc, eTimerLoop, int64(d), f)
+	t, err := w.AddTimer(goFunc, TimerLoop, d, f)
 	if err == nil {
 		return (*Ticker)(t)
 	}

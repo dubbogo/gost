@@ -81,7 +81,7 @@ func (t *Timer) Reset(d time.Duration) {
 		panic("time: Stop called on uninitialized Timer")
 	}
 
-	t.w.resetTimer(t, d)
+	_ = t.w.resetTimer(t, d)
 }
 
 // Stop prevents the Timer from firing.
@@ -90,6 +90,6 @@ func (t *Timer) Stop() {
 		panic("time: Stop called on uninitialized Timer")
 	}
 
-	t.w.deleteTimer(t)
+	_ = t.w.deleteTimer(t)
 	t.w = nil
 }

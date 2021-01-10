@@ -23,6 +23,14 @@ import (
 	"time"
 )
 
+func TestGetTimerWheel(t *testing.T) {
+	InitDefaultTimerWheel()
+	tw := GetDefaultTimerWheel()
+	if tw == nil {
+		t.Fatal("default time wheel is nil")
+	}
+}
+
 func TestUnix2Time(t *testing.T) {
 	now := time.Now()
 	nowUnix := Time2Unix(now)
