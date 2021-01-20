@@ -51,15 +51,15 @@ func TestUnixNano2Time(t *testing.T) {
 }
 
 func TestGetEndTime(t *testing.T) {
-	dayEndTime := GetEndtime("day")
+	dayEndTime := GetEndTime("day")
 	t.Logf("today end time %q", dayEndTime)
 
-	weekEndTime := GetEndtime("week")
+	weekEndTime := GetEndTime("week")
 	t.Logf("this week end time %q", weekEndTime)
 
-	monthEndTime := GetEndtime("month")
+	monthEndTime := GetEndTime("month")
 	t.Logf("this month end time %q", monthEndTime)
 
-	yearEndTime := GetEndtime("year")
+	yearEndTime := GetEndTime("year")
 	t.Logf("this year end time %q", yearEndTime)
 }

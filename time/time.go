@@ -23,11 +23,11 @@ import (
 	"time"
 )
 
-func TimeDayDuratioin(day float64) time.Duration {
+func TimeDayDuration(day float64) time.Duration {
 	return time.Duration(day * 24 * float64(time.Hour))
 }
 
-func TimeHourDuratioin(hour float64) time.Duration {
+func TimeHourDuration(hour float64) time.Duration {
 	return time.Duration(hour * float64(time.Hour))
 }
 
@@ -51,7 +51,7 @@ func TimeNanosecondDuration(n float64) time.Duration {
 	return time.Duration(n * float64(time.Nanosecond))
 }
 
-// desc: convert year-month-day-hour-minute-seccond to int in second
+// desc: convert year-month-day-hour-minute-second to int in second
 // @month: 1 ~ 12
 // @hour:  0 ~ 23
 // @minute: 0 ~ 59
@@ -98,7 +98,7 @@ func Time2UnixNano(t time.Time) int64 {
 	return t.UnixNano()
 }
 
-func GetEndtime(format string) time.Time {
+func GetEndTime(format string) time.Time {
 	timeNow := time.Now()
 	switch format {
 	case "day":
