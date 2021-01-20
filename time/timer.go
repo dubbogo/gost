@@ -326,7 +326,7 @@ func (w *TimerWheel) deleteTimerNode(node *timerNode) {
 LOOP:
 	for level = range w.slot[:] {
 		for e := w.slot[level].Front(); e != nil; e = e.Next() {
-			if e.Value.(timerNode).ID == node.ID {
+			if e.Value.(*timerNode).ID == node.ID {
 				w.slot[level].Remove(e)
 				// atomic.AddInt64(&w.number, -1)
 				break LOOP
