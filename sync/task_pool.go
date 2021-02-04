@@ -152,7 +152,7 @@ func (p *TaskPool) run(id int, q chan task) error {
 // return false when the pool is stop
 func (p *TaskPool) AddTask(t task) (ok bool) {
 	idx := atomic.AddUint32(&p.idx, 1)
-	id := idx % uint32(p.tQNumber)
+	id := idx & (uint32(p.tQNumber) - 1)
 
 	select {
 	case <-p.done:
@@ -164,7 +164,7 @@ func (p *TaskPool) AddTask(t task) (ok bool) {
 }
 
 func (p *TaskPool) AddTaskAlways(t task) {
-	id := atomic.AddUint32(&p.idx, 1) % uint32(p.tQNumber)
+	id := atomic.AddUint32(&p.idx, 1) & (uint32(p.tQNumber) - 1)
 
 	select {
 	case p.qArray[id] <- t:
