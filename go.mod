@@ -13,6 +13,8 @@ require (
 	github.com/shirou/gopsutil v3.20.11-0.20201116082039-2fb5da2f2449+incompatible
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/atomic v1.7.0
+    github.com/coreos/etcd v3.3.25+incompatible
+    google.golang.org/grpc v1.26.0
 )
 
 go 1.13
