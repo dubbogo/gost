@@ -127,6 +127,8 @@ type Client struct {
 // NewClient create a client instance with name, endpoints etc.
 func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	rawClient, err := clientv3.New(clientv3.Config{
 		Context:     ctx,
 		Endpoints:   endpoints,

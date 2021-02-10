@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"log"
 	"net/url"
 	"os"
 	"path"
@@ -97,7 +98,7 @@ func (suite *ClientTestSuite) SetupSuite() {
 	cfg.Dir = defaultEtcdV3WorkDir
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	select {
 	case <-e.Server.ReadyNotify():
@@ -145,7 +146,7 @@ func (suite *ClientTestSuite) TestClientClose() {
 
 	defer c.Close()
 	if c.rawClient.ActiveConnection().GetState() != connectivity.Ready {
-		t.Fatal(suite.client.rawClient.ActiveConnection().GetState())
+		log.Fatal(suite.client.rawClient.ActiveConnection().GetState())
 	}
 }
 
@@ -298,7 +299,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 
 		wc, err := c.watch(prefix)
 		if err != nil {
-			t.Fatal(err)
+			log.Fatal(err)
 		}
 
 		events := make([]mvccpb.Event, 0)
@@ -358,7 +359,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		completePath := path.Join("scott", "wang")
 		wc, err := observeC.watch(completePath)
 		if err != nil {
-			t.Fatal(err)
+			log.Fatal(err)
 		}
 
 		events := make([]mvccpb.Event, 0)
