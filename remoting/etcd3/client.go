@@ -127,7 +127,6 @@ type Client struct {
 // NewClient create a client instance with name, endpoints etc.
 func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	rawClient, err := clientv3.New(clientv3.Config{
 		Context:     ctx,
@@ -136,6 +135,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
 	}
 
@@ -153,6 +153,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 	}
 
 	if err := c.maintenanceStatus(); err != nil {
+		cancel()
 		return nil, perrors.WithMessage(err, "client maintenance status")
 	}
 	return c, nil
