@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package etcdv3
+package gxetcd
 
 import (
 	"net/url"
@@ -23,7 +23,6 @@ import (
 	"path"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -289,57 +288,50 @@ func (suite *ClientTestSuite) TestClientWatch() {
 	c := suite.client
 	t := suite.T()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
 	go func() {
+		time.Sleep(time.Second)
+		for _, tc := range tests {
 
-		defer wg.Done()
+			k := tc.input.k
+			v := tc.input.v
 
-		wc, err := c.watch(prefix)
-		if err != nil {
-			assert.Error(t, err)
-		}
+			if err := c.Create(k, v); err != nil {
+				t.Fatal(err)
+			}
 
-		events := make([]mvccpb.Event, 0)
-		var eCreate, eDelete mvccpb.Event
-
-		for e := range wc {
-
-			for _, event := range e.Events {
-				events = append(events, (mvccpb.Event)(*event))
-				if event.Type == mvccpb.PUT {
-					eCreate = (mvccpb.Event)(*event)
-				}
-				if event.Type == mvccpb.DELETE {
-					eDelete = (mvccpb.Event)(*event)
-				}
-				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
+			if err := c.delete(k); err != nil {
+				t.Fatal(err)
 			}
 		}
 
-		assert.Equal(t, 2, len(events))
-		assert.Contains(t, events, eCreate)
-		assert.Contains(t, events, eDelete)
+		c.Close()
 	}()
 
-	for _, tc := range tests {
+	wc, err := c.watch(prefix)
+	if err != nil {
+		assert.Error(t, err)
+	}
 
-		k := tc.input.k
-		v := tc.input.v
+	events := make([]mvccpb.Event, 0)
+	var eCreate, eDelete mvccpb.Event
 
-		if err := c.Create(k, v); err != nil {
-			t.Fatal(err)
-		}
+	for e := range wc {
 
-		if err := c.delete(k); err != nil {
-			t.Fatal(err)
+		for _, event := range e.Events {
+			events = append(events, (mvccpb.Event)(*event))
+			if event.Type == mvccpb.PUT {
+				eCreate = (mvccpb.Event)(*event)
+			}
+			if event.Type == mvccpb.DELETE {
+				eDelete = (mvccpb.Event)(*event)
+			}
+			t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
 		}
 	}
 
-	c.Close()
-
-	wg.Wait()
+	assert.Equal(t, 2, len(events))
+	assert.Contains(t, events, eCreate)
+	assert.Contains(t, events, eDelete)
 
 }
 
@@ -349,50 +341,42 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 	observeC := suite.setUpClient()
 	t := suite.T()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
 	go func() {
-		defer wg.Done()
-
-		completePath := path.Join("scott", "wang")
-		wc, err := observeC.watch(completePath)
+		time.Sleep(2 * time.Second)
+		err := c.RegisterTemp("scott/wang", "test")
 		if err != nil {
-			assert.Error(t, err)
+			t.Fatal(err)
 		}
-
-		events := make([]mvccpb.Event, 0)
-		var eCreate, eDelete mvccpb.Event
-
-		for e := range wc {
-
-			for _, event := range e.Events {
-				events = append(events, (mvccpb.Event)(*event))
-				if event.Type == mvccpb.DELETE {
-					eDelete = (mvccpb.Event)(*event)
-					t.Logf("complete key (%s) is delete", completePath)
-					observeC.Close()
-					break
-				}
-				eCreate = (mvccpb.Event)(*event)
-				t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
-			}
-		}
-
-		assert.Equal(t, 2, len(events))
-		assert.Contains(t, events, eCreate)
-		assert.Contains(t, events, eDelete)
+		c.Close()
 	}()
 
-	err := c.RegisterTemp("scott/wang", "test")
+	completePath := path.Join("scott", "wang")
+	wc, err := observeC.watch(completePath)
 	if err != nil {
-		t.Fatal(err)
+		assert.Error(t, err)
 	}
 
-	time.Sleep(2 * time.Second)
-	c.Close()
+	events := make([]mvccpb.Event, 0)
+	var eCreate, eDelete mvccpb.Event
 
-	wg.Wait()
+	for e := range wc {
+
+		for _, event := range e.Events {
+			events = append(events, (mvccpb.Event)(*event))
+			if event.Type == mvccpb.DELETE {
+				eDelete = (mvccpb.Event)(*event)
+				t.Logf("complete key (%s) is delete", completePath)
+				observeC.Close()
+				break
+			}
+			eCreate = (mvccpb.Event)(*event)
+			t.Logf("type IsCreate %v k %s v %s", event.IsCreate(), event.Kv.Key, event.Kv.Value)
+		}
+	}
+
+	assert.Equal(t, 2, len(events))
+	assert.Contains(t, events, eCreate)
+	assert.Contains(t, events, eDelete)
 }
 
 func TestClientSuite(t *testing.T) {
