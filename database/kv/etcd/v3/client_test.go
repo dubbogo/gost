@@ -296,11 +296,11 @@ func (suite *ClientTestSuite) TestClientWatch() {
 			v := tc.input.v
 
 			if err := c.Create(k, v); err != nil {
-				t.Fatal(err)
+				assert.Error(t, err)
 			}
 
 			if err := c.delete(k); err != nil {
-				t.Fatal(err)
+				assert.Error(t, err)
 			}
 		}
 
@@ -345,7 +345,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 		time.Sleep(2 * time.Second)
 		err := c.RegisterTemp("scott/wang", "test")
 		if err != nil {
-			t.Fatal(err)
+			assert.Error(t, err)
 		}
 		c.Close()
 	}()
