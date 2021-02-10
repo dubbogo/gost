@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package etcdv3
+package gxetcd
 
 import (
 	"context"
@@ -31,63 +31,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	// ConnDelay connection delay
-	ConnDelay = 3
-	// MaxFailTimes max failure times
-	MaxFailTimes = 15
-	// RegistryETCDV3Client client name
-	RegistryETCDV3Client = "etcd registry"
-	// MetadataETCDV3Client client name
-	MetadataETCDV3Client = "etcd metadata"
-)
-
 var (
 	// ErrNilETCDV3Client raw client nil
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound = perrors.New("k/v pair not found")
 )
-
-// Options client configuration
-type Options struct {
-	name      string
-	endpoints []string
-	client    *Client
-	timeout   time.Duration
-	heartbeat int // heartbeat second
-}
-
-// Option will define a function of handling Options
-type Option func(*Options)
-
-// WithEndpoints sets etcd client endpoints
-func WithEndpoints(endpoints ...string) Option {
-	return func(opt *Options) {
-		opt.endpoints = endpoints
-	}
-}
-
-// WithName sets etcd client name
-func WithName(name string) Option {
-	return func(opt *Options) {
-		opt.name = name
-	}
-}
-
-// WithTimeout sets etcd client timeout
-func WithTimeout(timeout time.Duration) Option {
-	return func(opt *Options) {
-		opt.timeout = timeout
-	}
-}
-
-// WithHeartbeat sets etcd client heartbeat
-func WithHeartbeat(heartbeat int) Option {
-	return func(opt *Options) {
-		opt.heartbeat = heartbeat
-	}
-}
 
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
@@ -134,6 +83,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialTimeout: timeout,
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
+
 	if err != nil {
 		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
