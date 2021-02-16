@@ -194,16 +194,22 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	}
 }
 
-// if k not exist will put k/v in etcd, otherwise return nil
-func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
+func (c *Client) GetRawClient() *clientv3.Client {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	if c.rawClient == nil {
+	return c.rawClient
+}
+
+// if k not exist will put k/v in etcd, otherwise return nil
+func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
+	rawClient := c.GetRawClient()
+
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := c.rawClient.Txn(c.ctx).
+	_, err := rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.Version(k), "<", 1)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
@@ -213,14 +219,13 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 // if k not exist will put k/v in etcd
 // if k is already exist in etcd, replace it
 func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := c.rawClient.Txn(c.ctx).
+	_, err := rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.Version(k), "!=", -1)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
@@ -228,26 +233,24 @@ func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
 }
 
 func (c *Client) delete(k string) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := c.rawClient.Delete(c.ctx, k)
+	_, err := rawClient.Delete(c.ctx, k)
 	return err
 }
 
 func (c *Client) get(k string) (string, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return "", ErrNilETCDV3Client
 	}
 
-	resp, err := c.rawClient.Get(c.ctx, k)
+	resp, err := rawClient.Get(c.ctx, k)
 	if err != nil {
 		return "", err
 	}
@@ -261,26 +264,24 @@ func (c *Client) get(k string) (string, error) {
 
 // CleanKV delete all key and value
 func (c *Client) CleanKV() error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := c.rawClient.Delete(c.ctx, "", clientv3.WithPrefix())
+	_, err := rawClient.Delete(c.ctx, "", clientv3.WithPrefix())
 	return err
 }
 
 func (c *Client) getChildren(k string) ([]string, []string, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return nil, nil, ErrNilETCDV3Client
 	}
 
-	resp, err := c.rawClient.Get(c.ctx, k, clientv3.WithPrefix())
+	resp, err := rawClient.Get(c.ctx, k, clientv3.WithPrefix())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -299,51 +300,48 @@ func (c *Client) getChildren(k string) ([]string, []string, error) {
 }
 
 func (c *Client) watchWithPrefix(prefix string) (clientv3.WatchChan, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
 	}
 
-	return c.rawClient.Watch(c.ctx, prefix, clientv3.WithPrefix()), nil
+	return rawClient.Watch(c.ctx, prefix, clientv3.WithPrefix()), nil
 }
 
 func (c *Client) watch(k string) (clientv3.WatchChan, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
 	}
 
-	return c.rawClient.Watch(c.ctx, k), nil
+	return rawClient.Watch(c.ctx, k), nil
 }
 
 func (c *Client) keepAliveKV(k string, v string) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
 	// make lease time longer, since 1 second is too short
-	lease, err := c.rawClient.Grant(c.ctx, int64(30*time.Second.Seconds()))
+	lease, err := rawClient.Grant(c.ctx, int64(30*time.Second.Seconds()))
 	if err != nil {
 		return perrors.WithMessage(err, "grant lease")
 	}
 
-	keepAlive, err := c.rawClient.KeepAlive(c.ctx, lease.ID)
+	keepAlive, err := rawClient.KeepAlive(c.ctx, lease.ID)
 	if err != nil || keepAlive == nil {
-		c.rawClient.Revoke(c.ctx, lease.ID)
+		rawClient.Revoke(c.ctx, lease.ID)
 		if err != nil {
 			return perrors.WithMessage(err, "keep alive lease")
 		}
 		return perrors.New("keep alive lease")
 	}
 
-	_, err = c.rawClient.Put(c.ctx, k, v, clientv3.WithLease(lease.ID))
+	_, err = rawClient.Put(c.ctx, k, v, clientv3.WithLease(lease.ID))
 	return perrors.WithMessage(err, "put k/v with lease")
 }
 
