@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/dubbogo/gost)](https://goreportcard.com/report/github.com/dubbogo/gost)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
-A go sdk for [Apache Dubbo-go](github.com/apache/dubbo-go).
+A go sdk for [Apache Dubbo-go](https://github.com/apache/dubbo-go).
 
 ## bytes
 
