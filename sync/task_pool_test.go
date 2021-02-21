@@ -80,6 +80,7 @@ func TestTaskPoolSimple(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	tp.Close()
 
 	cntValue := atomic.LoadInt64(cnt)
 	if taskCnt != cntValue {
