@@ -54,6 +54,7 @@ func Test_getZookeeperClient(t *testing.T) {
 	tc, err = zk.StartTestCluster(1, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc.Servers[0])
+
 	address = append(address, "127.0.0.1:"+strconv.Itoa(tc.Servers[0].Port))
 	client1, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
