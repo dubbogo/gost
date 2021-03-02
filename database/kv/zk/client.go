@@ -29,10 +29,6 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"github.com/apache/dubbo-go/common/logger"
-)
-
 var (
 	errNilZkClientConn = perrors.New("zookeeper client{conn} is nil")
 	errNilChildren     = perrors.Errorf("has none children")
@@ -244,7 +240,6 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
 	a := z.eventRegistry[zkPath]
 	a = append(a, event)
 	z.eventRegistry[zkPath] = a
-	logger.Debugf("zkClient{%s} register event{path:%s, ptr:%p}", z.name, zkPath, event)
 }
 
 // UnregisterEvent unregisters zookeeper events
@@ -262,11 +257,8 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
 	for i, e := range infoList {
 		if e == event {
 			infoList = append(infoList[:i], infoList[i+1:]...)
-			logger.Infof("zkClient{%s} unregister event{path:%s, event:%p}", z.name, zkPath, event)
 		}
 	}
-	logger.Debugf("after zkClient{%s} unregister event{path:%s, event:%p}, array length %d",
-		z.name, zkPath, event, len(infoList))
 	if len(infoList) == 0 {
 		delete(z.eventRegistry, zkPath)
 	} else {
