@@ -52,7 +52,7 @@ type ZkEventHandler interface {
 type DefaultHandler struct {
 }
 
-// nolint
+// StateToString will transfer zk state to string
 func StateToString(state zk.State) string {
 	switch state {
 	case zk.StateDisconnected:
@@ -86,6 +86,7 @@ func initZookeeperClientPool() {
 	zkClientPool.zkClient = make(map[string]*ZookeeperClient)
 }
 
+//NewZookeeperClient will create a ZookeeperClient
 func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...ZkClientOption) (*ZookeeperClient, error) {
 	if share {
 		once.Do(initZookeeperClientPool)
@@ -346,7 +347,7 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 	return nil
 }
 
-// nolint
+//Delete will delete basePath
 func (z *ZookeeperClient) Delete(basePath string) error {
 	err := ErrNilZkClientConn
 	conn := z.getConn()
@@ -495,7 +496,7 @@ func (z *ZookeeperClient) GetContent(zkPath string) ([]byte, *zk.Stat, error) {
 	return z.Conn.Get(zkPath)
 }
 
-// nolint
+//SetContent set content of zkPath
 func (z *ZookeeperClient) SetContent(zkPath string, content []byte, version int32) (*zk.Stat, error) {
 	return z.Conn.Set(zkPath, content, version)
 }
@@ -520,7 +521,6 @@ func (z *ZookeeperClient) GetEventHandler() ZkEventHandler {
 	return z.zkEventHandler
 }
 
-// In my opinion, this method should never called by user, here just for lint
 func (z *ZookeeperClient) Close() {
 	if z.share {
 		zkClientPool.Lock()
