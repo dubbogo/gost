@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	errNilZkClientConn = perrors.New("zookeeper client{conn} is nil")
+	errNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
 	errNilChildren     = perrors.Errorf("has none children")
 	errNilNode         = perrors.Errorf("node does not exist")
 )
@@ -135,14 +135,14 @@ func (z *ZookeeperClient) createZookeeperConn() error {
 	return nil
 }
 
-// WithTestCluster sets test cluster for zk client
+// WithTestCluster sets test cluster for zk Client
 func WithTestCluster(ts *zk.TestCluster) Option {
 	return func(opt *Options) {
-		opt.ts = ts
+		opt.Ts = ts
 	}
 }
 
-// NewMockZookeeperClient returns a mock client instance
+// NewMockZookeeperClient returns a mock Client instance
 func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event, error) {
 	var (
 		err error
@@ -167,8 +167,8 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 	}
 
 	// connect to zookeeper
-	if options.ts != nil {
-		ts = options.ts
+	if options.Ts != nil {
+		ts = options.Ts
 	} else {
 		ts, err = zk.StartTestCluster(1, nil, nil)
 		if err != nil {

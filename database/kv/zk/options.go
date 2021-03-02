@@ -11,22 +11,22 @@ import (
 
 // nolint
 type Options struct {
-	zkName string
-	client *ZookeeperClient
-	ts     *zk.TestCluster
+	ZkName string
+	Client *ZookeeperClient
+	Ts     *zk.TestCluster
 }
 
 // Option will define a function of handling Options
 type Option func(*Options)
 
-// WithZkName sets zk client name
+// WithZkName sets zk Client name
 func WithZkName(name string) Option {
 	return func(opt *Options) {
-		opt.zkName = name
+		opt.ZkName = name
 	}
 }
 
-// ZookeeperClient represents zookeeper client Configuration
+// ZookeeperClient represents zookeeper Client Configuration
 type ZookeeperClient struct {
 	name              string
 	ZkAddrs           []string
@@ -46,14 +46,14 @@ type ZookeeperClient struct {
 
 type ZkClientOption func(*ZookeeperClient)
 
-// WithZkEventHandler sets zk client event
+// WithZkEventHandler sets zk Client event
 func WithZkEventHandler(handler ZkEventHandler) ZkClientOption {
 	return func(opt *ZookeeperClient) {
 		opt.zkEventHandler = handler
 	}
 }
 
-// WithZkEventHandler sets zk client timeout
+// WithZkEventHandler sets zk Client timeout
 func WithZkTimeOut(t time.Duration) ZkClientOption {
 	return func(opt *ZookeeperClient) {
 		opt.Timeout = t
