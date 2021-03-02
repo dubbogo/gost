@@ -63,9 +63,15 @@ func Test_getZookeeperClient(t *testing.T) {
 	assert.Nil(t, err)
 	client4, err := NewZookeeperClient("test2", address, false, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
-	assert.Equal(t, client1, client2)
-	assert.NotEqual(t, client1, client3)
-	assert.NotEqual(t, client3, client4)
+	if client1 != client2 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
+	if client1 == client3 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
+	if client3 == client4 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
 	client1.Close()
 	client2.Close()
 	client3.Close()
@@ -85,11 +91,15 @@ func Test_Close(t *testing.T) {
 	assert.Nil(t, err)
 	client2, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
-	assert.Equal(t, client2, client1)
+	if client1 != client2 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
 	client1.Close()
 	client3, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
-	assert.Equal(t, client3, client2)
+	if client2 != client3 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
 	client2.Close()
 	assert.Equal(t, client1.activeNumber, uint32(1))
 	client1.Close()
@@ -97,13 +107,16 @@ func Test_Close(t *testing.T) {
 	client4, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
 	assert.Equal(t, client4.activeNumber, uint32(1))
-	assert.NotEqual(t, client3, client4)
-
+	if client4 == client3 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
 	client5, err := NewZookeeperClient("test1", address, false, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
 	client6, err := NewZookeeperClient("test1", address, false, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
-	assert.NotEqual(t, client5, client6)
+	if client5 == client6 {
+		t.Fatalf("NewZookeeperClient failed")
+	}
 	client5.Close()
 	assert.Equal(t, client5.activeNumber, uint32(0))
 	assert.Equal(t, client5.Conn, (*zk.Conn)(nil))
