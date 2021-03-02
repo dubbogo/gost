@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	errNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
-	errNilChildren     = perrors.Errorf("has none children")
-	errNilNode         = perrors.Errorf("node does not exist")
+	ErrNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
+	ErrNilChildren     = perrors.Errorf("has none children")
+	ErrNilNode         = perrors.Errorf("node does not exist")
 )
 
 var (
@@ -290,7 +290,7 @@ func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	)
 
 	conn := z.getConn()
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	if conn == nil {
 		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 	}
@@ -318,7 +318,7 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 	)
 
 	conn := z.getConn()
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	if conn == nil {
 		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 	}
@@ -348,7 +348,7 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 
 // nolint
 func (z *ZookeeperClient) Delete(basePath string) error {
-	err := errNilZkClientConn
+	err := ErrNilZkClientConn
 	conn := z.getConn()
 	if conn != nil {
 		err = conn.Delete(basePath, -1)
@@ -364,7 +364,7 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 		tmpPath string
 	)
 
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	zkPath = path.Join(basePath) + "/" + node
 	conn := z.getConn()
 	if conn != nil {
@@ -385,7 +385,7 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 		tmpPath string
 	)
 
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	conn := z.getConn()
 	if conn != nil {
 		tmpPath, err = conn.Create(
@@ -411,7 +411,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		watcher  *zk.Watcher
 	)
 
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	conn := z.getConn()
 	if conn != nil {
 		children, stat, watcher, err = conn.ChildrenW(path)
@@ -419,10 +419,10 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 
 	if err != nil {
 		if err == zk.ErrNoChildrenForEphemerals {
-			return nil, nil, errNilChildren
+			return nil, nil, ErrNilChildren
 		}
 		if err == zk.ErrNoNode {
-			return nil, nil, errNilNode
+			return nil, nil, ErrNilNode
 		}
 		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
 	}
@@ -430,7 +430,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		return nil, nil, perrors.Errorf("path{%s} get stat is nil", path)
 	}
 	if len(children) == 0 {
-		return nil, nil, errNilChildren
+		return nil, nil, ErrNilChildren
 	}
 
 	return children, watcher.EvtCh, nil
@@ -444,7 +444,7 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 		stat     *zk.Stat
 	)
 
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	conn := z.getConn()
 	if conn != nil {
 		children, stat, err = conn.Children(path)
@@ -460,7 +460,7 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 		return nil, perrors.Errorf("path{%s} has none children", path)
 	}
 	if len(children) == 0 {
-		return nil, errNilChildren
+		return nil, ErrNilChildren
 	}
 
 	return children, nil
@@ -474,7 +474,7 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 		watcher *zk.Watcher
 	)
 
-	err = errNilZkClientConn
+	err = ErrNilZkClientConn
 	conn := z.getConn()
 	if conn != nil {
 		exist, _, watcher, err = conn.ExistsW(zkPath)
@@ -513,6 +513,11 @@ func (z *ZookeeperClient) getConn() *zk.Conn {
 // Reconnect gets zookeeper reconnect event
 func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 	return z.reconnectCh
+}
+
+// GetEventHandler gets zookeeper event handler
+func (z *ZookeeperClient) GetEventHandler() ZkEventHandler {
+	return z.zkEventHandler
 }
 
 // In my opinion, this method should never called by user, here just for lint
