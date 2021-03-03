@@ -93,7 +93,7 @@ func initZookeeperClientPool() {
 }
 
 //NewZookeeperClient will create a ZookeeperClient
-func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...ZkClientOption) (*ZookeeperClient, error) {
+func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...zkClientOption) (*ZookeeperClient, error) {
 	if share {
 		once.Do(initZookeeperClientPool)
 		zkClientPool.Lock()
@@ -144,7 +144,7 @@ func (z *ZookeeperClient) createZookeeperConn() error {
 
 // WithTestCluster sets test cluster for zk Client
 func WithTestCluster(ts *zk.TestCluster) Option {
-	return func(opt *Options) {
+	return func(opt *options) {
 		opt.Ts = ts
 	}
 }
@@ -168,14 +168,14 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		zkEventHandler: &DefaultHandler{},
 	}
 
-	options := &Options{}
+	option := &options{}
 	for _, opt := range opts {
-		opt(options)
+		opt(option)
 	}
 
 	// connect to zookeeper
-	if options.Ts != nil {
-		ts = options.Ts
+	if option.Ts != nil {
+		ts = option.Ts
 	} else {
 		ts, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
 		if err != nil {
