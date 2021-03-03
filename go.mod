@@ -43,6 +43,7 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
+	github.com/dubbogo/go-zookeeper => github.com/wenxuwan/go-zookeeper v1.0.3-0.20210303051024-8a4fef629f1a
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.4
 	google.golang.org/grpc v1.33.1 => google.golang.org/grpc v1.26.0
 )

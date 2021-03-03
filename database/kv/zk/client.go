@@ -172,7 +172,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 	if options.Ts != nil {
 		ts = options.Ts
 	} else {
-		ts, err = zk.StartTestCluster(1, nil, nil)
+		ts, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
 		if err != nil {
 			return nil, nil, nil, perrors.WithMessagef(err, "zk.StartTestCluster fail")
 		}
