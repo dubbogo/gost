@@ -40,8 +40,8 @@ var (
 )
 
 var (
-	zkClientPool zookeeperClientPool
-	once         sync.Once
+	zkClientPool   zookeeperClientPool
+	clientPoolOnce sync.Once
 )
 
 // ZookeeperClient represents zookeeper Client Configuration
@@ -113,7 +113,7 @@ func initZookeeperClientPool() {
 //NewZookeeperClient will create a ZookeeperClient
 func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...zkClientOption) (*ZookeeperClient, error) {
 	if share {
-		once.Do(initZookeeperClientPool)
+		clientPoolOnce.Do(initZookeeperClientPool)
 		zkClientPool.Lock()
 		defer zkClientPool.Unlock()
 		if zkClient, ok := zkClientPool.zkClient[name]; ok {
