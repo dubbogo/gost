@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dubbogo/go-zookeeper v1.0.2
+	github.com/dubbogo/go-zookeeper v1.0.3
 	github.com/dubbogo/jsonparser v1.0.1
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
@@ -43,7 +43,6 @@ require (
 
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	github.com/dubbogo/go-zookeeper => github.com/wenxuwan/go-zookeeper v1.0.3-0.20210303051024-8a4fef629f1a
 	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.4
 	google.golang.org/grpc v1.33.1 => google.golang.org/grpc v1.26.0
 )

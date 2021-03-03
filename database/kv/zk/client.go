@@ -31,25 +31,30 @@ import (
 )
 
 var (
+	// ErrNilZkClientConn no conn error
 	ErrNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
-	ErrNilChildren     = perrors.Errorf("has none children")
-	ErrNilNode         = perrors.Errorf("node does not exist")
+	// ErrNilChildren no children error
+	ErrNilChildren = perrors.Errorf("has none children")
+	// ErrNilNode no node error
+	ErrNilNode = perrors.Errorf("node does not exist")
 )
 
 var (
-	zkClientPool ZookeeperClientPool
+	zkClientPool zookeeperClientPool
 	once         sync.Once
 )
 
-type ZookeeperClientPool struct {
+type zookeeperClientPool struct {
 	sync.Mutex
 	zkClient map[string]*ZookeeperClient
 }
 
+// ZkEventHandler interface
 type ZkEventHandler interface {
 	HandleZkEvent(z *ZookeeperClient)
 }
 
+// DefaultHandler is default handler for zk event
 type DefaultHandler struct {
 }
 
