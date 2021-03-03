@@ -18,7 +18,6 @@
 package gxzookeeper
 
 import (
-	"sync"
 	"time"
 )
 
@@ -41,24 +40,6 @@ func WithZkName(name string) Option {
 	return func(opt *options) {
 		opt.ZkName = name
 	}
-}
-
-// ZookeeperClient represents zookeeper Client Configuration
-type ZookeeperClient struct {
-	name              string
-	ZkAddrs           []string
-	sync.RWMutex      // for conn
-	Conn              *zk.Conn
-	activeNumber      uint32
-	Timeout           time.Duration
-	Wait              sync.WaitGroup
-	valid             uint32
-	share             bool
-	reconnectCh       chan struct{}
-	eventRegistry     map[string][]*chan struct{}
-	eventRegistryLock sync.RWMutex
-	zkEventHandler    ZkEventHandler
-	Session           <-chan zk.Event
 }
 
 type zkClientOption func(*ZookeeperClient)
