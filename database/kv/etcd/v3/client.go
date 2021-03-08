@@ -199,6 +199,7 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	}
 }
 
+//GetRawClient return etcd raw client
 func (c *Client) GetRawClient() *clientv3.Client {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
