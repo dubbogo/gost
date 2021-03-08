@@ -137,6 +137,11 @@ func (c *Client) stop() bool {
 }
 
 // Close close client
+func (c *Client) GetCtx() context.Context {
+	return c.ctx
+}
+
+// Close close client
 func (c *Client) Close() {
 	if c == nil {
 		return
@@ -274,7 +279,7 @@ func (c *Client) CleanKV() error {
 	return err
 }
 
-func (c *Client) getChildren(k string) ([]string, []string, error) {
+func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	rawClient := c.getRawClient()
 
 	if rawClient == nil {
@@ -389,7 +394,7 @@ func (c *Client) RegisterTemp(k, v string) error {
 
 // GetChildrenKVList gets children kv list by @k
 func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
-	kList, vList, err := c.getChildren(k)
+	kList, vList, err := c.GetChildren(k)
 	return kList, vList, perrors.WithMessagef(err, "get key children (key %s)", k)
 }
 
