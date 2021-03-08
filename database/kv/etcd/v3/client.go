@@ -136,7 +136,7 @@ func (c *Client) stop() bool {
 	}
 }
 
-// Close close client
+// GetCtx return client context
 func (c *Client) GetCtx() context.Context {
 	return c.ctx
 }
@@ -206,6 +206,7 @@ func (c *Client) GetRawClient() *clientv3.Client {
 	return c.rawClient
 }
 
+//GetEndPoints return etcd endpoints
 func (c *Client) GetEndPoints() []string {
 	return c.endpoints
 }
@@ -283,6 +284,7 @@ func (c *Client) CleanKV() error {
 	return err
 }
 
+//GetChildren return node children
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	rawClient := c.GetRawClient()
 
