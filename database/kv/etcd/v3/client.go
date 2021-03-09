@@ -32,13 +32,13 @@ import (
 )
 
 var (
-	// ErrNilETCDV3Client raw Client nil
+	// ErrNilETCDV3Client raw client nil
 	ErrNilETCDV3Client = perrors.New("etcd raw Client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound = perrors.New("k/v pair not found")
 )
 
-// NewConfigClient create new Client
+// NewConfigClient create new client
 func NewConfigClient(opts ...Option) *Client {
 	options := &Options{
 		Heartbeat: 1, // default Heartbeat
@@ -49,13 +49,13 @@ func NewConfigClient(opts ...Option) *Client {
 
 	newClient, err := NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 	if err != nil {
-		log.Printf("new etcd Client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
+		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
 			options.Name, options.Endpoints, options.Timeout, err)
 	}
 	return newClient
 }
 
-// Client represents etcd Client Configuration
+// Client represents etcd client Configuration
 type Client struct {
 	lock     sync.RWMutex
 	quitOnce sync.Once
@@ -74,7 +74,7 @@ type Client struct {
 	Wait sync.WaitGroup
 }
 
-// NewClient create a Client instance with Name, Endpoints etc.
+// NewClient create a client instance with name, endpoints etc.
 func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat int) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -87,7 +87,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 
 	if err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "new raw Client block connect to server")
+		return nil, perrors.WithMessage(err, "new raw client block connect to server")
 	}
 
 	c := &Client{
@@ -105,20 +105,20 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 
 	if err := c.keepSession(); err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "Client keep session")
+		return nil, perrors.WithMessage(err, "client keep session")
 	}
 	return c, nil
 }
 
 // NOTICE: need to get the lock before calling this method
 func (c *Client) clean() {
-	// close raw Client
+	// close raw client
 	c.rawClient.Close()
 
-	// cancel ctx for raw Client
+	// cancel ctx for raw client
 	c.cancel()
 
-	// clean raw Client
+	// clean raw client
 	c.rawClient = nil
 }
 
@@ -136,23 +136,23 @@ func (c *Client) stop() bool {
 	}
 }
 
-// GetCtx return Client context
+// GetCtx return client context
 func (c *Client) GetCtx() context.Context {
 	return c.ctx
 }
 
-// Close close Client
+// Close close client
 func (c *Client) Close() {
 	if c == nil {
 		return
 	}
 
-	// stop the Client
+	// stop the client
 	if ret := c.stop(); !ret {
 		return
 	}
 
-	// wait Client keep session stop
+	// wait client keep session stop
 	c.Wait.Wait()
 
 	c.lock.Lock()
@@ -160,7 +160,7 @@ func (c *Client) Close() {
 	if c.rawClient != nil {
 		c.clean()
 	}
-	log.Printf("etcd Client{Name:%s, Endpoints:%s} exit now.", c.name, c.endpoints)
+	log.Printf("etcd client{Name:%s, Endpoints:%s} exit now.", c.name, c.endpoints)
 }
 
 func (c *Client) keepSession() error {
@@ -178,20 +178,20 @@ func (c *Client) keepSession() error {
 func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	defer func() {
 		c.Wait.Done()
-		log.Printf("etcd Client {Endpoints:%v, Name:%s} keep goroutine game over.", c.endpoints, c.name)
+		log.Printf("etcd client {Endpoints:%v, Name:%s} keep goroutine game over.", c.endpoints, c.name)
 	}()
 
 	for {
 		select {
 		case <-c.Done():
-			// Client be stopped, will clean the Client hold resources
+			// client be stopped, will clean the client hold resources
 			return
 		case <-s.Done():
 			log.Print("etcd server stopped")
 			c.lock.Lock()
 			// when etcd server stopped, cancel ctx, stop all watchers
 			c.clean()
-			// when connection lose, stop Client, trigger reconnect to etcd
+			// when connection lose, stop client, trigger reconnect to etcd
 			c.stop()
 			c.lock.Unlock()
 			return
@@ -199,7 +199,7 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	}
 }
 
-//GetRawClient return etcd raw Client
+//GetRawClient return etcd raw client
 func (c *Client) GetRawClient() *clientv3.Client {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -207,7 +207,7 @@ func (c *Client) GetRawClient() *clientv3.Client {
 	return c.rawClient
 }
 
-//GetEndPoints return etcd Endpoints
+//GetEndPoints return etcd endpoints
 func (c *Client) GetEndPoints() []string {
 	return c.endpoints
 }
@@ -362,7 +362,7 @@ func (c *Client) Done() <-chan struct{} {
 	return c.exit
 }
 
-// Valid check Client
+// Valid check client
 func (c *Client) Valid() bool {
 	select {
 	case <-c.exit:
