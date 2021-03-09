@@ -34,11 +34,11 @@ const (
 
 // Options client configuration
 type Options struct {
-	name      string
-	endpoints []string
-	client    *Client
-	timeout   time.Duration
-	heartbeat int // heartbeat second
+	Name      string
+	Endpoints []string
+	Client    *Client
+	Timeout   time.Duration
+	Heartbeat int // heartbeat second
 }
 
 // Option will define a function of handling Options
@@ -47,27 +47,27 @@ type Option func(*Options)
 // WithEndpoints sets etcd client endpoints
 func WithEndpoints(endpoints ...string) Option {
 	return func(opt *Options) {
-		opt.endpoints = endpoints
+		opt.Endpoints = endpoints
 	}
 }
 
 // WithName sets etcd client name
 func WithName(name string) Option {
 	return func(opt *Options) {
-		opt.name = name
+		opt.Name = name
 	}
 }
 
 // WithTimeout sets etcd client timeout
 func WithTimeout(timeout time.Duration) Option {
 	return func(opt *Options) {
-		opt.timeout = timeout
+		opt.Timeout = timeout
 	}
 }
 
 // WithHeartbeat sets etcd client heartbeat
 func WithHeartbeat(heartbeat int) Option {
 	return func(opt *Options) {
-		opt.heartbeat = heartbeat
+		opt.Heartbeat = heartbeat
 	}
 }
