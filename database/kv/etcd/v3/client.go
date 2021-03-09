@@ -33,12 +33,12 @@ import (
 
 var (
 	// ErrNilETCDV3Client raw client nil
-	ErrNilETCDV3Client = perrors.New("etcd raw Client is nil") // full describe the ERR
+	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound = perrors.New("k/v pair not found")
 )
 
-// NewConfigClient create new client
+// NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
 	options := &Options{
 		Heartbeat: 1, // default Heartbeat
@@ -184,7 +184,7 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	for {
 		select {
 		case <-c.Done():
-			// client be stopped, will clean the client hold resources
+			// Client be stopped, will clean the client hold resources
 			return
 		case <-s.Done():
 			log.Print("etcd server stopped")
