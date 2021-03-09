@@ -48,7 +48,7 @@ var tests = []struct {
 	{input: struct {
 		k string
 		v string
-	}{k: "name", v: "scott.wang"}},
+	}{k: "Name", v: "scott.wang"}},
 	{input: struct {
 		k string
 		v string
@@ -64,7 +64,7 @@ var tests = []struct {
 }
 
 // test dataset prefix
-const prefix = "name"
+const prefix = "Name"
 
 type ClientTestSuite struct {
 	suite.Suite
@@ -129,7 +129,7 @@ func (suite *ClientTestSuite) setUpClient() *Client {
 	return c
 }
 
-// set up a client for suite
+// set up a Client for suite
 func (suite *ClientTestSuite) SetupTest() {
 	c := suite.setUpClient()
 	c.CleanKV()
@@ -154,11 +154,11 @@ func (suite *ClientTestSuite) TestClientValid() {
 	t := suite.T()
 
 	if !c.Valid() {
-		t.Fatal("client is not valid")
+		t.Fatal("Client is not valid")
 	}
 	c.Close()
 	if suite.client.Valid() != false {
-		t.Fatal("client is valid")
+		t.Fatal("Client is valid")
 	}
 }
 
@@ -174,7 +174,7 @@ func (suite *ClientTestSuite) TestClientDone() {
 	c.Wait.Wait()
 
 	if c.Valid() {
-		suite.T().Fatal("client should be invalid then")
+		suite.T().Fatal("Client should be invalid then")
 	}
 }
 

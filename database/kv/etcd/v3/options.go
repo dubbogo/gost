@@ -26,46 +26,51 @@ const (
 	ConnDelay = 3
 	// MaxFailTimes max failure times
 	MaxFailTimes = 15
-	// RegistryETCDV3Client client name
+	// RegistryETCDV3Client Client Name
 	RegistryETCDV3Client = "etcd registry"
-	// MetadataETCDV3Client client name
+	// MetadataETCDV3Client Client Name
 	MetadataETCDV3Client = "etcd metadata"
 )
 
-// Options client configuration
+// Options Client configuration
 type Options struct {
-	Name      string
+	//Name etcd server Name
+	Name string
+	//Endpoints etcd Endpoints
 	Endpoints []string
-	Client    *Client
-	Timeout   time.Duration
-	Heartbeat int // heartbeat second
+	//Client etcd Client
+	Client *Client
+	//Timeout Timeout
+	Timeout time.Duration
+	//Heartbeat
+	Heartbeat int // Heartbeat second
 }
 
 // Option will define a function of handling Options
 type Option func(*Options)
 
-// WithEndpoints sets etcd client endpoints
+// WithEndpoints sets etcd Client Endpoints
 func WithEndpoints(endpoints ...string) Option {
 	return func(opt *Options) {
 		opt.Endpoints = endpoints
 	}
 }
 
-// WithName sets etcd client name
+// WithName sets etcd Client Name
 func WithName(name string) Option {
 	return func(opt *Options) {
 		opt.Name = name
 	}
 }
 
-// WithTimeout sets etcd client timeout
+// WithTimeout sets etcd Client Timeout
 func WithTimeout(timeout time.Duration) Option {
 	return func(opt *Options) {
 		opt.Timeout = timeout
 	}
 }
 
-// WithHeartbeat sets etcd client heartbeat
+// WithHeartbeat sets etcd Client Heartbeat
 func WithHeartbeat(heartbeat int) Option {
 	return func(opt *Options) {
 		opt.Heartbeat = heartbeat
