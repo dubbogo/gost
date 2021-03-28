@@ -36,6 +36,7 @@ import (
 	"github.com/dubbogo/gost/path/filepath"
 )
 
+// CurrentPID returns the process id of the caller.
 var CurrentPID = os.Getpid()
 
 const (
