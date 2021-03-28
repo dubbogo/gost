@@ -196,7 +196,7 @@ func BenchmarkTaskPoolSimple_RandomTask(b *testing.B) {
 
 func TestTaskPool(t *testing.T) {
 	numCPU := runtime.NumCPU()
-	//taskCnt := int64(numCPU * numCPU * 100)
+	// taskCnt := int64(numCPU * numCPU * 100)
 
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(1),
@@ -204,7 +204,7 @@ func TestTaskPool(t *testing.T) {
 		WithTaskPoolTaskQueueLength(1),
 	)
 
-	//task, cnt := newCountTask()
+	// task, cnt := newCountTask()
 	task, _ := newCountTask()
 
 	var wg sync.WaitGroup
@@ -232,7 +232,7 @@ func BenchmarkTaskPool_CountTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 
 	b.Run(`AddTask`, func(b *testing.B) {
@@ -261,7 +261,6 @@ func BenchmarkTaskPool_CountTask(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 // cpu-intensive task
@@ -269,7 +268,7 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 
 	b.Run(`fib`, func(b *testing.B) {
@@ -307,7 +306,6 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 // IO-intensive task
@@ -315,7 +313,7 @@ func BenchmarkTaskPool_IOTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 
 	b.Run(`AddTask`, func(b *testing.B) {
@@ -350,7 +348,7 @@ func BenchmarkTaskPool_RandomTask(b *testing.B) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(runtime.NumCPU()),
 		WithTaskPoolTaskQueueNumber(runtime.NumCPU()),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 
 	b.Run(`AddTask`, func(b *testing.B) {
@@ -456,7 +454,7 @@ func TestWithPool(t *testing.T) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(1000),
 		WithTaskPoolTaskQueueNumber(2),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 	task, _ := newIOTask()
 	for i := 0; i < n; i++ {
@@ -474,7 +472,7 @@ func TestWithPoolUseAlways(t *testing.T) {
 	tp := NewTaskPool(
 		WithTaskPoolTaskPoolSize(1000),
 		WithTaskPoolTaskQueueNumber(10),
-		//WithTaskPoolTaskQueueLength(runtime.NumCPU()),
+		// WithTaskPoolTaskQueueLength(runtime.NumCPU()),
 	)
 	task, _ := newIOTask()
 	for i := 0; i < n; i++ {

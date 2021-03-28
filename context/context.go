@@ -23,9 +23,7 @@ import (
 
 type ValueContextKeyType int32
 
-var (
-	defaultCtxKey = ValueContextKeyType(1)
-)
+var defaultCtxKey = ValueContextKeyType(1)
 
 type Values struct {
 	m map[interface{}]interface{}

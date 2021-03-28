@@ -51,7 +51,7 @@ func TestSysStat(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetProcessMemoryStat() = error %+v", err)
 	}
-	//t.Logf("process memory usage stat %v", memoryStat)
+	// t.Logf("process memory usage stat %v", memoryStat)
 	if memoryStat <= uint64(size) {
 		t.Errorf("memory usage stat %d < %d", memoryStat, size)
 	}

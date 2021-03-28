@@ -36,9 +36,7 @@ import (
 	"github.com/dubbogo/gost/path/filepath"
 )
 
-var (
-	CurrentPID = os.Getpid()
-)
+var CurrentPID = os.Getpid()
 
 const (
 	cgroupMemLimitPath = "/sys/fs/cgroup/memory/memory.limit_in_bytes"

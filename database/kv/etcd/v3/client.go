@@ -84,7 +84,6 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialTimeout: timeout,
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
-
 	if err != nil {
 		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
@@ -199,7 +198,7 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	}
 }
 
-//GetRawClient return etcd raw client
+// GetRawClient return etcd raw client
 func (c *Client) GetRawClient() *clientv3.Client {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -207,7 +206,7 @@ func (c *Client) GetRawClient() *clientv3.Client {
 	return c.rawClient
 }
 
-//GetEndPoints return etcd endpoints
+// GetEndPoints return etcd endpoints
 func (c *Client) GetEndPoints() []string {
 	return c.endpoints
 }
@@ -285,7 +284,7 @@ func (c *Client) CleanKV() error {
 	return err
 }
 
-//GetChildren return node children
+// GetChildren return node children
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	rawClient := c.GetRawClient()
 

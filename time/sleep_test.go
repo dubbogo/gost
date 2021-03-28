@@ -62,7 +62,7 @@ func TestAfter(t *testing.T) {
 	)
 	wheel = NewTimerWheel()
 
-	//Init()
+	// Init()
 
 	defer wheel.Stop()
 
@@ -174,6 +174,6 @@ func TestTimer_Stop(t *testing.T) {
 	time.Sleep(1e9)
 
 	time.Sleep(TimeSecondDuration(0.01))
-	//assert.Equalf(t, 0, defaultTimerWheel.TimerNumber(), "after stop")
+	// assert.Equalf(t, 0, defaultTimerWheel.TimerNumber(), "after stop")
 	time.Sleep(3e9)
 }

@@ -28,11 +28,9 @@ import (
 )
 
 func TestTickFunc(t *testing.T) {
-	var (
-		//num     int
-		cw CountWatch
-		//xassert *assert.Assertions
-	)
+
+	// num     int
+	var cw CountWatch // xassert *assert.Assertions
 
 	InitDefaultTimerWheel()
 
@@ -40,14 +38,14 @@ func TestTickFunc(t *testing.T) {
 		gxlog.CInfo("timer costs:%dms", cw.Count()/1e6)
 	}
 
-	//num = 3
-	//xassert = assert.New(t)
+	// num = 3
+	// xassert = assert.New(t)
 	cw.Start()
 	TickFunc(TimeSecondDuration(0.5), f)
 	TickFunc(TimeSecondDuration(1.3), f)
 	TickFunc(TimeSecondDuration(61.5), f)
 	time.Sleep(62e9)
-	//xassert.Equal(defaultTimerWheel.TimerNumber(), num, "") // just equal in this ut
+	// xassert.Equal(defaultTimerWheel.TimerNumber(), num, "") // just equal in this ut
 }
 
 func TestTicker_Reset(t *testing.T) {
@@ -80,7 +78,7 @@ func TestTicker_Stop(t *testing.T) {
 	var (
 		ticker *Ticker
 		cw     CountWatch
-		//xassert assert.Assertions
+		// xassert assert.Assertions
 	)
 
 	InitDefaultTimerWheel()
@@ -93,12 +91,12 @@ func TestTicker_Stop(t *testing.T) {
 	ticker = TickFunc(TimeSecondDuration(4.5), f)
 	// 添加是异步进行的，所以sleep一段时间再去检测timer number
 	time.Sleep(TimeSecondDuration(0.001))
-	//timerNumber := defaultTimerWheel.TimerNumber()
-	//xassert.Equal(timerNumber, 1, "")
+	// timerNumber := defaultTimerWheel.TimerNumber()
+	// xassert.Equal(timerNumber, 1, "")
 	time.Sleep(TimeSecondDuration(5))
 	ticker.Stop()
 	// 删除是异步进行的，所以sleep一段时间再去检测timer number
-	//time.Sleep(TimeSecondDuration(0.001))
-	//timerNumber = defaultTimerWheel.TimerNumber()
-	//xassert.Equal(timerNumber, 0, "")
+	// time.Sleep(TimeSecondDuration(0.001))
+	// timerNumber = defaultTimerWheel.TimerNumber()
+	// xassert.Equal(timerNumber, 0, "")
 }
