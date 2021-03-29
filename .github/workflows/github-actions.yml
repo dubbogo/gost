@@ -49,8 +49,9 @@ jobs:
             go get -v -t -d ./...
         fi
 
-    - name: Go Fmt
-      run: go fmt ./... && [[ -z `git status -s` ]]
+    - name: format
+      run: |
+        gofmt -l -w . && [[ -z `git status -s` ]]
 
     - name: License Check
       run: |
