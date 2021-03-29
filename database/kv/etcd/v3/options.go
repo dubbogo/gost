@@ -34,15 +34,15 @@ const (
 
 // Options client configuration
 type Options struct {
-	//Name etcd server name
+	// Name etcd server name
 	Name string
-	//Endpoints etcd endpoints
+	// Endpoints etcd endpoints
 	Endpoints []string
-	//Client etcd client
+	// Client etcd client
 	Client *Client
-	//Timeout timeout
+	// Timeout timeout
 	Timeout time.Duration
-	//Heartbeat second
+	// Heartbeat second
 	Heartbeat int
 }
 

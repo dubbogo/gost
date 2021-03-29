@@ -28,9 +28,7 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-var (
-	privateBlocks []*net.IPNet
-)
+var privateBlocks []*net.IPNet
 
 const (
 	// Ipv4SplitCharacter use for slipt Ipv4

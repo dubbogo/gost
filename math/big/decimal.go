@@ -265,7 +265,7 @@ func (d *Decimal) GetDigitsFrac() int8 {
 func (d *Decimal) String() string {
 	tmp := *d
 	_ = tmp.Round(&tmp, int(tmp.resultFrac), ModeHalfEven)
-	//todo terror.Log(errors.Trace(err))
+	// todo terror.Log(errors.Trace(err))
 	return string(tmp.ToBytes())
 }
 
@@ -1478,7 +1478,7 @@ func writeWord(b []byte, word int32, size int) {
 func (d *Decimal) Compare(to *Decimal) int {
 	if d.negative == to.negative {
 		cmp, _ := doSub(d, to, nil)
-		//todo terror.Log(errors.Trace(err))
+		// todo terror.Log(errors.Trace(err))
 		return cmp
 	}
 	if d.negative {
@@ -1735,7 +1735,7 @@ func doAdd(from1, from2, to *Decimal) error {
 			wordsInt2 = wordsIntTo
 		}
 	}
-	var dec1, dec2 = from1, from2
+	dec1, dec2 := from1, from2
 	var idx1, idx2, stop, stop2 int
 	/* part 1 - max(frac) ... min (frac) */
 	if wordsFrac1 > wordsFrac2 {
@@ -2279,7 +2279,7 @@ func NewDecFromUint(i uint64) *Decimal {
 func NewDecFromFloatForTest(f float64) *Decimal {
 	dec := new(Decimal)
 	_ = dec.FromFloat64(f)
-	//todo terror.Log(errors.Trace(err))
+	// todo terror.Log(errors.Trace(err))
 	return dec
 }
 
@@ -2287,7 +2287,7 @@ func NewDecFromFloatForTest(f float64) *Decimal {
 func NewDecFromStringForTest(s string) *Decimal {
 	dec := new(Decimal)
 	_ = dec.FromBytes([]byte(s))
-	//todo terror.Log(errors.Trace(err))
+	// todo terror.Log(errors.Trace(err))
 	return dec
 }
 
@@ -2305,6 +2305,6 @@ func NewMaxOrMinDec(negative bool, prec, frac int) *Decimal {
 	str[1+prec-frac] = '.'
 	dec := new(Decimal)
 	_ = dec.FromBytes(str)
-	//todo terror.Log(errors.Trace(err))
+	// todo terror.Log(errors.Trace(err))
 	return dec
 }

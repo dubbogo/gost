@@ -73,8 +73,7 @@ type ZkEventHandler interface {
 }
 
 // DefaultHandler is default handler for zk event
-type DefaultHandler struct {
-}
+type DefaultHandler struct{}
 
 // StateToString will transfer zk state to string
 func StateToString(state zk.State) string {
@@ -110,7 +109,7 @@ func initZookeeperClientPool() {
 	zkClientPool.zkClient = make(map[string]*ZookeeperClient)
 }
 
-//NewZookeeperClient will create a ZookeeperClient
+// NewZookeeperClient will create a ZookeeperClient
 func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...zkClientOption) (*ZookeeperClient, error) {
 	if share {
 		clientPoolOnce.Do(initZookeeperClientPool)
@@ -371,7 +370,7 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 	return nil
 }
 
-//Delete will delete basePath
+// Delete will delete basePath
 func (z *ZookeeperClient) Delete(basePath string) error {
 	err := ErrNilZkClientConn
 	conn := z.getConn()
@@ -520,7 +519,7 @@ func (z *ZookeeperClient) GetContent(zkPath string) ([]byte, *zk.Stat, error) {
 	return z.Conn.Get(zkPath)
 }
 
-//SetContent set content of zkPath
+// SetContent set content of zkPath
 func (z *ZookeeperClient) SetContent(zkPath string, content []byte, version int32) (*zk.Stat, error) {
 	return z.Conn.Set(zkPath, content, version)
 }
@@ -564,5 +563,4 @@ func (z *ZookeeperClient) Close() {
 			conn.Close()
 		}
 	}
-
 }

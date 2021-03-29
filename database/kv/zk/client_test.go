@@ -137,7 +137,6 @@ func Test_newMockZookeeperClient(t *testing.T) {
 	}()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
-
 }
 
 func TestCreate(t *testing.T) {

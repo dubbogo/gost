@@ -36,9 +36,7 @@ type Wheel struct {
 }
 
 func NewWheel(span time.Duration, buckets int) *Wheel {
-	var (
-		w *Wheel
-	)
+	var w *Wheel
 
 	if span == 0 {
 		panic("@span == 0")
@@ -86,7 +84,7 @@ func (w *Wheel) After(timeout time.Duration) <-chan struct{} {
 		panic("@timeout over ring's life period")
 	}
 
-	var pos = int(timeout / w.span)
+	pos := int(timeout / w.span)
 	if 0 < pos {
 		pos--
 	}
