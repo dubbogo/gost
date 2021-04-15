@@ -35,7 +35,8 @@ var (
 	// ErrNilETCDV3Client raw client nil
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
-	ErrKVPairNotFound = perrors.New("k/v pair not found")
+	ErrKVPairNotFound    = perrors.New("k/v pair not found")
+	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList size not equal to vList size")
 )
 
 // NewConfigClient create new Client
@@ -211,7 +212,7 @@ func (c *Client) GetEndPoints() []string {
 	return c.endpoints
 }
 
-// if k not exist will put k/v in etcd, otherwise return nil
+// if k not exist will put k/v in etcd, otherwise return error
 func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
 
@@ -222,6 +223,36 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 	_, err := rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.Version(k), "<", 1)).
 		Then(clientv3.OpPut(k, v, opts...)).
+		Commit()
+	return err
+}
+
+// if k in bulk insertion not exist all, then put all k/v in etcd, otherwise return error
+func (c *Client) batchPut(kList []string, vList []string, opts ...clientv3.OpOption) error {
+	rawClient := c.GetRawClient()
+
+	if rawClient == nil {
+		return ErrNilETCDV3Client
+	}
+
+	kLen := len(kList)
+	vLen := len(vList)
+	if kLen == 0 || vLen == 0 || kLen != vLen {
+		return ErrKVListSizeIllegal
+	}
+
+	var cs []clientv3.Cmp
+	var ops []clientv3.Op
+
+	for i, k := range kList {
+		v := vList[i]
+		cs = append(cs, clientv3.Compare(clientv3.Version(k), "<", 1))
+		ops = append(ops, clientv3.OpPut(k, v, opts...))
+	}
+
+	_, err := rawClient.Txn(c.ctx).
+		If(cs...).
+		Then(ops...).
 		Commit()
 	return err
 }
