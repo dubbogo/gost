@@ -74,7 +74,7 @@ func TestSlicePoolMediumBytes(t *testing.T) {
 			t.Errorf("Expect get the slab size (%d) from pool, but got %d", 1<<uint(i+1), cap(*bp))
 		}
 
-		//Puts the bytes to pool
+		// Puts the bytes to pool
 		pool.Put(bp)
 	}
 }

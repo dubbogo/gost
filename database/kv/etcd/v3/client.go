@@ -41,16 +41,16 @@ var (
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
 	options := &Options{
-		heartbeat: 1, // default heartbeat
+		Heartbeat: 1, // default Heartbeat
 	}
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	newClient, err := NewClient(options.name, options.endpoints, options.timeout, options.heartbeat)
+	newClient, err := NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 	if err != nil {
-		log.Printf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%d}) = error{%v}",
-			options.name, options.endpoints, options.timeout, err)
+		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
+			options.Name, options.Endpoints, options.Timeout, err)
 	}
 	return newClient
 }
@@ -84,7 +84,6 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		DialTimeout: timeout,
 		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
-
 	if err != nil {
 		cancel()
 		return nil, perrors.WithMessage(err, "new raw client block connect to server")
@@ -136,6 +135,11 @@ func (c *Client) stop() bool {
 	}
 }
 
+// GetCtx return client context
+func (c *Client) GetCtx() context.Context {
+	return c.ctx
+}
+
 // Close close client
 func (c *Client) Close() {
 	if c == nil {
@@ -155,7 +159,7 @@ func (c *Client) Close() {
 	if c.rawClient != nil {
 		c.clean()
 	}
-	log.Printf("etcd client{name:%s, endpoints:%s} exit now.", c.name, c.endpoints)
+	log.Printf("etcd client{Name:%s, Endpoints:%s} exit now.", c.name, c.endpoints)
 }
 
 func (c *Client) keepSession() error {
@@ -173,7 +177,7 @@ func (c *Client) keepSession() error {
 func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	defer func() {
 		c.Wait.Done()
-		log.Printf("etcd client {endpoints:%v, name:%s} keep goroutine game over.", c.endpoints, c.name)
+		log.Printf("etcd client {Endpoints:%v, Name:%s} keep goroutine game over.", c.endpoints, c.name)
 	}()
 
 	for {
@@ -194,16 +198,22 @@ func (c *Client) keepSessionLoop(s *concurrency.Session) {
 	}
 }
 
-func (c *Client) getRawClient() *clientv3.Client {
+// GetRawClient return etcd raw client
+func (c *Client) GetRawClient() *clientv3.Client {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	return c.rawClient
 }
 
+// GetEndPoints return etcd endpoints
+func (c *Client) GetEndPoints() []string {
+	return c.endpoints
+}
+
 // if k not exist will put k/v in etcd, otherwise return nil
 func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
@@ -219,7 +229,7 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 // if k not exist will put k/v in etcd
 // if k is already exist in etcd, replace it
 func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
@@ -233,7 +243,7 @@ func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
 }
 
 func (c *Client) delete(k string) error {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
@@ -244,7 +254,7 @@ func (c *Client) delete(k string) error {
 }
 
 func (c *Client) get(k string) (string, error) {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return "", ErrNilETCDV3Client
@@ -264,7 +274,7 @@ func (c *Client) get(k string) (string, error) {
 
 // CleanKV delete all key and value
 func (c *Client) CleanKV() error {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
@@ -274,8 +284,9 @@ func (c *Client) CleanKV() error {
 	return err
 }
 
-func (c *Client) getChildren(k string) ([]string, []string, error) {
-	rawClient := c.getRawClient()
+// GetChildren return node children
+func (c *Client) GetChildren(k string) ([]string, []string, error) {
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return nil, nil, ErrNilETCDV3Client
@@ -300,7 +311,7 @@ func (c *Client) getChildren(k string) ([]string, []string, error) {
 }
 
 func (c *Client) watchWithPrefix(prefix string) (clientv3.WatchChan, error) {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
@@ -310,7 +321,7 @@ func (c *Client) watchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 }
 
 func (c *Client) watch(k string) (clientv3.WatchChan, error) {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
@@ -320,7 +331,7 @@ func (c *Client) watch(k string) (clientv3.WatchChan, error) {
 }
 
 func (c *Client) keepAliveKV(k string, v string) error {
-	rawClient := c.getRawClient()
+	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
@@ -389,7 +400,7 @@ func (c *Client) RegisterTemp(k, v string) error {
 
 // GetChildrenKVList gets children kv list by @k
 func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
-	kList, vList, err := c.getChildren(k)
+	kList, vList, err := c.GetChildren(k)
 	return kList, vList, perrors.WithMessagef(err, "get key children (key %s)", k)
 }
 

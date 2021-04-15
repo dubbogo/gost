@@ -36,9 +36,8 @@ import (
 	"github.com/dubbogo/gost/path/filepath"
 )
 
-var (
-	CurrentPID = os.Getpid()
-)
+// CurrentPID returns the process id of the caller.
+var CurrentPID = os.Getpid()
 
 const (
 	cgroupMemLimitPath = "/sys/fs/cgroup/memory/memory.limit_in_bytes"

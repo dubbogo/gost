@@ -169,7 +169,7 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 		case reflect.TypeOf(""):
 			v.Field(i).SetString(valStr)
 		case reflect.TypeOf(time.Time{}):
-			//todo time support v.Field(i).
+			// todo time support v.Field(i).
 		case reflect.TypeOf(float64(0)), reflect.TypeOf(float32(0)):
 			if parsedFloat, err := strconv.ParseFloat(valStr, 64); err == nil {
 				v.Field(i).SetFloat(parsedFloat)

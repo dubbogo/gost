@@ -246,7 +246,7 @@ func NewTimerWheel() *TimerWheel {
 func (w *TimerWheel) output() {
 	for idx := range w.slot {
 		log.Printf("print slot %d\n", idx)
-		//w.slot[idx].Output()
+		// w.slot[idx].Output()
 	}
 }
 
@@ -319,9 +319,7 @@ func (w *TimerWheel) insertSlot(idx int, node *timerNode) {
 }
 
 func (w *TimerWheel) deleteTimerNode(node *timerNode) {
-	var (
-		level int
-	)
+	var level int
 
 LOOP:
 	for level = range w.slot[:] {
@@ -336,9 +334,7 @@ LOOP:
 }
 
 func (w *TimerWheel) resetTimerNode(node *timerNode) {
-	var (
-		level int
-	)
+	var level int
 
 LOOP:
 	for level = range w.slot[:] {
@@ -357,9 +353,7 @@ LOOP:
 }
 
 func (w *TimerWheel) deltaDiff(clock int64) int64 {
-	var (
-		handTime int64
-	)
+	var handTime int64
 
 	for idx, hand := range w.hand[:] {
 		handTime += hand * msLimit[idx]
