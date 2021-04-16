@@ -411,6 +411,12 @@ func (c *Client) Create(k string, v string) error {
 	return perrors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
 }
 
+// BatchCreate bulk insertion
+func (c *Client) BatchCreate(kList []string, vList []string) error {
+	err := c.batchPut(kList, vList)
+	return perrors.WithMessagef(err, "batch put k/v error ")
+}
+
 // Update key value ...
 func (c *Client) Update(k, v string) error {
 	err := c.update(k, v)
