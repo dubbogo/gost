@@ -28,7 +28,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go/common/constant"
+	constant "github.com/dubbogo/gost/dubbogo/constant"
 )
 
 const (
