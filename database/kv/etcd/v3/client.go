@@ -25,9 +25,9 @@ import (
 )
 
 import (
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	perrors "github.com/pkg/errors"
+	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/clientv3/concurrency"
 	"google.golang.org/grpc"
 )
 
