@@ -41,9 +41,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
-	go.etcd.io/bbolt v1.3.4 => github.com/coreos/bbolt v1.3.4
-)
-
 go 1.13
