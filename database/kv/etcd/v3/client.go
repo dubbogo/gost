@@ -60,6 +60,23 @@ func NewConfigClient(opts ...Option) *Client {
 	return newClient
 }
 
+// NewConfigClientWithErr create new Client,error
+func NewConfigClientWithErr(opts ...Option) (*Client, error) {
+	options := &Options{
+		Heartbeat: 1, // default Heartbeat
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	newClient, err := NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
+	if err != nil {
+		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
+			options.Name, options.Endpoints, options.Timeout, err)
+	}
+	return newClient, err
+}
+
 // Client represents etcd client Configuration
 type Client struct {
 	lock     sync.RWMutex
