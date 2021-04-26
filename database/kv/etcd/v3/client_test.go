@@ -204,6 +204,77 @@ func (suite *ClientTestSuite) TestClientCreateKV() {
 	}
 }
 
+func (suite *ClientTestSuite) TestBatchClientCreateKV() {
+	tests := tests
+
+	c := suite.client
+	t := suite.T()
+
+	defer suite.client.Close()
+
+	for _, tc := range tests {
+
+		k := tc.input.k
+		v := tc.input.v
+		expect := tc.input.v
+		kList := make([]string, 0, 1)
+		vList := make([]string, 0, 1)
+		kList = append(kList, k)
+		vList = append(vList, v)
+
+		if err := c.BatchCreate(kList, vList); err != nil {
+			t.Fatal(err)
+		}
+
+		value, err := c.Get(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if value != expect {
+			t.Fatalf("expect %v but get %v", expect, value)
+		}
+	}
+}
+
+func (suite *ClientTestSuite) TestBatchClientGetValAndRevKV() {
+	tests := tests
+
+	c := suite.client
+	t := suite.T()
+
+	defer suite.client.Close()
+
+	for _, tc := range tests {
+
+		k := tc.input.k
+		v := tc.input.v
+		expect := tc.input.v
+		kList := make([]string, 0, 1)
+		vList := make([]string, 0, 1)
+		kList = append(kList, k)
+		vList = append(vList, v)
+
+		if err := c.BatchCreate(kList, vList); err != nil {
+			t.Fatal(err)
+		}
+
+		value, revision, err := c.getValAndRev(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = c.UpdateWithRev(k, k, revision)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if value != expect {
+			t.Fatalf("expect %v but get %v", expect, value)
+		}
+	}
+}
+
 func (suite *ClientTestSuite) TestClientDeleteKV() {
 	tests := tests
 	c := suite.client
