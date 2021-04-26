@@ -37,6 +37,10 @@ var (
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound    = perrors.New("k/v pair not found")
 	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList size not equal to vList size")
+	// ErrCompareFail txn compare fail
+	ErrCompareFail = perrors.New("txn compare fail")
+	// ErrRevision revision when error
+	ErrRevision int64 = -1
 )
 
 // NewConfigClient create new Client
@@ -212,23 +216,30 @@ func (c *Client) GetEndPoints() []string {
 	return c.endpoints
 }
 
-// if k not exist will put k/v in etcd, otherwise return error
-func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
+// if k not exist will put k/v in etcd, otherwise return ErrCompareFail
+func (c *Client) create(k string, v string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := rawClient.Txn(c.ctx).
-		If(clientv3.Compare(clientv3.Version(k), "<", 1)).
+	resp, err := c.rawClient.Txn(c.ctx).
+		If(clientv3.Compare(clientv3.CreateRevision(k), "=", 0)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
-	return err
+
+	if err != nil {
+		return err
+	}
+	if !resp.Succeeded {
+		return ErrCompareFail
+	}
+	return nil
 }
 
 // if k in bulk insertion not exist all, then put all k/v in etcd, otherwise return error
-func (c *Client) batchPut(kList []string, vList []string, opts ...clientv3.OpOption) error {
+func (c *Client) batchCreate(kList []string, vList []string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
@@ -246,7 +257,7 @@ func (c *Client) batchPut(kList []string, vList []string, opts ...clientv3.OpOpt
 
 	for i, k := range kList {
 		v := vList[i]
-		cs = append(cs, clientv3.Compare(clientv3.Version(k), "<", 1))
+		cs = append(cs, clientv3.Compare(clientv3.CreateRevision(k), "=", 0))
 		ops = append(ops, clientv3.OpPut(k, v, opts...))
 	}
 
@@ -257,20 +268,47 @@ func (c *Client) batchPut(kList []string, vList []string, opts ...clientv3.OpOpt
 	return err
 }
 
-// if k not exist will put k/v in etcd
-// if k is already exist in etcd, replace it
-func (c *Client) update(k string, v string, opts ...clientv3.OpOption) error {
+// put k v into etcd
+func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
 
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	_, err := rawClient.Txn(c.ctx).
-		If(clientv3.Compare(clientv3.Version(k), "!=", -1)).
+	if c.rawClient == nil {
+		return ErrNilETCDV3Client
+	}
+	_, err := c.rawClient.Put(c.ctx, k, v, opts...)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// if k not exist will put k/v in etcd
+// if k is already exist in etcd and revision <= revision, replace it, otherwise return ErrCompareFail
+func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.OpOption) error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if c.rawClient == nil {
+		return ErrNilETCDV3Client
+	}
+
+	resp, err := c.rawClient.Txn(c.ctx).
+		If(clientv3.Compare(clientv3.ModRevision(k), "=", rev)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
-	return err
+
+	if err != nil {
+		return err
+	}
+	if !resp.Succeeded {
+		return ErrCompareFail
+	}
+	return nil
 }
 
 func (c *Client) delete(k string) error {
@@ -301,6 +339,27 @@ func (c *Client) get(k string) (string, error) {
 	}
 
 	return string(resp.Kvs[0].Value), nil
+}
+
+// getValAndRev get value and revision
+func (c *Client) getValAndRev(k string) (string, int64, error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if c.rawClient == nil {
+		return "", ErrRevision, ErrNilETCDV3Client
+	}
+
+	resp, err := c.rawClient.Get(c.ctx, k)
+	if err != nil {
+		return "", ErrRevision, err
+	}
+
+	if len(resp.Kvs) == 0 {
+		return "", ErrRevision, ErrKVPairNotFound
+	}
+
+	return string(resp.Kvs[0].Value), resp.Header.Revision, nil
 }
 
 // CleanKV delete all key and value
@@ -341,24 +400,16 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	return kList, vList, nil
 }
 
-func (c *Client) watchWithPrefix(prefix string) (clientv3.WatchChan, error) {
-	rawClient := c.GetRawClient()
+// watchWithOption watch
+func (c *Client) watchWithOption(k string, opts ...clientv3.OpOption) (clientv3.WatchChan, error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
-	if rawClient == nil {
+	if c.rawClient == nil {
 		return nil, ErrNilETCDV3Client
 	}
 
-	return rawClient.Watch(c.ctx, prefix, clientv3.WithPrefix()), nil
-}
-
-func (c *Client) watch(k string) (clientv3.WatchChan, error) {
-	rawClient := c.GetRawClient()
-
-	if rawClient == nil {
-		return nil, ErrNilETCDV3Client
-	}
-
-	return rawClient.Watch(c.ctx, k), nil
+	return c.rawClient.Watch(c.ctx, k, opts...), nil
 }
 
 func (c *Client) keepAliveKV(k string, v string) error {
@@ -407,19 +458,25 @@ func (c *Client) Valid() bool {
 
 // Create key value ...
 func (c *Client) Create(k string, v string) error {
-	err := c.put(k, v)
+	err := c.create(k, v)
 	return perrors.WithMessagef(err, "put k/v (key: %s value %s)", k, v)
 }
 
 // BatchCreate bulk insertion
 func (c *Client) BatchCreate(kList []string, vList []string) error {
-	err := c.batchPut(kList, vList)
+	err := c.batchCreate(kList, vList)
 	return perrors.WithMessagef(err, "batch put k/v error ")
 }
 
 // Update key value ...
 func (c *Client) Update(k, v string) error {
-	err := c.update(k, v)
+	err := c.put(k, v)
+	return perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
+}
+
+// Update key value ...
+func (c *Client) UpdateWithRev(k, v string, rev int64, opts ...clientv3.OpOption) error {
+	err := c.updateWithRev(k, v, rev, opts...)
 	return perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
 }
 
@@ -449,12 +506,18 @@ func (c *Client) Get(k string) (string, error) {
 
 // Watch watches on spec key
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
-	wc, err := c.watch(k)
+	wc, err := c.watchWithOption(k)
 	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", k)
 }
 
 // WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
-	wc, err := c.watchWithPrefix(prefix)
+	wc, err := c.watchWithOption(prefix, clientv3.WithPrefix())
 	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", prefix)
+}
+
+// Watch watches on spc key with OpOption
+func (c *Client) WatchWithOption(k string, opts ...clientv3.OpOption) (clientv3.WatchChan, error) {
+	wc, err := c.watchWithOption(k, opts...)
+	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", k)
 }
