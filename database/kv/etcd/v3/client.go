@@ -35,7 +35,8 @@ var (
 	// ErrNilETCDV3Client raw client nil
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
-	ErrKVPairNotFound    = perrors.New("k/v pair not found")
+	ErrKVPairNotFound = perrors.New("k/v pair not found")
+	// ErrKVListSizeIllegal not found k/v list
 	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList size not equal to vList size")
 	// ErrCompareFail txn compare fail
 	ErrCompareFail = perrors.New("txn compare fail")
@@ -241,7 +242,7 @@ func (c *Client) create(k string, v string, opts ...clientv3.OpOption) error {
 		return ErrNilETCDV3Client
 	}
 
-	resp, err := c.rawClient.Txn(c.ctx).
+	resp, err := rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.CreateRevision(k), "=", 0)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
@@ -278,11 +279,18 @@ func (c *Client) batchCreate(kList []string, vList []string, opts ...clientv3.Op
 		ops = append(ops, clientv3.OpPut(k, v, opts...))
 	}
 
-	_, err := rawClient.Txn(c.ctx).
+	resp, err := rawClient.Txn(c.ctx).
 		If(cs...).
 		Then(ops...).
 		Commit()
-	return err
+
+	if err != nil {
+		return err
+	}
+	if !resp.Succeeded {
+		return ErrCompareFail
+	}
+	return nil
 }
 
 // put k v into etcd
@@ -293,28 +301,20 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 		return ErrNilETCDV3Client
 	}
 
-	if c.rawClient == nil {
-		return ErrNilETCDV3Client
-	}
-	_, err := c.rawClient.Put(c.ctx, k, v, opts...)
-
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := rawClient.Put(c.ctx, k, v, opts...)
+	return err
 }
 
 // if k not exist will put k/v in etcd
 // if k is already exist in etcd and revision <= revision, replace it, otherwise return ErrCompareFail
 func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.OpOption) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
 
-	resp, err := c.rawClient.Txn(c.ctx).
+	resp, err := rawClient.Txn(c.ctx).
 		If(clientv3.Compare(clientv3.ModRevision(k), "=", rev)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
@@ -360,14 +360,13 @@ func (c *Client) get(k string) (string, error) {
 
 // getValAndRev get value and revision
 func (c *Client) getValAndRev(k string) (string, int64, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return "", ErrRevision, ErrNilETCDV3Client
 	}
 
-	resp, err := c.rawClient.Get(c.ctx, k)
+	resp, err := rawClient.Get(c.ctx, k)
 	if err != nil {
 		return "", ErrRevision, err
 	}
@@ -419,14 +418,13 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 
 // watchWithOption watch
 func (c *Client) watchWithOption(k string, opts ...clientv3.OpOption) (clientv3.WatchChan, error) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	rawClient := c.GetRawClient()
 
-	if c.rawClient == nil {
+	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
 	}
 
-	return c.rawClient.Watch(c.ctx, k, opts...), nil
+	return rawClient.Watch(c.ctx, k, opts...), nil
 }
 
 func (c *Client) keepAliveKV(k string, v string) error {
