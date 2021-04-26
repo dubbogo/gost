@@ -297,7 +297,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 		c.Close()
 	}()
 
-	wc, err := c.watch(prefix)
+	wc, err := c.watchWithOption(prefix)
 	if err != nil {
 		assert.Error(t, err)
 	}
@@ -338,7 +338,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 	}()
 
 	completePath := path.Join("scott", "wang")
-	wc, err := observeC.watch(completePath)
+	wc, err := observeC.watchWithOption(completePath)
 	if err != nil {
 		assert.Error(t, err)
 	}

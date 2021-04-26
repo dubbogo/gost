@@ -36,7 +36,7 @@ var (
 	ErrNilETCDV3Client = perrors.New("etcd raw client is nil") // full describe the ERR
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound = perrors.New("k/v pair not found")
-	// ErrKVListSizeIllegal not found k/v list
+	// ErrKVListSizeIllegal k/v list empty or not equal size
 	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList size not equal to vList size")
 	// ErrCompareFail txn compare fail
 	ErrCompareFail = perrors.New("txn compare fail")
@@ -306,7 +306,7 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 }
 
 // if k not exist will put k/v in etcd
-// if k is already exist in etcd and revision <= revision, replace it, otherwise return ErrCompareFail
+// if k is already exist in etcd and revision = revision, replace it, otherwise return ErrCompareFail
 func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
 
