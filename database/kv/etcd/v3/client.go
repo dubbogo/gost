@@ -46,17 +46,10 @@ var (
 
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
-	options := &Options{
-		Heartbeat: 1, // default Heartbeat
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
+	newClient, err := NewConfigClientWithErr(opts...)
 
-	newClient, err := NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 	if err != nil {
-		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
-			options.Name, options.Endpoints, options.Timeout, err)
+		log.Printf("new etcd client = error{%v}", err)
 	}
 	return newClient
 }
@@ -237,7 +230,6 @@ func (c *Client) GetEndPoints() []string {
 // if k not exist will put k/v in etcd, otherwise return ErrCompareFail
 func (c *Client) create(k string, v string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -259,7 +251,6 @@ func (c *Client) create(k string, v string, opts ...clientv3.OpOption) error {
 // if k in bulk insertion not exist all, then put all k/v in etcd, otherwise return error
 func (c *Client) batchCreate(kList []string, vList []string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -293,10 +284,9 @@ func (c *Client) batchCreate(kList []string, vList []string, opts ...clientv3.Op
 	return nil
 }
 
-// put k v into etcd
+// put k/v in etcd, if fail return error
 func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -305,11 +295,9 @@ func (c *Client) put(k string, v string, opts ...clientv3.OpOption) error {
 	return err
 }
 
-// if k not exist will put k/v in etcd
-// if k is already exist in etcd and revision = revision, replace it, otherwise return ErrCompareFail
+// put k/v in etcd when ModRevision equal with rev, if not return ErrCompareFail or other err
 func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.OpOption) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -330,7 +318,6 @@ func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.O
 
 func (c *Client) delete(k string) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -341,7 +328,6 @@ func (c *Client) delete(k string) error {
 
 func (c *Client) get(k string) (string, error) {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return "", ErrNilETCDV3Client
 	}
@@ -361,7 +347,6 @@ func (c *Client) get(k string) (string, error) {
 // getValAndRev get value and revision
 func (c *Client) getValAndRev(k string) (string, int64, error) {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return "", ErrRevision, ErrNilETCDV3Client
 	}
@@ -381,7 +366,6 @@ func (c *Client) getValAndRev(k string) (string, int64, error) {
 // CleanKV delete all key and value
 func (c *Client) CleanKV() error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}
@@ -393,7 +377,6 @@ func (c *Client) CleanKV() error {
 // GetChildren return node children
 func (c *Client) GetChildren(k string) ([]string, []string, error) {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return nil, nil, ErrNilETCDV3Client
 	}
@@ -419,7 +402,6 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 // watchWithOption watch
 func (c *Client) watchWithOption(k string, opts ...clientv3.OpOption) (clientv3.WatchChan, error) {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return nil, ErrNilETCDV3Client
 	}
@@ -429,7 +411,6 @@ func (c *Client) watchWithOption(k string, opts ...clientv3.OpOption) (clientv3.
 
 func (c *Client) keepAliveKV(k string, v string) error {
 	rawClient := c.GetRawClient()
-
 	if rawClient == nil {
 		return ErrNilETCDV3Client
 	}

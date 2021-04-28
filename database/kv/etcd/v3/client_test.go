@@ -118,10 +118,10 @@ func (suite *ClientTestSuite) TearDownSuite() {
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
-	c, err := NewClient(suite.etcdConfig.name,
-		suite.etcdConfig.endpoints,
-		suite.etcdConfig.timeout,
-		suite.etcdConfig.heartbeat)
+	c, err := NewConfigClientWithErr(WithName(suite.etcdConfig.name),
+		WithEndpoints(suite.etcdConfig.endpoints...),
+		WithTimeout(suite.etcdConfig.timeout),
+		WithHeartbeat(suite.etcdConfig.heartbeat))
 	if err != nil {
 		suite.T().Fatal(err)
 	}
@@ -269,6 +269,11 @@ func (suite *ClientTestSuite) TestBatchClientGetValAndRevKV() {
 			t.Fatal(err)
 		}
 
+		err = c.Update(k, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		if value != expect {
 			t.Fatalf("expect %v but get %v", expect, value)
 		}
@@ -368,7 +373,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 		c.Close()
 	}()
 
-	wc, err := c.watchWithOption(prefix)
+	wc, err := c.WatchWithOption(prefix)
 	if err != nil {
 		assert.Error(t, err)
 	}
