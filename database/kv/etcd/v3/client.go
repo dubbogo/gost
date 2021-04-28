@@ -326,24 +326,6 @@ func (c *Client) delete(k string) error {
 	return err
 }
 
-func (c *Client) get(k string) (string, error) {
-	rawClient := c.GetRawClient()
-	if rawClient == nil {
-		return "", ErrNilETCDV3Client
-	}
-
-	resp, err := rawClient.Get(c.ctx, k)
-	if err != nil {
-		return "", err
-	}
-
-	if len(resp.Kvs) == 0 {
-		return "", ErrKVPairNotFound
-	}
-
-	return string(resp.Kvs[0].Value), nil
-}
-
 // getValAndRev get value and revision
 func (c *Client) getValAndRev(k string) (string, int64, error) {
 	rawClient := c.GetRawClient()
@@ -494,9 +476,15 @@ func (c *Client) GetChildrenKVList(k string) ([]string, []string, error) {
 	return kList, vList, perrors.WithMessagef(err, "get key children (key %s)", k)
 }
 
+// GetValAndRev gets value and revision by @k
+func (c *Client) GetValAndRev(k string) (string, int64, error) {
+	v, rev, err := c.getValAndRev(k)
+	return v, rev, perrors.WithMessagef(err, "get key value (key %s)", k)
+}
+
 // Get gets value by @k
 func (c *Client) Get(k string) (string, error) {
-	v, err := c.get(k)
+	v, _, err := c.getValAndRev(k)
 	return v, perrors.WithMessagef(err, "get key value (key %s)", k)
 }
 
