@@ -48,15 +48,15 @@ var tests = []struct {
 	{input: struct {
 		k string
 		v string
-	}{k: "name", v: "scott.wang"}},
+	}{k: "name/name", v: "scott.wang"}},
 	{input: struct {
 		k string
 		v string
-	}{k: "namePrefix", v: "prefix.scott.wang"}},
+	}{k: "name/namePrefix", v: "prefix.scott.wang"}},
 	{input: struct {
 		k string
 		v string
-	}{k: "namePrefix1", v: "prefix1.scott.wang"}},
+	}{k: "name/namePrefix1", v: "prefix1.scott.wang"}},
 	{input: struct {
 		k string
 		v string
@@ -64,7 +64,8 @@ var tests = []struct {
 }
 
 // test dataset prefix
-const prefix = "name"
+const prefixKey = "name/"
+const keyPrefix = "name/name"
 
 type ClientTestSuite struct {
 	suite.Suite
@@ -326,7 +327,7 @@ func (suite *ClientTestSuite) TestClientGetChildrenKVList() {
 		k := tc.input.k
 		v := tc.input.v
 
-		if strings.Contains(k, prefix) {
+		if strings.Contains(k, prefixKey) {
 			expectKList = append(expectKList, k)
 			expectVList = append(expectVList, v)
 		}
@@ -336,7 +337,7 @@ func (suite *ClientTestSuite) TestClientGetChildrenKVList() {
 		}
 	}
 
-	kList, vList, err := c.GetChildrenKVList(prefix)
+	kList, vList, err := c.GetChildrenKVList(prefixKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,7 +374,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 		c.Close()
 	}()
 
-	wc, err := c.WatchWithOption(prefix)
+	wc, err := c.WatchWithOption(keyPrefix)
 	if err != nil {
 		assert.Error(t, err)
 	}

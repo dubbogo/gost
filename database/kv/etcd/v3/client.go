@@ -20,6 +20,7 @@ package gxetcd
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -363,6 +364,10 @@ func (c *Client) GetChildren(k string) ([]string, []string, error) {
 		return nil, nil, ErrNilETCDV3Client
 	}
 
+	if !strings.HasSuffix(k, "/") {
+		k += "/"
+	}
+
 	resp, err := rawClient.Get(c.ctx, k, clientv3.WithPrefix())
 	if err != nil {
 		return nil, nil, err
@@ -491,11 +496,15 @@ func (c *Client) Get(k string) (string, error) {
 // Watch watches on spec key
 func (c *Client) Watch(k string) (clientv3.WatchChan, error) {
 	wc, err := c.watchWithOption(k)
-	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", k)
+	return wc, perrors.WithMessagef(err, "watch (key %s)", k)
 }
 
 // WatchWithPrefix watches on spec prefix
 func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
 	wc, err := c.watchWithOption(prefix, clientv3.WithPrefix())
 	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", prefix)
 }
@@ -503,5 +512,5 @@ func (c *Client) WatchWithPrefix(prefix string) (clientv3.WatchChan, error) {
 // Watch watches on spc key with OpOption
 func (c *Client) WatchWithOption(k string, opts ...clientv3.OpOption) (clientv3.WatchChan, error) {
 	wc, err := c.watchWithOption(k, opts...)
-	return wc, perrors.WithMessagef(err, "watch prefix (key %s)", k)
+	return wc, perrors.WithMessagef(err, "watch (key %s)", k)
 }
