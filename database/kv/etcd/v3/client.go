@@ -38,7 +38,7 @@ var (
 	// ErrKVPairNotFound not found key
 	ErrKVPairNotFound = perrors.New("k/v pair not found")
 	// ErrKVListSizeIllegal k/v list empty or not equal size
-	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList size not equal to vList size")
+	ErrKVListSizeIllegal = perrors.New("k/v List is empty or kList's size is not equal to the size of vList")
 	// ErrCompareFail txn compare fail
 	ErrCompareFail = perrors.New("txn compare fail")
 	// ErrRevision revision when error
@@ -69,6 +69,7 @@ func NewConfigClientWithErr(opts ...Option) (*Client, error) {
 		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
 			options.Name, options.Endpoints, options.Timeout, err)
 	}
+
 	return newClient, err
 }
 
@@ -239,13 +240,13 @@ func (c *Client) create(k string, v string, opts ...clientv3.OpOption) error {
 		If(clientv3.Compare(clientv3.CreateRevision(k), "=", 0)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
-
 	if err != nil {
 		return err
 	}
 	if !resp.Succeeded {
 		return ErrCompareFail
 	}
+
 	return nil
 }
 
@@ -275,13 +276,13 @@ func (c *Client) batchCreate(kList []string, vList []string, opts ...clientv3.Op
 		If(cs...).
 		Then(ops...).
 		Commit()
-
 	if err != nil {
 		return err
 	}
 	if !resp.Succeeded {
 		return ErrCompareFail
 	}
+
 	return nil
 }
 
@@ -307,13 +308,13 @@ func (c *Client) updateWithRev(k string, v string, rev int64, opts ...clientv3.O
 		If(clientv3.Compare(clientv3.ModRevision(k), "=", rev)).
 		Then(clientv3.OpPut(k, v, opts...)).
 		Commit()
-
 	if err != nil {
 		return err
 	}
 	if !resp.Succeeded {
 		return ErrCompareFail
 	}
+
 	return nil
 }
 
