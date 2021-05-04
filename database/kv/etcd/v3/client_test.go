@@ -48,15 +48,15 @@ var tests = []struct {
 	{input: struct {
 		k string
 		v string
-	}{k: "name", v: "scott.wang"}},
+	}{k: "name/name", v: "scott.wang"}},
 	{input: struct {
 		k string
 		v string
-	}{k: "namePrefix", v: "prefix.scott.wang"}},
+	}{k: "name/namePrefix", v: "prefix.scott.wang"}},
 	{input: struct {
 		k string
 		v string
-	}{k: "namePrefix1", v: "prefix1.scott.wang"}},
+	}{k: "name/namePrefix1", v: "prefix1.scott.wang"}},
 	{input: struct {
 		k string
 		v string
@@ -64,7 +64,8 @@ var tests = []struct {
 }
 
 // test dataset prefix
-const prefix = "name"
+const prefixKey = "name/"
+const keyPrefix = "name/name"
 
 type ClientTestSuite struct {
 	suite.Suite
@@ -118,10 +119,10 @@ func (suite *ClientTestSuite) TearDownSuite() {
 }
 
 func (suite *ClientTestSuite) setUpClient() *Client {
-	c, err := NewClient(suite.etcdConfig.name,
-		suite.etcdConfig.endpoints,
-		suite.etcdConfig.timeout,
-		suite.etcdConfig.heartbeat)
+	c, err := NewConfigClientWithErr(WithName(suite.etcdConfig.name),
+		WithEndpoints(suite.etcdConfig.endpoints...),
+		WithTimeout(suite.etcdConfig.timeout),
+		WithHeartbeat(suite.etcdConfig.heartbeat))
 	if err != nil {
 		suite.T().Fatal(err)
 	}
@@ -204,6 +205,82 @@ func (suite *ClientTestSuite) TestClientCreateKV() {
 	}
 }
 
+func (suite *ClientTestSuite) TestBatchClientCreateKV() {
+	tests := tests
+
+	c := suite.client
+	t := suite.T()
+
+	defer suite.client.Close()
+
+	for _, tc := range tests {
+
+		k := tc.input.k
+		v := tc.input.v
+		expect := tc.input.v
+		kList := make([]string, 0, 1)
+		vList := make([]string, 0, 1)
+		kList = append(kList, k)
+		vList = append(vList, v)
+
+		if err := c.BatchCreate(kList, vList); err != nil {
+			t.Fatal(err)
+		}
+
+		value, err := c.Get(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if value != expect {
+			t.Fatalf("expect %v but get %v", expect, value)
+		}
+	}
+}
+
+func (suite *ClientTestSuite) TestBatchClientGetValAndRevKV() {
+	tests := tests
+
+	c := suite.client
+	t := suite.T()
+
+	defer suite.client.Close()
+
+	for _, tc := range tests {
+
+		k := tc.input.k
+		v := tc.input.v
+		expect := tc.input.v
+		kList := make([]string, 0, 1)
+		vList := make([]string, 0, 1)
+		kList = append(kList, k)
+		vList = append(vList, v)
+
+		if err := c.BatchCreate(kList, vList); err != nil {
+			t.Fatal(err)
+		}
+
+		value, revision, err := c.getValAndRev(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = c.UpdateWithRev(k, k, revision)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = c.Update(k, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if value != expect {
+			t.Fatalf("expect %v but get %v", expect, value)
+		}
+	}
+}
+
 func (suite *ClientTestSuite) TestClientDeleteKV() {
 	tests := tests
 	c := suite.client
@@ -250,7 +327,7 @@ func (suite *ClientTestSuite) TestClientGetChildrenKVList() {
 		k := tc.input.k
 		v := tc.input.v
 
-		if strings.Contains(k, prefix) {
+		if strings.Contains(k, prefixKey) {
 			expectKList = append(expectKList, k)
 			expectVList = append(expectVList, v)
 		}
@@ -260,7 +337,7 @@ func (suite *ClientTestSuite) TestClientGetChildrenKVList() {
 		}
 	}
 
-	kList, vList, err := c.GetChildrenKVList(prefix)
+	kList, vList, err := c.GetChildrenKVList(prefixKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +374,7 @@ func (suite *ClientTestSuite) TestClientWatch() {
 		c.Close()
 	}()
 
-	wc, err := c.watch(prefix)
+	wc, err := c.WatchWithOption(keyPrefix)
 	if err != nil {
 		assert.Error(t, err)
 	}
@@ -338,7 +415,7 @@ func (suite *ClientTestSuite) TestClientRegisterTemp() {
 	}()
 
 	completePath := path.Join("scott", "wang")
-	wc, err := observeC.watch(completePath)
+	wc, err := observeC.watchWithOption(completePath)
 	if err != nil {
 		assert.Error(t, err)
 	}
