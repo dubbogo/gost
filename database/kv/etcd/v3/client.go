@@ -461,7 +461,7 @@ func (c *Client) Update(k, v string) error {
 // Put key value ...
 func (c *Client) Put(k, v string, opts ...clientv3.OpOption) error {
 	err := c.put(k, v, opts...)
-	return perrors.WithMessagef(err, "Update k/v (key: %s value %s)", k, v)
+	return perrors.WithMessagef(err, "Put k/v (key: %s value %s)", k, v)
 }
 
 // Update key value ...
