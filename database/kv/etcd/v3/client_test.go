@@ -31,8 +31,8 @@ import (
 	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"go.etcd.io/etcd/embed"
-	"go.etcd.io/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.etcd.io/etcd/server/v3/embed"
 	"google.golang.org/grpc/connectivity"
 )
 
@@ -294,7 +294,7 @@ func (suite *ClientTestSuite) TestClientDeleteKV() {
 		v := tc.input.v
 		expect := ErrKVPairNotFound
 
-		if err := c.Create(k, v); err != nil {
+		if err := c.Put(k, v); err != nil {
 			t.Fatal(err)
 		}
 
