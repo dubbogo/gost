@@ -42,7 +42,8 @@ func initNacosClientPool() {
 }
 
 // NewNamingClient create nacos client
-func NewNamingClient(name string, share bool, sc []constant.ServerConfig, cc constant.ClientConfig) (naming_client.INamingClient, error) {
+func NewNamingClient(name string, share bool, sc []constant.ServerConfig,
+	cc constant.ClientConfig) (naming_client.INamingClient, error) {
 	if share {
 		clientPoolOnce.Do(initNacosClientPool)
 		clientPool.Lock()
