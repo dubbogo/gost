@@ -17,7 +17,9 @@
 
 package nacos
 
-import "testing"
+import (
+	"testing"
+)
 
 import (
 	"github.com/nacos-group/nacos-sdk-go/common/constant"

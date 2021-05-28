@@ -43,8 +43,8 @@ func TestTickFunc(t *testing.T) {
 	cw.Start()
 	TickFunc(TimeSecondDuration(0.5), f)
 	TickFunc(TimeSecondDuration(1.3), f)
-	TickFunc(TimeSecondDuration(61.5), f)
-	time.Sleep(62e9)
+	TickFunc(TimeSecondDuration(6.5), f)
+	time.Sleep(6e9)
 	// xassert.Equal(defaultTimerWheel.TimerNumber(), num, "") // just equal in this ut
 }
 
