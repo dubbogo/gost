@@ -18,6 +18,8 @@
 package nacos
 
 import (
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 	"sync"
 )
 
@@ -28,8 +30,10 @@ import (
 )
 
 var (
-	clientPool     nacosClientPool
-	clientPoolOnce sync.Once
+	clientPool           nacosClientPool
+	configClientPool     nacosConfigClientPool
+	clientPoolOnce       sync.Once
+	configClientPoolOnce sync.Once
 )
 
 type nacosClientPool struct {
@@ -37,12 +41,21 @@ type nacosClientPool struct {
 	namingClient map[string]naming_client.INamingClient
 }
 
+type nacosConfigClientPool struct {
+	sync.Mutex
+	configClient map[string]config_client.IConfigClient
+}
+
 func initNacosClientPool() {
 	clientPool.namingClient = make(map[string]naming_client.INamingClient)
 }
 
-// NewNamingClient create nacos client
-func NewNamingClient(name string, share bool, sc []constant.ServerConfig,
+func initNacosConfigClientPool() {
+	configClientPool.configClient = make(map[string]config_client.IConfigClient)
+}
+
+// NewNacosNamingClient create nacos client
+func NewNacosNamingClient(name string, share bool, sc []constant.ServerConfig,
 	cc constant.ClientConfig) (naming_client.INamingClient, error) {
 	if share {
 		clientPoolOnce.Do(initNacosClientPool)
@@ -52,12 +65,36 @@ func NewNamingClient(name string, share bool, sc []constant.ServerConfig,
 			return client, nil
 		}
 	}
-	configMap := make(map[string]interface{}, 2)
-	configMap["serverConfigs"] = sc
-	configMap["clientConfig"] = cc
-	client, err := clients.CreateNamingClient(configMap)
+
+	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
+	client, err := clients.NewNamingClient(cfg)
+	if err != nil {
+		return nil, err
+	}
 	if share {
 		clientPool.namingClient[name] = client
+	}
+	return client, err
+}
+
+// NewNacosConfigClient create config client
+func NewNacosConfigClient(name string, share bool, sc []constant.ServerConfig,
+	cc constant.ClientConfig) (config_client.IConfigClient, error) {
+	if share {
+		configClientPoolOnce.Do(initNacosConfigClientPool)
+		configClientPool.Lock()
+		defer configClientPool.Unlock()
+		if client, ok := configClientPool.configClient[name]; ok {
+			return client, nil
+		}
+	}
+	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
+	client, err := clients.NewConfigClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if share {
+		configClientPool.configClient[name] = client
 	}
 	return client, err
 }
