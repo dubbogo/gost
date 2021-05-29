@@ -68,10 +68,9 @@ func NewNacosNamingClient(name string, share bool, sc []constant.ServerConfig,
 	}
 
 	client, err := newNamingClient(sc, cc)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		clientPool.namingClient[name] = client
 	}
-	clientPool.namingClient[name] = client
 	return client, err
 }
 
@@ -89,10 +88,9 @@ func NewNacosConfigClient(name string, share bool, sc []constant.ServerConfig,
 	}
 
 	client, err := newConfigClient(sc, cc)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		configClientPool.configClient[name] = client
 	}
-	configClientPool.configClient[name] = client
 	return client, err
 }
 
