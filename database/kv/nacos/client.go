@@ -30,9 +30,12 @@ import (
 )
 
 var (
-	clientPool           nacosClientPool
+	clientPool     nacosClientPool
+	clientPoolOnce sync.Once
+)
+
+var (
 	configClientPool     nacosConfigClientPool
-	clientPoolOnce       sync.Once
 	configClientPoolOnce sync.Once
 )
 
