@@ -57,44 +57,51 @@ func initNacosConfigClientPool() {
 // NewNacosNamingClient create nacos client
 func NewNacosNamingClient(name string, share bool, sc []constant.ServerConfig,
 	cc constant.ClientConfig) (naming_client.INamingClient, error) {
-	if share {
-		clientPoolOnce.Do(initNacosClientPool)
-		clientPool.Lock()
-		defer clientPool.Unlock()
-		if client, ok := clientPool.namingClient[name]; ok {
-			return client, nil
-		}
+	if !share {
+		return newNamingClient(sc, cc)
+	}
+	clientPoolOnce.Do(initNacosClientPool)
+	clientPool.Lock()
+	defer clientPool.Unlock()
+	if client, ok := clientPool.namingClient[name]; ok {
+		return client, nil
 	}
 
-	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
-	client, err := clients.NewNamingClient(cfg)
+	client, err := newNamingClient(sc, cc)
 	if err != nil {
 		return nil, err
 	}
-	if share {
-		clientPool.namingClient[name] = client
-	}
+	clientPool.namingClient[name] = client
 	return client, err
 }
 
 // NewNacosConfigClient create config client
 func NewNacosConfigClient(name string, share bool, sc []constant.ServerConfig,
 	cc constant.ClientConfig) (config_client.IConfigClient, error) {
-	if share {
-		configClientPoolOnce.Do(initNacosConfigClientPool)
-		configClientPool.Lock()
-		defer configClientPool.Unlock()
-		if client, ok := configClientPool.configClient[name]; ok {
-			return client, nil
-		}
+	if !share {
+		return newConfigClient(sc, cc)
 	}
-	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
-	client, err := clients.NewConfigClient(cfg)
+	configClientPoolOnce.Do(initNacosConfigClientPool)
+	configClientPool.Lock()
+	defer configClientPool.Unlock()
+	if client, ok := configClientPool.configClient[name]; ok {
+		return client, nil
+	}
+
+	client, err := newConfigClient(sc, cc)
 	if err != nil {
 		return nil, err
 	}
-	if share {
-		configClientPool.configClient[name] = client
-	}
+	configClientPool.configClient[name] = client
 	return client, err
+}
+
+func newNamingClient(sc []constant.ServerConfig, cc constant.ClientConfig) (naming_client.INamingClient, error) {
+	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
+	return clients.NewNamingClient(cfg)
+}
+
+func newConfigClient(sc []constant.ServerConfig, cc constant.ClientConfig) (config_client.IConfigClient, error) {
+	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
+	return clients.NewConfigClient(cfg)
 }
