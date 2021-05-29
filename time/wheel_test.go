@@ -40,7 +40,7 @@ func TestWheel(t *testing.T) {
 
 	cw.Start()
 	for {
-		<-wheel.After(TimeMillisecondDuration(1000))
+		<-wheel.After(TimeMillisecondDuration(100))
 		t.Log("loop:", index)
 		index++
 		if index >= 30 {
