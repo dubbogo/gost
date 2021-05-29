@@ -78,7 +78,7 @@ func CPrintf(color []byte, format string, args ...interface{}) {
 func CPrintfln(color []byte, format string, args ...interface{}) {
 	logStr := fmt.Sprintf(format, args...)
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Fprint(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset)+"\n", logStr)
+		fmt.Fprintf(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset)+"\n", logStr)
 	} else {
 		fmt.Fprintf(os.Stdout, "%s\n", logStr)
 	}
