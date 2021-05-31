@@ -53,8 +53,11 @@ func TestNewNacosClient(t *testing.T) {
 
 	t.Run("config_client", func(t *testing.T) {
 		client1, err := NewNacosConfigClient("nacos", true, scs, cc)
+		assert.Nil(t, err)
 		client2, err := NewNacosConfigClient("nacos", true, scs, cc)
+		assert.Nil(t, err)
 		client3, err := NewNacosConfigClient("nacos", false, scs, cc)
+		assert.Nil(t, err)
 		client4, err := NewNacosConfigClient("test", true, scs, cc)
 
 		assert.Nil(t, err)
