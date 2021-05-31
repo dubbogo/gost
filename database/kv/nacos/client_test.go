@@ -48,16 +48,4 @@ func TestNewNacosClient(t *testing.T) {
 		assert.NotEqual(t, client1, client3)
 		assert.NotEqual(t, client1, client4)
 	})
-
-	t.Run("config_client", func(t *testing.T) {
-		client1, err := NewNacosConfigClient("nacos", true, scs, cc)
-		client2, err := NewNacosConfigClient("nacos", true, scs, cc)
-		client3, err := NewNacosConfigClient("nacos", false, scs, cc)
-		client4, err := NewNacosConfigClient("test", true, scs, cc)
-
-		assert.Nil(t, err)
-		assert.Equal(t, client1, client2)
-		assert.Equal(t, client1, client3)
-		assert.Equal(t, client1, client4)
-	})
 }

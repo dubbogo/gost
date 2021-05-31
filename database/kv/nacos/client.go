@@ -23,7 +23,6 @@ import (
 
 import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
@@ -34,27 +33,13 @@ var (
 	clientPoolOnce sync.Once
 )
 
-var (
-	configClientPool     nacosConfigClientPool
-	configClientPoolOnce sync.Once
-)
-
 type nacosClientPool struct {
 	sync.Mutex
 	namingClient map[string]naming_client.INamingClient
 }
 
-type nacosConfigClientPool struct {
-	sync.Mutex
-	configClient map[string]config_client.IConfigClient
-}
-
 func initNacosClientPool() {
 	clientPool.namingClient = make(map[string]naming_client.INamingClient)
-}
-
-func initNacosConfigClientPool() {
-	configClientPool.configClient = make(map[string]config_client.IConfigClient)
 }
 
 // NewNacosNamingClient create nacos client
@@ -77,32 +62,7 @@ func NewNacosNamingClient(name string, share bool, sc []constant.ServerConfig,
 	return client, err
 }
 
-// NewNacosConfigClient create config client
-func NewNacosConfigClient(name string, share bool, sc []constant.ServerConfig,
-	cc constant.ClientConfig) (config_client.IConfigClient, error) {
-	if !share {
-		return newConfigClient(sc, cc)
-	}
-	configClientPoolOnce.Do(initNacosConfigClientPool)
-	configClientPool.Lock()
-	defer configClientPool.Unlock()
-	if client, ok := configClientPool.configClient[name]; ok {
-		return client, nil
-	}
-
-	client, err := newConfigClient(sc, cc)
-	if err == nil {
-		configClientPool.configClient[name] = client
-	}
-	return client, err
-}
-
 func newNamingClient(sc []constant.ServerConfig, cc constant.ClientConfig) (naming_client.INamingClient, error) {
 	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
 	return clients.NewNamingClient(cfg)
-}
-
-func newConfigClient(sc []constant.ServerConfig, cc constant.ClientConfig) (config_client.IConfigClient, error) {
-	cfg := vo.NacosClientParam{ClientConfig: &cc, ServerConfigs: sc}
-	return clients.NewConfigClient(cfg)
 }
