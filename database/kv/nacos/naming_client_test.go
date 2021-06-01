@@ -45,6 +45,7 @@ func TestNewNacosClient(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, client1, client2)
+		assert.Equal(t, client1.activeCount, uint32(2))
 		assert.NotEqual(t, client1, client3)
 		assert.NotEqual(t, client1, client4)
 	})
