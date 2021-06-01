@@ -37,15 +37,17 @@ func TestNewNacosClient(t *testing.T) {
 		NotLoadCacheAtStart: true,
 	}
 
-	t.Run("naming_client", func(t *testing.T) {
-		client1, err := NewNacosNamingClient("nacos", true, scs, cc)
-		client2, err := NewNacosNamingClient("nacos", true, scs, cc)
-		client3, err := NewNacosNamingClient("nacos", false, scs, cc)
-		client4, err := NewNacosNamingClient("test", true, scs, cc)
+	client1, err := NewNacosNamingClient("nacos", true, scs, cc)
+	assert.Nil(t, err)
+	client2, err := NewNacosNamingClient("nacos", true, scs, cc)
+	assert.Nil(t, err)
+	client3, err := NewNacosNamingClient("nacos", false, scs, cc)
+	assert.Nil(t, err)
+	client4, err := NewNacosNamingClient("test", true, scs, cc)
+	assert.Nil(t, err)
 
-		assert.Nil(t, err)
-		assert.Equal(t, client1, client2)
-		assert.NotEqual(t, client1, client3)
-		assert.NotEqual(t, client1, client4)
-	})
+	assert.Equal(t, client1, client2)
+	assert.Equal(t, client1.activeCount, uint32(2))
+	assert.NotEqual(t, client1, client3)
+	assert.NotEqual(t, client1, client4)
 }
