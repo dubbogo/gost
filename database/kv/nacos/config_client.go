@@ -41,7 +41,7 @@ type nacosConfigClientPool struct {
 
 type NacosConfigClient struct {
 	name        string
-	sync.Mutex  // for Client
+	clientLock  sync.Mutex // for Client
 	client      config_client.IConfigClient
 	config      vo.NacosClientParam //conn config
 	valid       uint32
@@ -99,9 +99,9 @@ func (n *NacosConfigClient) Client() config_client.IConfigClient {
 
 // SetClient Set NacosConfigClient
 func (n *NacosConfigClient) SetClient(client config_client.IConfigClient) {
-	n.Lock()
+	n.clientLock.Lock()
 	n.client = client
-	n.Unlock()
+	n.clientLock.Unlock()
 }
 
 // NacosClientValid Get nacos client valid status
