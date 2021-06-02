@@ -101,14 +101,15 @@ func TestPublishConfig(t *testing.T) {
 		Group:   "dubbo",
 		Content: "dubbo-go nb",
 	})
-
 	assert.Nil(t, err)
 	assert.Equal(t, push, true)
+
 	//get config
 	cfg, err := client.Client().GetConfig(vo.ConfigParam{
 		DataId: "nacos-config",
 		Group:  "dubbo",
 	})
+	assert.Nil(t, err)
 	fmt.Println("GetConfig,config :", cfg)
 
 	//Listen config change,key=dataId+group+namespaceId.
@@ -120,12 +121,14 @@ func TestPublishConfig(t *testing.T) {
 			fmt.Println("config changed group:" + group + ", dataId:" + dataId + ", content:" + data)
 		},
 	})
+	assert.Nil(t, err)
 
 	_, err = client.Client().PublishConfig(vo.ConfigParam{
 		DataId:  "nacos-config",
 		Group:   "dubbo",
 		Content: "test-listen",
 	})
+	assert.Nil(t, err)
 
 	searchPage, _ := client.Client().SearchConfig(vo.SearchConfigParam{
 		Search:   "accurate",
