@@ -48,11 +48,14 @@ func TestNewNacosConfigClient(t *testing.T) {
 	cc := constant.ClientConfig{TimeoutMs: 5 * 1000, NotLoadCacheAtStart: true}
 
 	client1, err := NewNacosConfigClient("nacos", true, scs, cc)
-	client2, err := NewNacosConfigClient("nacos", true, scs, cc)
-	client3, err := NewNacosConfigClient("nacos", false, scs, cc)
-	client4, err := NewNacosConfigClient("test", true, scs, cc)
-
 	assert.Nil(t, err)
+	client2, err := NewNacosConfigClient("nacos", true, scs, cc)
+	assert.Nil(t, err)
+	client3, err := NewNacosConfigClient("nacos", false, scs, cc)
+	assert.Nil(t, err)
+	client4, err := NewNacosConfigClient("test", true, scs, cc)
+	assert.Nil(t, err)
+
 	assert.Equal(t, client1, client2)
 	assert.Equal(t, client1.activeCount, uint32(2))
 	assert.Equal(t, client1.NacosClientValid(), true)
