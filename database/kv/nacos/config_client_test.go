@@ -42,6 +42,7 @@ func TestStructAlign(t *testing.T) {
 	}
 }
 
+//TestNewNacosConfigClient config client
 func TestNewNacosConfigClient(t *testing.T) {
 
 	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
