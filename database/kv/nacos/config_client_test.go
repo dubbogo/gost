@@ -76,7 +76,7 @@ func TestNewNacosConfigClient(t *testing.T) {
 
 func TestPublishConfig(t *testing.T) {
 
-	scs := []constant.ServerConfig{*constant.NewServerConfig("127.0.0.1", 8848)}
+	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
 
 	cc := constant.ClientConfig{
 		AppName:             "nacos",
