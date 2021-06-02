@@ -111,16 +111,25 @@ func initZookeeperClientPool() {
 
 // NewZookeeperClient will create a ZookeeperClient
 func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...zkClientOption) (*ZookeeperClient, error) {
-	if share {
-		clientPoolOnce.Do(initZookeeperClientPool)
-		zkClientPool.Lock()
-		defer zkClientPool.Unlock()
-		if zkClient, ok := zkClientPool.zkClient[name]; ok {
-			zkClient.activeNumber++
-			return zkClient, nil
-		}
-
+	if !share {
+		return newClient(name, zkAddrs, share, opts...)
 	}
+	clientPoolOnce.Do(initZookeeperClientPool)
+	zkClientPool.Lock()
+	defer zkClientPool.Unlock()
+	if zkClient, ok := zkClientPool.zkClient[name]; ok {
+		zkClient.activeNumber++
+		return zkClient, nil
+	}
+	newZkClient, err := newClient(name, zkAddrs, share, opts...)
+	if err != nil {
+		return nil, err
+	}
+	zkClientPool.zkClient[name] = newZkClient
+	return newZkClient, nil
+}
+
+func newClient(name string, zkAddrs []string, share bool, opts ...zkClientOption) (*ZookeeperClient, error) {
 	newZkClient := &ZookeeperClient{
 		name:           name,
 		ZkAddrs:        zkAddrs,
@@ -139,9 +148,6 @@ func NewZookeeperClient(name string, zkAddrs []string, share bool, opts ...zkCli
 		return nil, err
 	}
 	newZkClient.activeNumber++
-	if share {
-		zkClientPool.zkClient[name] = newZkClient
-	}
 	return newZkClient, nil
 }
 
