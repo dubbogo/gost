@@ -179,6 +179,8 @@ func NewTimerWheel() *TimerWheel {
 		ticker: time.NewTicker(time.Duration(minTickerInterval)),
 		timerQ: make(chan *timerNodeAction, timerNodeQueueSize),
 	}
+
+	w.enable.Store(true)
 	w.start = w.clock
 
 	for i := 0; i < maxTimerLevel; i++ {
@@ -200,46 +202,42 @@ func NewTimerWheel() *TimerWheel {
 			if !w.enable.Load() {
 				break LOOP
 			}
+
 			select {
 			case t, cFlag = <-w.ticker.C:
+				if !cFlag {
+					break LOOP
+				}
+
 				atomic.StoreInt64(&curGxTime, t.UnixNano())
-				if cFlag && 0 != w.number.Load() {
-					ret := w.timerUpdate(t)
-					if ret == 0 {
-						w.run()
-					}
-
-					continue
+				ret := w.timerUpdate(t)
+				if ret == 0 {
+					w.run()
 				}
-
-				break LOOP
-
 			case nodeAction, qFlag = <-w.timerQ:
-				// just one w.timerQ channel to ensure the exec sequence of timer event.
-				if qFlag {
-					switch {
-					case nodeAction.action == TimerActionAdd:
-						w.number.Add(1)
-						w.insertTimerNode(nodeAction.node)
-					case nodeAction.action == TimerActionDel:
-						w.number.Add(-1)
-						w.deleteTimerNode(nodeAction.node)
-					case nodeAction.action == TimerActionReset:
-						// log.CInfo("node action:%#v", nodeAction)
-						w.resetTimerNode(nodeAction.node)
-					default:
-						w.number.Add(1)
-						w.insertTimerNode(nodeAction.node)
-					}
-					continue
+				if !qFlag {
+					break LOOP
 				}
 
-				break LOOP
+				// just one w.timerQ channel to ensure the exec sequence of timer event.
+				switch {
+				case nodeAction.action == TimerActionAdd:
+					w.number.Add(1)
+					w.insertTimerNode(nodeAction.node)
+				case nodeAction.action == TimerActionDel:
+					w.number.Add(-1)
+					w.deleteTimerNode(nodeAction.node)
+				case nodeAction.action == TimerActionReset:
+					// log.CInfo("node action:%#v", nodeAction)
+					w.resetTimerNode(nodeAction.node)
+				default:
+					w.number.Add(1)
+					w.insertTimerNode(nodeAction.node)
+				}
 			}
 		}
+		log.Printf("the timeWheel runner exit, current timer node num:%d", w.number.Load())
 	}()
-
-	w.enable.Store(true)
 	return w
 }
 
@@ -262,11 +260,11 @@ func (w *TimerWheel) Now() time.Time {
 
 func (w *TimerWheel) run() {
 	var (
-		clock int64
-		err   error
-		node  *timerNode
-		slot  *list.List
-		array []*timerNode
+		clock         int64
+		err           error
+		node          *timerNode
+		slot          *list.List
+		reinsertNodes []*timerNode
 	)
 
 	slot = w.slot[0]
@@ -280,7 +278,7 @@ func (w *TimerWheel) run() {
 
 		err = node.timerRun(node.ID, UnixNano2Time(clock), node.arg)
 		if err == nil && node.typ == TimerLoop {
-			array = append(array, node)
+			reinsertNodes = append(reinsertNodes, node)
 			// w.insertTimerNode(node)
 		} else {
 			w.number.Add(-1)
@@ -289,9 +287,10 @@ func (w *TimerWheel) run() {
 		next = e.Next()
 		slot.Remove(e)
 	}
-	for idx := range array[:] {
-		array[idx].trig += array[idx].period
-		w.insertTimerNode(array[idx])
+
+	for _, reinsertNode := range reinsertNodes {
+		reinsertNode.trig += reinsertNode.period
+		w.insertTimerNode(reinsertNode)
 	}
 }
 
@@ -507,6 +506,7 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 		return nil, ErrTimeChannelClosed
 	}
 
+	println("add timer")
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
 	select {
