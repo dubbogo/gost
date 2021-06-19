@@ -506,7 +506,6 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 		return nil, ErrTimeChannelClosed
 	}
 
-	println("add timer")
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
 	select {
