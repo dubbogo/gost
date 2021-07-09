@@ -63,3 +63,10 @@ func TestGetEndTime(t *testing.T) {
 	yearEndTime := GetEndTime("year")
 	t.Logf("this year end time %q", yearEndTime)
 }
+
+func TestTimerConsumerGoroutine(t *testing.T) {
+	InitDefaultTimerWheel()
+	time.Sleep(time.Second * 2)
+	println("sleep over")
+	<-defaultTimerWheel.After(1)
+}

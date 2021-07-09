@@ -219,7 +219,10 @@ func (q *Queue) Poll(number int64, timeout time.Duration) ([]interface{}, error)
 
 		var timeoutC <-chan time.Time
 		if timeout > 0 {
-			timeoutC = time.After(timeout)
+			timer := time.NewTimer(timeout)
+			defer timer.Stop()
+
+			timeoutC = timer.C
 		}
 		select {
 		case <-sema.ready:
