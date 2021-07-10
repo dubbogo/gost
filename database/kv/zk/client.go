@@ -55,6 +55,7 @@ type ZookeeperClient struct {
 	Wait              sync.WaitGroup
 	valid             uint32
 	share             bool
+	initialized       uint32
 	reconnectCh       chan struct{}
 	eventRegistry     map[string][]*chan struct{}
 	eventRegistryLock sync.RWMutex
@@ -243,8 +244,11 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 				}
 				if event.State == zk.StateHasSession {
 					atomic.StoreUint32(&z.valid, 1)
-					close(z.reconnectCh)
-					z.reconnectCh = make(chan struct{})
+					//if this is the first connection, don't trigger reconnect event
+					if !atomic.CompareAndSwapUint32(&z.initialized, 0, 1) {
+						close(z.reconnectCh)
+						z.reconnectCh = make(chan struct{})
+					}
 				}
 				z.eventRegistryLock.RLock()
 				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
