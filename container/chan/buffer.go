@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package chanx
+package gxchan
 
 const (
 	fastGrowThreshold = 1024

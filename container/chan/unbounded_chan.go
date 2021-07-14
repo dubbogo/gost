@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package chanx
+package gxchan
 
 type T interface{}
 
-// AdaptiveChan is a chan that could grow if the number of elements exceeds the capacity.
-type AdaptiveChan struct {
+// UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
+type UnboundedChan struct {
 	in     chan T
 	out    chan T
 	buffer *Buffer
 }
 
-// NewAdaptiveChan creates an instance of AdaptiveChan.
+// NewUnboundedChan creates an instance of UnboundedChan.
 // incap: The capacity of the in chan
 // outcap: The capacity of the out chan
 // bufcap: The Capacity of the buffer
-func NewAdaptiveChan(incap, outcap, bufcap int) *AdaptiveChan {
-	ch := &AdaptiveChan{
+func NewUnboundedChan(incap, outcap, bufcap int) *UnboundedChan {
+	ch := &UnboundedChan{
 		in:     make(chan T, incap),
 		out:    make(chan T, outcap),
 		buffer: NewBuffer(bufcap),
@@ -43,24 +43,24 @@ func NewAdaptiveChan(incap, outcap, bufcap int) *AdaptiveChan {
 }
 
 // In returns write-only chan
-func (ch *AdaptiveChan) In() chan<- T {
+func (ch *UnboundedChan) In() chan<- T {
 	return ch.in
 }
 
 // Out returns read-only chan
-func (ch *AdaptiveChan) Out() <-chan T {
+func (ch *UnboundedChan) Out() <-chan T {
 	return ch.out
 }
 
-func (ch *AdaptiveChan) Len() int {
+func (ch *UnboundedChan) Len() int {
 	return len(ch.in) + len(ch.out) + ch.buffer.Len()
 }
 
-func (ch *AdaptiveChan) BufLen() int {
+func (ch *UnboundedChan) BufLen() int {
 	return ch.buffer.Len()
 }
 
-func (ch *AdaptiveChan) process() {
+func (ch *UnboundedChan) process() {
 	defer close(ch.out)
 
 loop:
@@ -98,7 +98,7 @@ loop:
 	}
 }
 
-func (ch *AdaptiveChan) tryToShrinkBuffer() {
+func (ch *UnboundedChan) tryToShrinkBuffer() {
 	if ch.buffer.IsEmpty() && ch.buffer.Cap() > ch.buffer.isize {
 		ch.buffer.Reset()
 	}

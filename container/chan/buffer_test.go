@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package chanx
+package gxchan
 
 import (
 	"testing"
@@ -24,11 +24,6 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 )
-
-type testBufferSuite struct {
-	buffer *Buffer
-	t      *testing.T
-}
 
 func TestBufferWithoutGrowing(t *testing.T) {
 	isize := 10

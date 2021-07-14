@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package chanx
+package gxchan
 
 import (
 	"sync"
@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAdaptiveChan(t *testing.T) {
-	ch := NewAdaptiveChan(100, 100, 100)
+func TestUnboundedChan(t *testing.T) {
+	ch := NewUnboundedChan(100, 100, 100)
 
 	var count int
 
