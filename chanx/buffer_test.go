@@ -18,8 +18,11 @@
 package chanx
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 type testBufferSuite struct {
