@@ -50,14 +50,14 @@ func TestBufferWithoutGrowing(t *testing.T) {
 	assert.Equal(t, 10, buffer.Cap())
 
 	// write 8 elements
-	for i:=0; i<8; i++ {
+	for i := 0; i < 8; i++ {
 		buffer.Write(i)
 	}
 	assert.Equal(t, 8, buffer.Len())
 	assert.Equal(t, 10, buffer.Cap())
 
 	// pop 5 elements
-	for i:=0; i<5; i++ {
+	for i := 0; i < 5; i++ {
 		v = buffer.Pop()
 		assert.Equal(t, i, v)
 	}
@@ -65,7 +65,7 @@ func TestBufferWithoutGrowing(t *testing.T) {
 	assert.Equal(t, 10, buffer.Cap())
 
 	// write 6 elements
-	for i:=0; i<6; i++ {
+	for i := 0; i < 6; i++ {
 		buffer.Write(i)
 	}
 	assert.Equal(t, 9, buffer.Len())
@@ -77,7 +77,7 @@ func TestBufferWithGrowing(t *testing.T) {
 	buffer := NewBuffer(10)
 
 	// write 11 elements
-	for i:=0; i<11; i++ {
+	for i := 0; i < 11; i++ {
 		buffer.Write(i)
 	}
 
@@ -91,7 +91,7 @@ func TestBufferWithGrowing(t *testing.T) {
 	buffer = NewBuffer(fastGrowThreshold)
 
 	// write fastGrowThreshold+1 elements
-	for i:=0; i< fastGrowThreshold+1; i++ {
+	for i := 0; i < fastGrowThreshold+1; i++ {
 		buffer.Write(i)
 	}
 

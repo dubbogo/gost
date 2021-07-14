@@ -77,7 +77,7 @@ func (b *Buffer) Peek() T {
 }
 
 func (b *Buffer) Cap() int {
-	return len(b.data)-1
+	return len(b.data) - 1
 }
 
 func (b *Buffer) Len() int {
@@ -99,7 +99,7 @@ func (b *Buffer) grow() {
 	if oldsize < fastGrowThreshold {
 		newsize = oldsize * 2
 	} else {
-		newsize = oldsize + oldsize / 4
+		newsize = oldsize + oldsize/4
 	}
 
 	newdata := make([]T, newsize+1)

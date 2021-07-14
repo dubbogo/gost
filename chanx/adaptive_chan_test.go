@@ -11,18 +11,18 @@ func TestAdaptiveChan(t *testing.T) {
 
 	var count int
 
-	for i:=1; i<200; i++ {
+	for i := 1; i < 200; i++ {
 		ch.In() <- i
 	}
 
-	for i:=1; i<60; i++ {
-		v, _ := <- ch.Out()
+	for i := 1; i < 60; i++ {
+		v, _ := <-ch.Out()
 		count += v.(int)
 	}
 
 	assert.Equal(t, 100, ch.buffer.Cap())
 
-	for i:=200; i<=1200; i++ {
+	for i := 200; i <= 1200; i++ {
 		ch.In() <- i
 	}
 	assert.Equal(t, 1600, ch.buffer.Cap())
