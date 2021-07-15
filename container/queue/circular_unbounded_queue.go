@@ -17,7 +17,7 @@
 
 package gxqueue
 
-type T interface {}
+type T interface{}
 
 const (
 	fastGrowThreshold = 1024

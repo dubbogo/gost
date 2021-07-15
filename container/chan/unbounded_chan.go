@@ -25,7 +25,7 @@ type T interface{}
 
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 type UnboundedChan struct {
-	in     chan T
+	in    chan T
 	out   chan T
 	queue *gxqueue.CircularUnboundedQueue
 }
@@ -35,7 +35,7 @@ func NewUnboundedChan(capacity int) *UnboundedChan {
 	ch := &UnboundedChan{
 		in:    make(chan T, capacity/3),
 		out:   make(chan T, capacity/3),
-		queue: gxqueue.NewCircularUnboundedQueue(capacity-2*(capacity/3)),
+		queue: gxqueue.NewCircularUnboundedQueue(capacity - 2*(capacity/3)),
 	}
 
 	go ch.run()
