@@ -27,7 +27,7 @@ import (
 )
 
 func TestUnboundedChan(t *testing.T) {
-	ch := NewUnboundedChan(100, 100, 100)
+	ch := NewUnboundedChan(300)
 
 	var count int
 
@@ -40,14 +40,32 @@ func TestUnboundedChan(t *testing.T) {
 		count += v.(int)
 	}
 
-	assert.Equal(t, 100, ch.buffer.Cap())
+	assert.Equal(t, 100, ch.queue.Cap())
 
 	for i := 200; i <= 1200; i++ {
 		ch.In() <- i
 	}
-	assert.Equal(t, 1600, ch.buffer.Cap())
+	assert.Equal(t, 1600, ch.queue.Cap())
 
 	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var icount int
+		for v := range ch.Out() {
+			count += v.(int)
+			icount++
+			if icount == 900 {
+				break
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	close(ch.In())
+
+	// buffer should be empty
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -55,8 +73,6 @@ func TestUnboundedChan(t *testing.T) {
 			count += v.(int)
 		}
 	}()
-
-	close(ch.In())
 
 	wg.Wait()
 

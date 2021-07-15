@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package gxchan
+package gxqueue
 
 import (
 	"testing"
@@ -25,78 +25,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBufferWithoutGrowing(t *testing.T) {
-	isize := 10
-	buffer := NewBuffer(isize)
+func TestCircularUnboundedQueueWithoutGrowing(t *testing.T) {
+	queue := NewCircularUnboundedQueue(10)
 
-	buffer.Reset()
-
-	// no data
-	v, ok := buffer.Read()
-	assert.Nil(t, v)
-	assert.False(t, ok)
+	queue.Reset()
 
 	// write 1 element
-	buffer.Write(1)
-	assert.Equal(t, 1, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	queue.Push(1)
+	assert.Equal(t, 1, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 	// peek and pop
-	assert.Equal(t, 1, buffer.Peek())
-	assert.Equal(t, 1, buffer.Pop())
+	assert.Equal(t, 1, queue.Peek())
+	assert.Equal(t, 1, queue.Pop())
 	// inspect len and cap
-	assert.Equal(t, 0, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	assert.Equal(t, 0, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 
 	// write 8 elements
 	for i := 0; i < 8; i++ {
-		buffer.Write(i)
+		queue.Push(i)
 	}
-	assert.Equal(t, 8, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	assert.Equal(t, 8, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 
+	var v T
 	// pop 5 elements
 	for i := 0; i < 5; i++ {
-		v = buffer.Pop()
+		v = queue.Pop()
 		assert.Equal(t, i, v)
 	}
-	assert.Equal(t, 3, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	assert.Equal(t, 3, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 
 	// write 6 elements
 	for i := 0; i < 6; i++ {
-		buffer.Write(i)
+		queue.Push(i)
 	}
-	assert.Equal(t, 9, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	assert.Equal(t, 9, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 }
 
 func TestBufferWithGrowing(t *testing.T) {
 	// size < fastGrowThreshold
-	buffer := NewBuffer(10)
+	queue := NewCircularUnboundedQueue(10)
 
 	// write 11 elements
 	for i := 0; i < 11; i++ {
-		buffer.Write(i)
+		queue.Push(i)
 	}
 
-	assert.Equal(t, 11, buffer.Len())
-	assert.Equal(t, 20, buffer.Cap())
+	assert.Equal(t, 11, queue.Len())
+	assert.Equal(t, 20, queue.Cap())
 
-	buffer.Reset()
-	assert.Equal(t, 0, buffer.Len())
-	assert.Equal(t, 10, buffer.Cap())
+	queue.Reset()
+	assert.Equal(t, 0, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
 
-	buffer = NewBuffer(fastGrowThreshold)
+	queue = NewCircularUnboundedQueue(fastGrowThreshold)
 
 	// write fastGrowThreshold+1 elements
 	for i := 0; i < fastGrowThreshold+1; i++ {
-		buffer.Write(i)
+		queue.Push(i)
 	}
 
-	assert.Equal(t, fastGrowThreshold+1, buffer.Len())
-	assert.Equal(t, fastGrowThreshold+fastGrowThreshold/4, buffer.Cap())
+	assert.Equal(t, fastGrowThreshold+1, queue.Len())
+	assert.Equal(t, fastGrowThreshold+fastGrowThreshold/4, queue.Cap())
 
-	buffer.Reset()
-	assert.Equal(t, 0, buffer.Len())
-	assert.Equal(t, fastGrowThreshold, buffer.Cap())
+	queue.Reset()
+	assert.Equal(t, 0, queue.Len())
+	assert.Equal(t, fastGrowThreshold, queue.Cap())
 }

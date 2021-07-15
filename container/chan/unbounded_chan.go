@@ -17,27 +17,28 @@
 
 package gxchan
 
+import (
+	"github.com/dubbogo/gost/container/queue"
+)
+
 type T interface{}
 
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 type UnboundedChan struct {
 	in     chan T
-	out    chan T
-	buffer *Buffer
+	out   chan T
+	queue *gxqueue.CircularUnboundedQueue
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
-// incap: The capacity of the in chan
-// outcap: The capacity of the out chan
-// bufcap: The Capacity of the buffer
-func NewUnboundedChan(incap, outcap, bufcap int) *UnboundedChan {
+func NewUnboundedChan(capacity int) *UnboundedChan {
 	ch := &UnboundedChan{
-		in:     make(chan T, incap),
-		out:    make(chan T, outcap),
-		buffer: NewBuffer(bufcap),
+		in:    make(chan T, capacity/3),
+		out:   make(chan T, capacity/3),
+		queue: gxqueue.NewCircularUnboundedQueue(capacity-2*(capacity/3)),
 	}
 
-	go ch.process()
+	go ch.run()
 
 	return ch
 }
@@ -53,53 +54,54 @@ func (ch *UnboundedChan) Out() <-chan T {
 }
 
 func (ch *UnboundedChan) Len() int {
-	return len(ch.in) + len(ch.out) + ch.buffer.Len()
+	return len(ch.in) + len(ch.out) + ch.queue.Len()
 }
 
-func (ch *UnboundedChan) BufLen() int {
-	return ch.buffer.Len()
-}
+func (ch *UnboundedChan) run() {
+	defer func() {
+		close(ch.out)
+	}()
 
-func (ch *UnboundedChan) process() {
-	defer close(ch.out)
-
-loop:
 	for {
 		val, ok := <-ch.in
-		if !ok { // `in` is closed
-			break loop
+		if !ok {
+			// `ch.in` was closed and queue has no elements
+			return
 		}
 
 		select {
-		case ch.out <- val: // `ch.out` is not full
+		// data was written to `ch.out`
+		case ch.out <- val:
 			continue
+		// `ch.out` is full, move the data to `ch.queue`
 		default:
+			ch.queue.Push(val)
 		}
 
-		// `ch.out` is full, write the value to buffer
-		ch.buffer.Write(val)
-		for !ch.buffer.IsEmpty() {
+		for !ch.queue.IsEmpty() {
 			select {
 			case val, ok := <-ch.in:
 				if !ok {
-					break loop
+					ch.closeWait()
+					return
 				}
-				ch.buffer.Write(val)
-			case ch.out <- ch.buffer.Peek():
-				ch.buffer.Pop()
-				ch.tryToShrinkBuffer()
+				ch.queue.Push(val)
+			case ch.out <- ch.queue.Peek():
+				ch.queue.Pop()
 			}
 		}
-	}
-
-	// waiting for out chan
-	for !ch.buffer.IsEmpty() {
-		ch.out <- ch.buffer.Pop()
+		ch.shrinkQueue()
 	}
 }
 
-func (ch *UnboundedChan) tryToShrinkBuffer() {
-	if ch.buffer.IsEmpty() && ch.buffer.Cap() > ch.buffer.isize {
-		ch.buffer.Reset()
+func (ch *UnboundedChan) shrinkQueue() {
+	if ch.queue.IsEmpty() && ch.queue.Cap() > ch.queue.InitialSize() {
+		ch.queue.Reset()
+	}
+}
+
+func (ch *UnboundedChan) closeWait() {
+	for !ch.queue.IsEmpty() {
+		ch.out <- ch.queue.Pop()
 	}
 }
