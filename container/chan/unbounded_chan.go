@@ -30,10 +30,37 @@ type UnboundedChan struct {
 
 // NewUnboundedChan creates an instance of UnboundedChan.
 func NewUnboundedChan(capacity int) *UnboundedChan {
+	return NewUnboundedChanWithQuota(capacity, 0)
+}
+
+func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
+	if capacity <= 0 {
+		panic("capacity should be greater than 0")
+	}
+	if quota < 0 {
+		panic("quota should be greater or equals to 0")
+	}
+	if quota != 0 && capacity > quota {
+		capacity = quota
+	}
+
+	var incap, outcap, qcap, qquota int
+	if capacity < 3 {
+		incap = 0
+		outcap = 0
+		qcap = capacity
+		qquota = quota
+	} else {
+		incap = capacity/3
+		outcap = capacity/3
+		qcap = capacity - 2*(capacity/3)
+		qquota = quota - 2*(capacity/3)
+	}
+
 	ch := &UnboundedChan{
-		in:    make(chan interface{}, capacity/3),
-		out:   make(chan interface{}, capacity/3),
-		queue: gxqueue.NewCircularUnboundedQueue(capacity - 2*(capacity/3)),
+		in:    make(chan interface{}, incap),
+		out:   make(chan interface{}, outcap),
+		queue: gxqueue.NewCircularUnboundedQueueWithQuota(qcap, qquota),
 	}
 
 	go ch.run()
@@ -79,11 +106,15 @@ func (ch *UnboundedChan) run() {
 		for !ch.queue.IsEmpty() {
 			select {
 			case val, ok := <-ch.in:
+				// `ch.in` was closed
 				if !ok {
 					ch.closeWait()
 					return
 				}
-				ch.queue.Push(val)
+				// try to push the value into queue
+				if ok = ch.queue.Push(val); !ok {
+					ch.block(val)
+				}
 			case ch.out <- ch.queue.Peek():
 				ch.queue.Pop()
 			}
@@ -93,13 +124,22 @@ func (ch *UnboundedChan) run() {
 }
 
 func (ch *UnboundedChan) shrinkQueue() {
-	if ch.queue.IsEmpty() && ch.queue.Cap() > ch.queue.InitialSize() {
+	if ch.queue.IsEmpty() && ch.queue.Cap() > ch.queue.InitialCap() {
 		ch.queue.Reset()
 	}
 }
 
+// closeWait waits for being empty of `ch.queue`
 func (ch *UnboundedChan) closeWait() {
 	for !ch.queue.IsEmpty() {
 		ch.out <- ch.queue.Pop()
+	}
+}
+
+// block waits for having an idle space on `ch.out`
+func (ch *UnboundedChan) block(val interface{}) {
+	select {
+	case ch.out <- ch.queue.Pop():
+		ch.queue.Push(val)
 	}
 }
