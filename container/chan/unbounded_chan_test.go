@@ -15,69 +15,67 @@
  * limitations under the License.
  */
 
-package chanx
+package gxchan
 
 import (
 	"sync"
 	"testing"
 )
 
-func TestMakeUnboundedChan(t *testing.T) {
-	ch := NewUnboundedChan(100)
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestUnboundedChan(t *testing.T) {
+	ch := NewUnboundedChan(300)
+
+	var count int
 
 	for i := 1; i < 200; i++ {
-		ch.In <- int64(i)
+		ch.In() <- i
 	}
 
-	var count int64
-	var wg sync.WaitGroup
+	for i := 1; i < 60; i++ {
+		v, _ := <-ch.Out()
+		count += v.(int)
+	}
+
+	assert.Equal(t, 100, ch.queue.Cap())
+
+	for i := 200; i <= 1200; i++ {
+		ch.In() <- i
+	}
+	assert.Equal(t, 1600, ch.queue.Cap())
+
+	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		for v := range ch.Out {
-			count += v.(int64)
+		var icount int
+		for v := range ch.Out() {
+			count += v.(int)
+			icount++
+			if icount == 900 {
+				break
+			}
 		}
 	}()
 
-	for i := 200; i <= 1000; i++ {
-		ch.In <- int64(i)
-	}
-	close(ch.In)
-
 	wg.Wait()
 
-	if count != 500500 {
-		t.Fatalf("expected 500500 but got %d", count)
-	}
-}
+	close(ch.In())
 
-func TestMakeUnboundedChanSize(t *testing.T) {
-	ch := NewUnboundedChanSize(10, 50, 100)
-
-	for i := 1; i < 200; i++ {
-		ch.In <- int64(i)
-	}
-
-	var count int64
-	var wg sync.WaitGroup
+	// buffer should be empty
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		for v := range ch.Out {
-			count += v.(int64)
+		for v := range ch.Out() {
+			count += v.(int)
 		}
 	}()
 
-	for i := 200; i <= 1000; i++ {
-		ch.In <- int64(i)
-	}
-	close(ch.In)
-
 	wg.Wait()
 
-	if count != 500500 {
-		t.Fatalf("expected 500500 but got %d", count)
-	}
+	assert.Equal(t, 720600, count)
+
 }
