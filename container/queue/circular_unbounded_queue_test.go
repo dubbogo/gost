@@ -48,7 +48,7 @@ func TestCircularUnboundedQueueWithoutGrowing(t *testing.T) {
 	assert.Equal(t, 8, queue.Len())
 	assert.Equal(t, 10, queue.Cap())
 
-	var v T
+	var v interface{}
 	// pop 5 elements
 	for i := 0; i < 5; i++ {
 		v = queue.Pop()

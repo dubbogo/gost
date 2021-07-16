@@ -21,20 +21,18 @@ import (
 	"github.com/dubbogo/gost/container/queue"
 )
 
-type T interface{}
-
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 type UnboundedChan struct {
-	in    chan T
-	out   chan T
+	in    chan interface{}
+	out   chan interface{}
 	queue *gxqueue.CircularUnboundedQueue
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
 func NewUnboundedChan(capacity int) *UnboundedChan {
 	ch := &UnboundedChan{
-		in:    make(chan T, capacity/3),
-		out:   make(chan T, capacity/3),
+		in:    make(chan interface{}, capacity/3),
+		out:   make(chan interface{}, capacity/3),
 		queue: gxqueue.NewCircularUnboundedQueue(capacity - 2*(capacity/3)),
 	}
 
@@ -44,12 +42,12 @@ func NewUnboundedChan(capacity int) *UnboundedChan {
 }
 
 // In returns write-only chan
-func (ch *UnboundedChan) In() chan<- T {
+func (ch *UnboundedChan) In() chan<- interface{} {
 	return ch.in
 }
 
 // Out returns read-only chan
-func (ch *UnboundedChan) Out() <-chan T {
+func (ch *UnboundedChan) Out() <-chan interface{} {
 	return ch.out
 }
 

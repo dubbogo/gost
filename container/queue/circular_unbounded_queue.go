@@ -17,15 +17,13 @@
 
 package gxqueue
 
-type T interface{}
-
 const (
 	fastGrowThreshold = 1024
 )
 
 // CircularUnboundedQueue is a circular structure and will grow automatically if it exceeds the capacity.
 type CircularUnboundedQueue struct {
-	data       []T
+	data       []interface{}
 	head, tail int
 	isize      int // initial size
 }
@@ -35,7 +33,7 @@ func NewCircularUnboundedQueue(size int) *CircularUnboundedQueue {
 		panic("size should be greater than zero")
 	}
 	return &CircularUnboundedQueue{
-		data:  make([]T, size+1),
+		data:  make([]interface{}, size+1),
 		isize: size,
 	}
 }
@@ -44,7 +42,7 @@ func (q *CircularUnboundedQueue) IsEmpty() bool {
 	return q.head == q.tail
 }
 
-func (q *CircularUnboundedQueue) Push(t T) {
+func (q *CircularUnboundedQueue) Push(t interface{}) {
 	q.data[q.tail] = t
 
 	q.tail = (q.tail + 1) % len(q.data)
@@ -53,7 +51,7 @@ func (q *CircularUnboundedQueue) Push(t T) {
 	}
 }
 
-func (q *CircularUnboundedQueue) Pop() T {
+func (q *CircularUnboundedQueue) Pop() interface{} {
 	if q.IsEmpty() {
 		panic("queue has no element")
 	}
@@ -64,7 +62,7 @@ func (q *CircularUnboundedQueue) Pop() T {
 	return t
 }
 
-func (q *CircularUnboundedQueue) Peek() T {
+func (q *CircularUnboundedQueue) Peek() interface{} {
 	if q.IsEmpty() {
 		panic("queue has no element")
 	}
@@ -84,7 +82,7 @@ func (q *CircularUnboundedQueue) Len() int {
 }
 
 func (q *CircularUnboundedQueue) Reset() {
-	q.data = make([]T, q.isize+1)
+	q.data = make([]interface{}, q.isize+1)
 	q.head, q.tail = 0, 0
 }
 
@@ -101,7 +99,7 @@ func (q *CircularUnboundedQueue) grow() {
 		newsize = oldsize + oldsize/4
 	}
 
-	newdata := make([]T, newsize+1)
+	newdata := make([]interface{}, newsize+1)
 	copy(newdata[0:], q.data[q.head:])
 	copy(newdata[len(q.data)-q.head:], q.data[:q.head])
 
