@@ -101,18 +101,15 @@ func (ch *UnboundedChan) run() {
 
 	for {
 		val, ok := <-ch.in
-		atomic.AddInt32(&ch.queueLen, 1)
 		if !ok { // `ch.in` was closed and queue has no elements
 			return
 		}
 
 		select {
 		case ch.out <- val: // data was written to `ch.out`
-			atomic.AddInt32(&ch.queueLen, -1)
 			continue
 		default: // `ch.out` is full, move the data to `ch.queue`
-			ch.queue.Push(val)
-			atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+			ch.queuePush(val)
 		}
 
 		for !ch.queue.IsEmpty() {
@@ -122,19 +119,15 @@ func (ch *UnboundedChan) run() {
 					ch.closeWait()
 					return
 				}
-				atomic.AddInt32(&ch.queueLen, 1)
-				if ok = ch.queue.Push(val); !ok { // try to push the value into queue
+				if ok = ch.queuePush(val); !ok { // try to push the value into queue
 					ch.block(val)
 				}
-				atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
 			case ch.out <- ch.queue.Peek():
-				atomic.AddInt32(&ch.queueLen, -1)
-				ch.queue.Pop()
+				ch.queuePop()
 			}
 		}
 		if ch.queue.Cap() > ch.queue.InitialCap() {
-			ch.queue.Reset()
-			atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+			ch.queueReset()
 		}
 	}
 }
@@ -142,17 +135,41 @@ func (ch *UnboundedChan) run() {
 // closeWait waits for being empty of `ch.queue`
 func (ch *UnboundedChan) closeWait() {
 	for !ch.queue.IsEmpty() {
-		ch.out <- ch.queue.Pop()
+		ch.out <- ch.queuePop()
 	}
 }
 
 // block waits for having an idle space on `ch.out`
 func (ch *UnboundedChan) block(val interface{}) {
+	// `val` is not in `ch.queue` and `ch.in`, but it is stored into `UnboundedChan`
+	defer func() {
+		atomic.AddInt32(&ch.queueLen, -1)
+	}()
+	atomic.AddInt32(&ch.queueLen, 1)
 	select {
 	case ch.out <- ch.queue.Peek():
+		// Here not needs to use `queuePush` and `queuePop` because the len and cap are not changed
 		ch.queue.Pop()
-		atomic.AddInt32(&ch.queueLen, -1)
 		ch.queue.Push(val)
-		// Here not needs `atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))` due to capacity couldn't be larger.
 	}
+}
+
+func (ch *UnboundedChan) queuePush(val interface{}) (ok bool) {
+	ok = ch.queue.Push(val)
+	if ok {
+		atomic.AddInt32(&ch.queueLen, 1)
+		atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+	}
+	return
+}
+
+func (ch *UnboundedChan) queueReset() {
+	ch.queue.Reset()
+	atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+}
+
+func (ch *UnboundedChan) queuePop() (t interface{}) {
+	t = ch.queue.Pop()
+	atomic.AddInt32(&ch.queueLen, -1)
+	return
 }
