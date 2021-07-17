@@ -92,7 +92,7 @@ func (ch *UnboundedChan) Len() int {
 // Cap returns the total capacity of chan.
 // WARNING: DO NOT call Cap() when growing, it may cause data race.
 func (ch *UnboundedChan) Cap() int {
-	// time.Sleep is required to ensure Len() returns the correct results
+	// time.Sleep is required to ensure Cap() returns the correct results
 	time.Sleep(1 * time.Millisecond)
 	return cap(ch.in) + cap(ch.out) + int(atomic.LoadInt32(&ch.queueCap)) + 1
 }
