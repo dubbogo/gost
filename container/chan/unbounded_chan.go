@@ -58,9 +58,9 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 	}
 
 	ch := &UnboundedChan{
-		in:    make(chan interface{}, capacity/3-1), // block() could store an extra value
-		out:   make(chan interface{}, capacity/3),
-		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
+		in:       make(chan interface{}, capacity/3-1), // block() could store an extra value
+		out:      make(chan interface{}, capacity/3),
+		queue:    gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
 		queueLen: &atomic.Int32{},
 		queueCap: &atomic.Int32{},
 	}
