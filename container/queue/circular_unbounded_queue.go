@@ -38,7 +38,7 @@ func NewCircularUnboundedQueueWithQuota(capacity, quota int) *CircularUnboundedQ
 		panic("capacity should be greater than zero")
 	}
 	if quota < 0 {
-		panic("quota should be greater than zero")
+		panic("quota should be greater or equal to zero")
 	}
 	if quota != 0 && capacity > quota {
 		capacity = quota

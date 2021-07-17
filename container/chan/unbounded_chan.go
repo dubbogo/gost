@@ -21,11 +21,16 @@ import (
 	"github.com/dubbogo/gost/container/queue"
 )
 
+const (
+	blocked = 1 << iota
+)
+
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 type UnboundedChan struct {
 	in    chan interface{}
 	out   chan interface{}
 	queue *gxqueue.CircularUnboundedQueue
+	status uint32
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
@@ -38,29 +43,23 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 		panic("capacity should be greater than 0")
 	}
 	if quota < 0 {
-		panic("quota should be greater or equals to 0")
+		panic("quota should be greater or equal to 0")
 	}
 	if quota != 0 && capacity > quota {
 		capacity = quota
 	}
 
-	var incap, outcap, qcap, qquota int
-	if capacity < 3 {
-		incap = 0
-		outcap = 0
-		qcap = capacity
-		qquota = quota
+	var qquota int
+	if quota == 0 {
+		qquota = 0
 	} else {
-		incap = capacity/3
-		outcap = capacity/3
-		qcap = capacity - 2*(capacity/3)
 		qquota = quota - 2*(capacity/3)
 	}
 
 	ch := &UnboundedChan{
-		in:    make(chan interface{}, incap),
-		out:   make(chan interface{}, outcap),
-		queue: gxqueue.NewCircularUnboundedQueueWithQuota(qcap, qquota),
+		in:    make(chan interface{}, capacity/3-1), // block() could store an extra value
+		out:   make(chan interface{}, capacity/3),
+		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity - 2*(capacity/3), qquota),
 	}
 
 	go ch.run()
@@ -78,8 +77,16 @@ func (ch *UnboundedChan) Out() <-chan interface{} {
 	return ch.out
 }
 
-func (ch *UnboundedChan) Len() int {
-	return len(ch.in) + len(ch.out) + ch.queue.Len()
+func (ch *UnboundedChan) Len() (l int) {
+	l = len(ch.in) + len(ch.out) + ch.queue.Len()
+	if ch.status & blocked == blocked {
+		l++
+	}
+	return
+}
+
+func (ch *UnboundedChan) Cap() int {
+	return cap(ch.in) + cap(ch.out) + ch.queue.Cap() + 1
 }
 
 func (ch *UnboundedChan) run() {
@@ -89,30 +96,25 @@ func (ch *UnboundedChan) run() {
 
 	for {
 		val, ok := <-ch.in
-		if !ok {
-			// `ch.in` was closed and queue has no elements
+		if !ok { // `ch.in` was closed and queue has no elements
 			return
 		}
 
 		select {
-		// data was written to `ch.out`
-		case ch.out <- val:
+		case ch.out <- val: // data was written to `ch.out`
 			continue
-		// `ch.out` is full, move the data to `ch.queue`
-		default:
+		default: // `ch.out` is full, move the data to `ch.queue`
 			ch.queue.Push(val)
 		}
 
 		for !ch.queue.IsEmpty() {
 			select {
-			case val, ok := <-ch.in:
-				// `ch.in` was closed
+			case val, ok := <-ch.in: // `ch.in` was closed
 				if !ok {
 					ch.closeWait()
 					return
 				}
-				// try to push the value into queue
-				if ok = ch.queue.Push(val); !ok {
+				if ok = ch.queue.Push(val); !ok { // try to push the value into queue
 					ch.block(val)
 				}
 			case ch.out <- ch.queue.Peek():
@@ -138,8 +140,16 @@ func (ch *UnboundedChan) closeWait() {
 
 // block waits for having an idle space on `ch.out`
 func (ch *UnboundedChan) block(val interface{}) {
+	defer func() {
+		ch.status &^= blocked
+	}()
+	if ch.status & blocked == blocked {
+		panic("reenter block() is not allowed")
+	}
+	ch.status |= blocked
 	select {
-	case ch.out <- ch.queue.Pop():
+	case ch.out <- ch.queue.Peek():
+		ch.queue.Pop()
 		ch.queue.Push(val)
 	}
 }

@@ -117,5 +117,30 @@ func TestCircularUnboundedQueueWithGrowing(t *testing.T) {
 }
 
 func TestCircularUnboundedQueueWithQuota(t *testing.T) {
-	//queue :=
+	queue := NewCircularUnboundedQueueWithQuota(10, 9)
+	assert.Equal(t, 0, queue.Len())
+	assert.Equal(t, 9, queue.Cap())
+
+	queue = NewCircularUnboundedQueueWithQuota(10, 15)
+
+	for i:=0; i<10; i++ {
+		ok := queue.Push(i)
+		assert.True(t, ok)
+	}
+
+	assert.Equal(t, 10, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
+
+	for i:=0; i<10; i++ {
+		v := queue.Pop()
+		assert.Equal(t, i, v.(int))
+	}
+
+	for i:=0; i<15; i++ {
+		ok := queue.Push(i)
+		assert.True(t, ok)
+	}
+
+	assert.Equal(t, 15, queue.Len())
+	assert.Equal(t, 15, queue.Cap())
 }

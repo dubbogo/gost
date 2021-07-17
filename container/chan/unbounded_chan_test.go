@@ -20,6 +20,7 @@ package gxchan
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -78,4 +79,60 @@ func TestUnboundedChan(t *testing.T) {
 
 	assert.Equal(t, 720600, count)
 
+}
+
+func TestUnboundedChanWithQuota(t *testing.T) {
+	ch := NewUnboundedChanWithQuota(10, 15)
+	assert.Equal(t, 2, cap(ch.in))
+	assert.Equal(t, 3, cap(ch.out))
+	assert.Equal(t, 4, ch.queue.Cap())
+	assert.Equal(t, 0, ch.Len())
+	assert.Equal(t, 10, ch.Cap())
+
+	var count int
+
+	for i:=0; i<10; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	assert.Equal(t, 14, ch.Cap())
+	assert.Equal(t, 10, ch.Len())
+
+	for i:=0; i<10; i++ {
+		v, ok := <- ch.Out()
+		assert.True(t, ok)
+		count += v.(int)
+	}
+
+	assert.Equal(t, 45, count)
+
+	for i:=0; i<15; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	assert.Equal(t, 15, ch.Cap())
+	assert.Equal(t, 15, ch.Len())
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ch.In() <- 15
+	}()
+
+	time.Sleep(10 * time.Millisecond)
+
+	for i:=0; i<16; i++ {
+		v, ok := <- ch.Out()
+		assert.True(t, ok)
+		count += v.(int)
+	}
+
+	assert.Equal(t, 165, count)
+
+	wg.Wait()
 }
