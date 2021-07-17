@@ -29,8 +29,8 @@ import (
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 // UnboundedChan is not thread-safe.
 type UnboundedChan struct {
-	in     chan interface{}
-	out    chan interface{}
+	in       chan interface{}
+	out      chan interface{}
 	queue    *gxqueue.CircularUnboundedQueue
 	queueLen int32
 }
