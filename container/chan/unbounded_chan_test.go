@@ -91,7 +91,7 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 
 	var count int
 
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		ch.In() <- i
 	}
 
@@ -100,15 +100,15 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 	assert.Equal(t, 14, ch.Cap())
 	assert.Equal(t, 10, ch.Len())
 
-	for i:=0; i<10; i++ {
-		v, ok := <- ch.Out()
+	for i := 0; i < 10; i++ {
+		v, ok := <-ch.Out()
 		assert.True(t, ok)
 		count += v.(int)
 	}
 
 	assert.Equal(t, 45, count)
 
-	for i:=0; i<15; i++ {
+	for i := 0; i < 15; i++ {
 		ch.In() <- i
 	}
 
@@ -126,8 +126,8 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	for i:=0; i<16; i++ {
-		v, ok := <- ch.Out()
+	for i := 0; i < 16; i++ {
+		v, ok := <-ch.Out()
 		assert.True(t, ok)
 		count += v.(int)
 	}

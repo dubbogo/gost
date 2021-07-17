@@ -81,11 +81,11 @@ func TestCircularUnboundedQueueWithGrowing(t *testing.T) {
 	assert.Equal(t, 0, queue.Len())
 	assert.Equal(t, 10, queue.Cap())
 
-	for i:=0; i<8; i++ {
+	for i := 0; i < 8; i++ {
 		queue.Push(i)
 		queue.Pop()
 	}
-	for i:=0; i<11; i++ {
+	for i := 0; i < 11; i++ {
 		queue.Push(i)
 		if i == 9 {
 			expectedArr := []int{3, 4, 5, 6, 7, 8, 9, 7, 0, 1, 2}
@@ -97,7 +97,7 @@ func TestCircularUnboundedQueueWithGrowing(t *testing.T) {
 	assert.Equal(t, 11, queue.Len())
 	assert.Equal(t, 20, queue.Cap())
 
-	for i:=0; i<11; i++ {
+	for i := 0; i < 11; i++ {
 		assert.Equal(t, i, queue.Pop())
 	}
 
@@ -123,7 +123,7 @@ func TestCircularUnboundedQueueWithQuota(t *testing.T) {
 
 	queue = NewCircularUnboundedQueueWithQuota(10, 15)
 
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		ok := queue.Push(i)
 		assert.True(t, ok)
 	}
@@ -131,12 +131,12 @@ func TestCircularUnboundedQueueWithQuota(t *testing.T) {
 	assert.Equal(t, 10, queue.Len())
 	assert.Equal(t, 10, queue.Cap())
 
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		v := queue.Pop()
 		assert.Equal(t, i, v.(int))
 	}
 
-	for i:=0; i<15; i++ {
+	for i := 0; i < 15; i++ {
 		ok := queue.Push(i)
 		assert.True(t, ok)
 	}

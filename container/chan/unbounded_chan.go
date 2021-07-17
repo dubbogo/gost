@@ -27,9 +27,9 @@ const (
 
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
 type UnboundedChan struct {
-	in    chan interface{}
-	out   chan interface{}
-	queue *gxqueue.CircularUnboundedQueue
+	in     chan interface{}
+	out    chan interface{}
+	queue  *gxqueue.CircularUnboundedQueue
 	status uint32
 }
 
@@ -59,7 +59,7 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 	ch := &UnboundedChan{
 		in:    make(chan interface{}, capacity/3-1), // block() could store an extra value
 		out:   make(chan interface{}, capacity/3),
-		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity - 2*(capacity/3), qquota),
+		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
 	}
 
 	go ch.run()
@@ -79,7 +79,7 @@ func (ch *UnboundedChan) Out() <-chan interface{} {
 
 func (ch *UnboundedChan) Len() (l int) {
 	l = len(ch.in) + len(ch.out) + ch.queue.Len()
-	if ch.status & blocked == blocked {
+	if ch.status&blocked == blocked {
 		l++
 	}
 	return
@@ -143,7 +143,7 @@ func (ch *UnboundedChan) block(val interface{}) {
 	defer func() {
 		ch.status &^= blocked
 	}()
-	if ch.status & blocked == blocked {
+	if ch.status&blocked == blocked {
 		panic("reenter block() is not allowed")
 	}
 	ch.status |= blocked
