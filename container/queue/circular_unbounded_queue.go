@@ -22,6 +22,7 @@ const (
 )
 
 // CircularUnboundedQueue is a circular structure and will grow automatically if it exceeds the capacity.
+// CircularUnboundedQueue is not thread-safe.
 type CircularUnboundedQueue struct {
 	data       []interface{}
 	head, tail int
