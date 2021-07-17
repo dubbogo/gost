@@ -26,6 +26,7 @@ const (
 )
 
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
+// UnboundedChan is not thread-safe.
 type UnboundedChan struct {
 	in     chan interface{}
 	out    chan interface{}
@@ -77,6 +78,8 @@ func (ch *UnboundedChan) Out() <-chan interface{} {
 	return ch.out
 }
 
+// Len returns the total length of chan.
+// WARNING: DO NOT call Len() when growing, it may cause data race.
 func (ch *UnboundedChan) Len() (l int) {
 	l = len(ch.in) + len(ch.out) + ch.queue.Len()
 	if ch.status&blocked == blocked {
@@ -85,6 +88,8 @@ func (ch *UnboundedChan) Len() (l int) {
 	return
 }
 
+// Cap returns the total capacity of chan.
+// WARNING: DO NOT call Cap() when growing, it may cause data race.
 func (ch *UnboundedChan) Cap() int {
 	return cap(ch.in) + cap(ch.out) + ch.queue.Cap() + 1
 }
