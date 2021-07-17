@@ -20,7 +20,6 @@ package gxchan
 import (
 	"sync"
 	"testing"
-	"time"
 )
 
 import (
@@ -95,6 +94,9 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 		ch.In() <- i
 	}
 
+	assert.Equal(t, 14, ch.Cap())
+	assert.Equal(t, 10, ch.Len())
+
 	for i := 0; i < 10; i++ {
 		v, ok := <-ch.Out()
 		assert.True(t, ok)
@@ -107,6 +109,9 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 		ch.In() <- i
 	}
 
+	assert.Equal(t, 15, ch.Cap())
+	assert.Equal(t, 15, ch.Len())
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -114,13 +119,17 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 		ch.In() <- 15
 	}()
 
-	time.Sleep(10 * time.Millisecond)
+	assert.Equal(t, 15, ch.Cap())
+	assert.Equal(t, 15, ch.Len())
 
 	for i := 0; i < 16; i++ {
 		v, ok := <-ch.Out()
 		assert.True(t, ok)
 		count += v.(int)
 	}
+
+	assert.Equal(t, 0, ch.Len())
+	assert.Equal(t, 10, ch.Cap())
 
 	assert.Equal(t, 165, count)
 

@@ -18,11 +18,12 @@
 package gxchan
 
 import (
-	"github.com/dubbogo/gost/container/queue"
+	"sync/atomic"
+	"time"
 )
 
-const (
-	blocked = 1 << iota
+import (
+	"github.com/dubbogo/gost/container/queue"
 )
 
 // UnboundedChan is a chan that could grow if the number of elements exceeds the capacity.
@@ -30,8 +31,8 @@ const (
 type UnboundedChan struct {
 	in     chan interface{}
 	out    chan interface{}
-	queue  *gxqueue.CircularUnboundedQueue
-	status uint32
+	queue    *gxqueue.CircularUnboundedQueue
+	queueLen int32
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
@@ -80,12 +81,10 @@ func (ch *UnboundedChan) Out() <-chan interface{} {
 
 // Len returns the total length of chan.
 // WARNING: DO NOT call Len() when growing, it may cause data race.
-func (ch *UnboundedChan) Len() (l int) {
-	l = len(ch.in) + len(ch.out) + ch.queue.Len()
-	if ch.status&blocked == blocked {
-		l++
-	}
-	return
+func (ch *UnboundedChan) Len() int {
+	// time.Sleep is required to ensure Len() returns the correct results
+	time.Sleep(1 * time.Millisecond)
+	return len(ch.in) + len(ch.out) + int(atomic.LoadInt32(&ch.queueLen))
 }
 
 // Cap returns the total capacity of chan.
@@ -101,12 +100,14 @@ func (ch *UnboundedChan) run() {
 
 	for {
 		val, ok := <-ch.in
+		atomic.AddInt32(&ch.queueLen, 1)
 		if !ok { // `ch.in` was closed and queue has no elements
 			return
 		}
 
 		select {
 		case ch.out <- val: // data was written to `ch.out`
+			atomic.AddInt32(&ch.queueLen, -1)
 			continue
 		default: // `ch.out` is full, move the data to `ch.queue`
 			ch.queue.Push(val)
@@ -119,20 +120,18 @@ func (ch *UnboundedChan) run() {
 					ch.closeWait()
 					return
 				}
+				atomic.AddInt32(&ch.queueLen, 1)
 				if ok = ch.queue.Push(val); !ok { // try to push the value into queue
 					ch.block(val)
 				}
 			case ch.out <- ch.queue.Peek():
+				atomic.AddInt32(&ch.queueLen, -1)
 				ch.queue.Pop()
 			}
 		}
-		ch.shrinkQueue()
-	}
-}
-
-func (ch *UnboundedChan) shrinkQueue() {
-	if ch.queue.IsEmpty() && ch.queue.Cap() > ch.queue.InitialCap() {
-		ch.queue.Reset()
+		if ch.queue.Cap() > ch.queue.InitialCap() {
+			ch.queue.Reset()
+		}
 	}
 }
 
@@ -145,16 +144,10 @@ func (ch *UnboundedChan) closeWait() {
 
 // block waits for having an idle space on `ch.out`
 func (ch *UnboundedChan) block(val interface{}) {
-	defer func() {
-		ch.status &^= blocked
-	}()
-	if ch.status&blocked == blocked {
-		panic("reenter block() is not allowed")
-	}
-	ch.status |= blocked
 	select {
 	case ch.out <- ch.queue.Peek():
 		ch.queue.Pop()
+		atomic.AddInt32(&ch.queueLen, -1)
 		ch.queue.Push(val)
 	}
 }
