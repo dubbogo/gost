@@ -18,8 +18,7 @@
 package gxchan
 
 import (
-	"sync/atomic"
-	"time"
+	"go.uber.org/atomic"
 )
 
 import (
@@ -31,8 +30,8 @@ type UnboundedChan struct {
 	in       chan interface{}
 	out      chan interface{}
 	queue    *gxqueue.CircularUnboundedQueue
-	queueLen int32
-	queueCap int32
+	queueLen *atomic.Int32
+	queueCap *atomic.Int32
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
@@ -62,8 +61,10 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 		in:    make(chan interface{}, capacity/3-1), // block() could store an extra value
 		out:   make(chan interface{}, capacity/3),
 		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
+		queueLen: &atomic.Int32{},
+		queueCap: &atomic.Int32{},
 	}
-	atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+	ch.queueCap.Store(int32(ch.queue.Cap()))
 
 	go ch.run()
 
@@ -80,18 +81,14 @@ func (ch *UnboundedChan) Out() <-chan interface{} {
 	return ch.out
 }
 
-// Len returns the total length of chan.
+// Len returns the total length of chan
 func (ch *UnboundedChan) Len() int {
-	// time.Sleep is required to ensure Len() returns the correct results
-	time.Sleep(1 * time.Millisecond)
-	return len(ch.in) + len(ch.out) + int(atomic.LoadInt32(&ch.queueLen))
+	return len(ch.in) + len(ch.out) + int(ch.queueLen.Load())
 }
 
 // Cap returns the total capacity of chan.
 func (ch *UnboundedChan) Cap() int {
-	// time.Sleep is required to ensure Cap() returns the correct results
-	time.Sleep(1 * time.Millisecond)
-	return cap(ch.in) + cap(ch.out) + int(atomic.LoadInt32(&ch.queueCap)) + 1
+	return cap(ch.in) + cap(ch.out) + int(ch.queueCap.Load()) + 1
 }
 
 func (ch *UnboundedChan) run() {
@@ -143,9 +140,9 @@ func (ch *UnboundedChan) closeWait() {
 func (ch *UnboundedChan) block(val interface{}) {
 	// `val` is not in `ch.queue` and `ch.in`, but it is stored into `UnboundedChan`
 	defer func() {
-		atomic.AddInt32(&ch.queueLen, -1)
+		ch.queueLen.Add(-1)
 	}()
-	atomic.AddInt32(&ch.queueLen, 1)
+	ch.queueLen.Add(1)
 	select {
 	case ch.out <- ch.queue.Peek():
 		// Here not needs to use `queuePush` and `queuePop` because the len and cap are not changed
@@ -157,19 +154,19 @@ func (ch *UnboundedChan) block(val interface{}) {
 func (ch *UnboundedChan) queuePush(val interface{}) (ok bool) {
 	ok = ch.queue.Push(val)
 	if ok {
-		atomic.AddInt32(&ch.queueLen, 1)
-		atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+		ch.queueLen.Add(1)
+		ch.queueCap.Store(int32(ch.queue.Cap()))
 	}
 	return
 }
 
 func (ch *UnboundedChan) queueReset() {
 	ch.queue.Reset()
-	atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
+	ch.queueCap.Store(int32(ch.queue.Cap()))
 }
 
 func (ch *UnboundedChan) queuePop() (t interface{}) {
 	t = ch.queue.Pop()
-	atomic.AddInt32(&ch.queueLen, -1)
+	ch.queueLen.Add(-1)
 	return
 }
