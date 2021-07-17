@@ -95,11 +95,6 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 		ch.In() <- i
 	}
 
-	time.Sleep(10 * time.Millisecond)
-
-	assert.Equal(t, 14, ch.Cap())
-	assert.Equal(t, 10, ch.Len())
-
 	for i := 0; i < 10; i++ {
 		v, ok := <-ch.Out()
 		assert.True(t, ok)
@@ -111,11 +106,6 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 	for i := 0; i < 15; i++ {
 		ch.In() <- i
 	}
-
-	time.Sleep(10 * time.Millisecond)
-
-	assert.Equal(t, 15, ch.Cap())
-	assert.Equal(t, 15, ch.Len())
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
