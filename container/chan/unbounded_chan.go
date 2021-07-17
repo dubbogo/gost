@@ -33,6 +33,7 @@ type UnboundedChan struct {
 	out      chan interface{}
 	queue    *gxqueue.CircularUnboundedQueue
 	queueLen int32
+	queueCap int32
 }
 
 // NewUnboundedChan creates an instance of UnboundedChan.
@@ -63,6 +64,7 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 		out:   make(chan interface{}, capacity/3),
 		queue: gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
 	}
+	atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
 
 	go ch.run()
 
@@ -90,7 +92,9 @@ func (ch *UnboundedChan) Len() int {
 // Cap returns the total capacity of chan.
 // WARNING: DO NOT call Cap() when growing, it may cause data race.
 func (ch *UnboundedChan) Cap() int {
-	return cap(ch.in) + cap(ch.out) + ch.queue.Cap() + 1
+	// time.Sleep is required to ensure Len() returns the correct results
+	time.Sleep(1 * time.Millisecond)
+	return cap(ch.in) + cap(ch.out) + int(atomic.LoadInt32(&ch.queueCap)) + 1
 }
 
 func (ch *UnboundedChan) run() {
@@ -111,6 +115,7 @@ func (ch *UnboundedChan) run() {
 			continue
 		default: // `ch.out` is full, move the data to `ch.queue`
 			ch.queue.Push(val)
+			atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
 		}
 
 		for !ch.queue.IsEmpty() {
@@ -124,6 +129,7 @@ func (ch *UnboundedChan) run() {
 				if ok = ch.queue.Push(val); !ok { // try to push the value into queue
 					ch.block(val)
 				}
+				atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
 			case ch.out <- ch.queue.Peek():
 				atomic.AddInt32(&ch.queueLen, -1)
 				ch.queue.Pop()
@@ -131,6 +137,7 @@ func (ch *UnboundedChan) run() {
 		}
 		if ch.queue.Cap() > ch.queue.InitialCap() {
 			ch.queue.Reset()
+			atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))
 		}
 	}
 }
@@ -149,5 +156,6 @@ func (ch *UnboundedChan) block(val interface{}) {
 		ch.queue.Pop()
 		atomic.AddInt32(&ch.queueLen, -1)
 		ch.queue.Push(val)
+		// Here not needs `atomic.StoreInt32(&ch.queueCap, int32(ch.queue.Cap()))` due to capacity couldn't be larger.
 	}
 }
