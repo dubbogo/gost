@@ -50,17 +50,35 @@ func NewUnboundedChanWithQuota(capacity, quota int) *UnboundedChan {
 		capacity = quota
 	}
 
-	var qquota int
-	if quota == 0 {
-		qquota = 0
-	} else {
+	var (
+		incap  = capacity / 3
+		outcap = capacity / 3
+		qcap   = capacity - 2*(capacity/3)
 		qquota = quota - 2*(capacity/3)
+	)
+
+	if capacity/3 > 0 {
+		incap--
+	} else {
+		qcap--
+		qquota--
+	}
+
+	// address quota if the value is not valid
+	if quota == 0 { // quota == 0 means no limits for queue
+		qquota = 0
+	} else { // quota != 0 means chan couldn't grow unlimitedly
+		if qquota == 0 {
+			// qquota == 0 means queue could grow unlimitedly
+			// in this case, the total quota will be set to quota+1
+			qquota = 1
+		}
 	}
 
 	ch := &UnboundedChan{
-		in:       make(chan interface{}, capacity/3-1), // block() could store an extra value
-		out:      make(chan interface{}, capacity/3),
-		queue:    gxqueue.NewCircularUnboundedQueueWithQuota(capacity-2*(capacity/3), qquota),
+		in:       make(chan interface{}, incap),
+		out:      make(chan interface{}, outcap),
+		queue:    gxqueue.NewCircularUnboundedQueueWithQuota(qcap, qquota),
 		queueLen: &atomic.Int32{},
 		queueCap: &atomic.Int32{},
 	}
@@ -106,7 +124,9 @@ func (ch *UnboundedChan) run() {
 		case ch.out <- val: // data was written to `ch.out`
 			continue
 		default: // `ch.out` is full, move the data to `ch.queue`
-			ch.queuePush(val)
+			if ok := ch.queuePush(val); !ok {
+				ch.block(val)
+			}
 		}
 
 		for !ch.queue.IsEmpty() {
@@ -123,6 +143,7 @@ func (ch *UnboundedChan) run() {
 				ch.queuePop()
 			}
 		}
+
 		if ch.queue.Cap() > ch.queue.InitialCap() {
 			ch.queueReset()
 		}
@@ -143,12 +164,15 @@ func (ch *UnboundedChan) block(val interface{}) {
 		ch.queueLen.Add(-1)
 	}()
 	ch.queueLen.Add(1)
-	select {
-	case ch.out <- ch.queue.Peek():
-		// Here not needs to use `queuePush` and `queuePop` because the len and cap are not changed
+
+	if !ch.queue.IsEmpty() {
+		ch.out <- ch.queue.Peek()
 		ch.queue.Pop()
 		ch.queue.Push(val)
+		return
 	}
+
+	ch.out <- val
 }
 
 func (ch *UnboundedChan) queuePush(val interface{}) (ok bool) {

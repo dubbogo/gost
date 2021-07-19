@@ -20,6 +20,7 @@ package gxchan
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -80,7 +81,12 @@ func TestUnboundedChan(t *testing.T) {
 
 }
 
-func TestUnboundedChanWithQuota(t *testing.T) {
+func TestUnboundedChan_Quota(t *testing.T) {
+	t.Run("testQuota1", testQuota1)
+	t.Run("testQuota2", testQuota2)
+}
+
+func testQuota1(t *testing.T) {
 	ch := NewUnboundedChanWithQuota(10, 15)
 	assert.Equal(t, 2, cap(ch.in))
 	assert.Equal(t, 3, cap(ch.out))
@@ -134,4 +140,88 @@ func TestUnboundedChanWithQuota(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, 165, count)
+}
+
+// testQuota2 tests `ch.in` has no space
+func testQuota2(t *testing.T) {
+	ch := NewUnboundedChanWithQuota(1, 1)
+
+	for i := 0; i < 1; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 1:
+	default:
+		assert.Fail(t, "the chan shouldn't be blocked")
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 2:
+		assert.Fail(t, "the chan should be blocked")
+	default:
+	}
+
+	ch = NewUnboundedChanWithQuota(1, 0)
+
+	for i := 0; i < 2; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 2:
+		assert.True(t, ch.Len() <= 3)
+	default:
+		assert.Fail(t, "the chan shouldn't be blocked")
+	}
+
+	ch = NewUnboundedChanWithQuota(1, 2)
+
+	for i := 0; i < 1; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 1:
+	default:
+		assert.Fail(t, "the chan shouldn't be blocked")
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 1:
+		assert.Fail(t, "the chan should be blocked")
+	default:
+	}
+
+	ch = NewUnboundedChanWithQuota(1, 3)
+
+	for i := 0; i < 2; i++ {
+		ch.In() <- i
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 2:
+	default:
+		assert.Fail(t, "the chan shouldn't be blocked")
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case ch.In() <- 2:
+		assert.Fail(t, "the chan should be blocked")
+	default:
+	}
 }

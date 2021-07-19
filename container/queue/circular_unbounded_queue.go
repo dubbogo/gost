@@ -113,6 +113,9 @@ func (q *CircularUnboundedQueue) InitialCap() int {
 
 func (q *CircularUnboundedQueue) grow() bool {
 	oldcap := q.Cap()
+	if oldcap == 0 {
+		oldcap++
+	}
 	var newcap int
 	if oldcap < fastGrowThreshold {
 		newcap = oldcap * 2
@@ -123,7 +126,7 @@ func (q *CircularUnboundedQueue) grow() bool {
 		newcap = q.quota
 	}
 
-	if newcap == oldcap {
+	if newcap == q.Cap() {
 		return false
 	}
 
@@ -133,8 +136,8 @@ func (q *CircularUnboundedQueue) grow() bool {
 		copy(newdata[len(q.data)-q.head:], q.data[:q.head-1])
 	}
 
+	q.head, q.tail = 0, q.Cap()
 	q.data = newdata
-	q.head, q.tail = 0, oldcap
 
 	return true
 }
