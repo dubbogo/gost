@@ -68,7 +68,7 @@ loop:
 			}
 			// select a worker to execute the task
 			select {
-			case p.workerQueue <-t:
+			case p.workerQueue <- t:
 			default:
 				if workerCount < p.maxWorkers {
 					// number of workers not reaches the limitation
@@ -79,7 +79,7 @@ loop:
 				} else {
 					// blocked and waiting for a worker
 					select {
-					case p.workerQueue <-t:
+					case p.workerQueue <- t:
 					}
 				}
 			}
@@ -88,7 +88,7 @@ loop:
 
 	// wait for the end of all tasks, and shutting down workers
 	for workerCount > 0 {
-		p.workerQueue <-nil
+		p.workerQueue <- nil
 		workerCount--
 	}
 
