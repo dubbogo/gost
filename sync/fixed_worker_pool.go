@@ -40,7 +40,7 @@ func NewFixedWorkerPool(maxWorkers, taskQueueSize int) WorkerPool {
 		done:        make(chan struct{}),
 	}
 
-	gxruntime.GoSafely(nil, false, p.dispatch, nil)
+	go p.dispatch()
 
 	return p
 }
@@ -86,7 +86,7 @@ loop:
 		}
 	}
 
-	// wait for the end of all tasks, and shutting down workers
+	// waiting for the end of all tasks, and shutting down workers
 	for workerCount > 0 {
 		p.workerQueue <- nil
 		workerCount--
