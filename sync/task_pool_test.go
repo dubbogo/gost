@@ -280,32 +280,39 @@ func BenchmarkTaskPool_CPUTask(b *testing.B) {
 		})
 	})
 
-	b.Run(`AddTask`, func(b *testing.B) {
-		task, _ := newCPUTask()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				tp.AddTask(task)
-			}
-		})
+	task, _ := newCPUTask()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			tp.AddTask(task)
+		}
 	})
 
-	b.Run(`AddTaskAlways`, func(b *testing.B) {
-		task, _ := newCPUTask()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				tp.AddTaskAlways(task)
-			}
-		})
-	})
-
-	b.Run(`AddTaskBalance`, func(b *testing.B) {
-		task, _ := newCPUTask()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				tp.AddTaskBalance(task)
-			}
-		})
-	})
+	//b.Run(`AddTask`, func(b *testing.B) {
+	//	task, _ := newCPUTask()
+	//	b.RunParallel(func(pb *testing.PB) {
+	//		for pb.Next() {
+	//			tp.AddTask(task)
+	//		}
+	//	})
+	//})
+	//
+	//b.Run(`AddTaskAlways`, func(b *testing.B) {
+	//	task, _ := newCPUTask()
+	//	b.RunParallel(func(pb *testing.PB) {
+	//		for pb.Next() {
+	//			tp.AddTaskAlways(task)
+	//		}
+	//	})
+	//})
+	//
+	//b.Run(`AddTaskBalance`, func(b *testing.B) {
+	//	task, _ := newCPUTask()
+	//	b.RunParallel(func(pb *testing.PB) {
+	//		for pb.Next() {
+	//			tp.AddTaskBalance(task)
+	//		}
+	//	})
+	//})
 }
 
 // IO-intensive task

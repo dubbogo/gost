@@ -18,12 +18,15 @@
 package gxsync
 
 import (
-	"github.com/stretchr/testify/assert"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConnectionPool(t *testing.T) {
@@ -64,15 +67,13 @@ func TestConnectionPool(t *testing.T) {
 }
 
 func BenchmarkConnectionPool(b *testing.B) {
-	p := NewConnectionPool(runtime.NumCPU(), 1000000000, nil)
+	p := NewConnectionPool(runtime.NumCPU(), 10000000, nil)
 
 	b.Run("CountTask", func(b *testing.B) {
 		task, _ := newCountTask()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				if err := p.Submit(task); err != nil {
-					panic("pool is full.")
-				}
+				_ = p.Submit(task)
 			}
 		})
 	})
@@ -81,9 +82,7 @@ func BenchmarkConnectionPool(b *testing.B) {
 		task, _ := newCPUTask()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				if err := p.Submit(task); err != nil {
-					panic("pool is full.")
-				}
+				_ = p.Submit(task)
 			}
 		})
 	})
@@ -92,9 +91,7 @@ func BenchmarkConnectionPool(b *testing.B) {
 		task, _ := newIOTask()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				if err := p.Submit(task); err != nil {
-					panic("pool is full.")
-				}
+				_ = p.Submit(task)
 			}
 		})
 	})
@@ -103,12 +100,8 @@ func BenchmarkConnectionPool(b *testing.B) {
 		task, _ := newRandomTask()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				if err := p.Submit(task); err != nil {
-					panic("pool is full.")
-				}
+				_ = p.Submit(task)
 			}
 		})
 	})
-
-	p.Close()
 }
