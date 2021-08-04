@@ -67,7 +67,7 @@ func TestConnectionPool(t *testing.T) {
 }
 
 func BenchmarkConnectionPool(b *testing.B) {
-	p := NewConnectionPool(runtime.NumCPU(), 10000000, nil)
+	p := NewConnectionPool(runtime.NumCPU(), 100000000, nil)
 
 	b.Run("CountTask", func(b *testing.B) {
 		task, _ := newCountTask()
