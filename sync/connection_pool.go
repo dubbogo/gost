@@ -35,7 +35,7 @@ func NewConnectionPool(maxWorkers, taskQueueSize int, logger gxlog.Logger) Worke
 	}
 
 	p := &ConnectionPool{
-		logger: logger,
+		logger:      logger,
 		maxWorkers:  maxWorkers,
 		workerQueue: make(chan task),
 		taskQueue:   make(chan task, taskQueueSize),

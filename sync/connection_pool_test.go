@@ -31,7 +31,7 @@ func TestConnectionPool(t *testing.T) {
 		p := NewConnectionPool(100, 100, nil)
 		var count int64
 		wg := new(sync.WaitGroup)
-		for i:=1; i<=100; i++ {
+		for i := 1; i <= 100; i++ {
 			wg.Add(1)
 			value := i
 			err := p.Submit(func() {
