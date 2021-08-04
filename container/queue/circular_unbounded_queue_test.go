@@ -65,7 +65,7 @@ func TestCircularUnboundedQueueWithoutGrowing(t *testing.T) {
 	assert.Equal(t, 10, queue.Cap())
 }
 
-func TestBufferWithGrowing(t *testing.T) {
+func TestCircularUnboundedQueueWithGrowing(t *testing.T) {
 	// size < fastGrowThreshold
 	queue := NewCircularUnboundedQueue(10)
 
@@ -81,6 +81,26 @@ func TestBufferWithGrowing(t *testing.T) {
 	assert.Equal(t, 0, queue.Len())
 	assert.Equal(t, 10, queue.Cap())
 
+	for i := 0; i < 8; i++ {
+		queue.Push(i)
+		queue.Pop()
+	}
+	for i := 0; i < 11; i++ {
+		queue.Push(i)
+		if i == 9 {
+			expectedArr := []int{3, 4, 5, 6, 7, 8, 9, 7, 0, 1, 2}
+			for j := range queue.data {
+				assert.Equal(t, expectedArr[j], queue.data[j].(int))
+			}
+		}
+	}
+	assert.Equal(t, 11, queue.Len())
+	assert.Equal(t, 20, queue.Cap())
+
+	for i := 0; i < 11; i++ {
+		assert.Equal(t, i, queue.Pop())
+	}
+
 	queue = NewCircularUnboundedQueue(fastGrowThreshold)
 
 	// write fastGrowThreshold+1 elements
@@ -94,4 +114,33 @@ func TestBufferWithGrowing(t *testing.T) {
 	queue.Reset()
 	assert.Equal(t, 0, queue.Len())
 	assert.Equal(t, fastGrowThreshold, queue.Cap())
+}
+
+func TestCircularUnboundedQueueWithQuota(t *testing.T) {
+	queue := NewCircularUnboundedQueueWithQuota(10, 9)
+	assert.Equal(t, 0, queue.Len())
+	assert.Equal(t, 9, queue.Cap())
+
+	queue = NewCircularUnboundedQueueWithQuota(10, 15)
+
+	for i := 0; i < 10; i++ {
+		ok := queue.Push(i)
+		assert.True(t, ok)
+	}
+
+	assert.Equal(t, 10, queue.Len())
+	assert.Equal(t, 10, queue.Cap())
+
+	for i := 0; i < 10; i++ {
+		v := queue.Pop()
+		assert.Equal(t, i, v.(int))
+	}
+
+	for i := 0; i < 15; i++ {
+		ok := queue.Push(i)
+		assert.True(t, ok)
+	}
+
+	assert.Equal(t, 15, queue.Len())
+	assert.Equal(t, 15, queue.Cap())
 }
