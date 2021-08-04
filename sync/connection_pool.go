@@ -22,10 +22,11 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log"
 	gxruntime "github.com/dubbogo/gost/runtime"
 )
 
-func NewFixedWorkerPool(maxWorkers, taskQueueSize int) WorkerPool {
+func NewConnectionPool(maxWorkers, taskQueueSize int, logger gxlog.Logger) WorkerPool {
 	if maxWorkers < 1 {
 		maxWorkers = 1
 	}
@@ -33,7 +34,8 @@ func NewFixedWorkerPool(maxWorkers, taskQueueSize int) WorkerPool {
 		taskQueueSize = 0
 	}
 
-	p := &FixedWorkerPool{
+	p := &ConnectionPool{
+		logger: logger,
 		maxWorkers:  maxWorkers,
 		workerQueue: make(chan task),
 		taskQueue:   make(chan task, taskQueueSize),
@@ -45,7 +47,9 @@ func NewFixedWorkerPool(maxWorkers, taskQueueSize int) WorkerPool {
 	return p
 }
 
-type FixedWorkerPool struct {
+type ConnectionPool struct {
+	logger gxlog.Logger
+
 	maxWorkers int
 
 	workerQueue chan task
@@ -54,7 +58,7 @@ type FixedWorkerPool struct {
 	done chan struct{}
 }
 
-func (p *FixedWorkerPool) dispatch() {
+func (p *ConnectionPool) dispatch() {
 	defer close(p.done)
 
 	var workerCount int
@@ -71,16 +75,15 @@ loop:
 			case p.workerQueue <- t:
 			default:
 				if workerCount < p.maxWorkers {
+					workerId := workerCount
 					// number of workers not reaches the limitation
 					gxruntime.GoSafely(nil, false, func() {
-						newWorker(t, p.workerQueue)
+						newWorker(t, p.workerQueue, p.logger, workerId)
 					}, nil)
 					workerCount++
 				} else {
 					// blocked and waiting for a worker
-					select {
-					case p.workerQueue <- t:
-					}
+					p.workerQueue <- t
 				}
 			}
 		}
@@ -95,7 +98,7 @@ loop:
 }
 
 // Submit adds a task to queue asynchronously.
-func (p *FixedWorkerPool) Submit(t task) error {
+func (p *ConnectionPool) Submit(t task) error {
 	if t == nil {
 		return perrors.New("task shouldn't be nil")
 	}
@@ -108,7 +111,7 @@ func (p *FixedWorkerPool) Submit(t task) error {
 }
 
 // SubmitSync adds a task to queue synchronously.
-func (p *FixedWorkerPool) SubmitSync(t task) error {
+func (p *ConnectionPool) SubmitSync(t task) error {
 	if t == nil {
 		return perrors.New("task shouldn't be nil")
 	}
@@ -127,7 +130,7 @@ func (p *FixedWorkerPool) SubmitSync(t task) error {
 	}
 }
 
-func (p *FixedWorkerPool) Close() {
+func (p *ConnectionPool) Close() {
 	select {
 	case <-p.done:
 		return
@@ -138,7 +141,7 @@ func (p *FixedWorkerPool) Close() {
 	<-p.done
 }
 
-func (p *FixedWorkerPool) IsClosed() bool {
+func (p *ConnectionPool) IsClosed() bool {
 	select {
 	case <-p.done:
 		return true
@@ -147,17 +150,23 @@ func (p *FixedWorkerPool) IsClosed() bool {
 	return false
 }
 
-func newWorker(t task, workerQueue chan task) {
+func newWorker(t task, workerQueue chan task, logger gxlog.Logger, workerId int) {
 	gxruntime.GoSafely(nil, false, t, nil)
 	gxruntime.GoSafely(nil, false, func() {
-		worker(workerQueue)
+		worker(workerQueue, logger, workerId)
 	}, nil)
 
 }
 
-func worker(workerQueue chan task) {
+func worker(workerQueue chan task, logger gxlog.Logger, workerId int) {
+	if logger != nil {
+		logger.Debugf("worker #%d is started\n", workerId)
+	}
 	for task := range workerQueue {
 		if task == nil {
+			if logger != nil {
+				logger.Debugf("worker #%d is closed\n", workerId)
+			}
 			return
 		}
 		task()
