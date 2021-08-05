@@ -151,11 +151,8 @@ func (p *ConnectionPool) IsClosed() bool {
 }
 
 func newWorker(t task, workerQueue chan task, logger gxlog.Logger, workerId int) {
-	gxruntime.GoSafely(nil, false, t, nil)
-	gxruntime.GoSafely(nil, false, func() {
-		worker(workerQueue, logger, workerId)
-	}, nil)
-
+	t()
+	worker(workerQueue, logger, workerId)
 }
 
 func worker(workerQueue chan task, logger gxlog.Logger, workerId int) {
