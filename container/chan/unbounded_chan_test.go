@@ -225,3 +225,51 @@ func testQuota2(t *testing.T) {
 	default:
 	}
 }
+
+func BenchmarkUnboundedChan_Fixed(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 1000)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
+}
+
+func BenchmarkUnboundedChan_Extension(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 100000)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
+}
+
+func BenchmarkUnboundedChan_ExtensionUnlimited(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 0)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
+}
