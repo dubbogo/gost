@@ -17,17 +17,13 @@
 
 package gxsync
 
-import (
-	perrors "github.com/pkg/errors"
-)
-
-var (
-	PoolBusyErr = perrors.New("pool is busy")
-)
-
 type WorkerPool interface {
+	// Submit adds a task to queue asynchronously.
 	Submit(task) error
+	// SubmitSync adds a task to queue synchronously.
 	SubmitSync(task) error
+	// Close closes the worker pool
 	Close()
+	// IsClosed returns close status of the worker pool
 	IsClosed() bool
 }

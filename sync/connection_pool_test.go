@@ -31,7 +31,12 @@ import (
 
 func TestConnectionPool(t *testing.T) {
 	t.Run("Count", func(t *testing.T) {
-		p := NewConnectionPool(100, 100, nil)
+		p := NewConnectionPool(ConnectionPoolConfig{
+			NumWorkers: 100,
+			NumQueues:  runtime.NumCPU(),
+			QueueSize:  10,
+			Logger:     nil,
+		})
 		var count int64
 		wg := new(sync.WaitGroup)
 		for i := 1; i <= 100; i++ {
@@ -50,7 +55,12 @@ func TestConnectionPool(t *testing.T) {
 	})
 
 	t.Run("PoolBusyErr", func(t *testing.T) {
-		p := NewConnectionPool(1, 1, nil)
+		p := NewConnectionPool(ConnectionPoolConfig{
+			NumWorkers: 1,
+			NumQueues:  1,
+			QueueSize:  1,
+			Logger:     nil,
+		})
 		_ = p.Submit(func() {
 			time.Sleep(1 * time.Second)
 		})
@@ -67,7 +77,12 @@ func TestConnectionPool(t *testing.T) {
 }
 
 func BenchmarkConnectionPool(b *testing.B) {
-	p := NewConnectionPool(runtime.NumCPU(), 1000000, nil)
+	p := NewConnectionPool(ConnectionPoolConfig{
+		NumWorkers: 100,
+		NumQueues:  runtime.NumCPU(),
+		QueueSize:  100,
+		Logger:     nil,
+	})
 
 	b.Run("CountTask", func(b *testing.B) {
 		task, _ := newCountTask()

@@ -18,154 +18,109 @@
 package gxsync
 
 import (
+	"math/rand"
+	"sync"
+	"sync/atomic"
+)
+
+import (
 	perrors "github.com/pkg/errors"
 )
 
 import (
 	"github.com/dubbogo/gost/log"
-	gxruntime "github.com/dubbogo/gost/runtime"
 )
 
-func NewConnectionPool(maxWorkers, taskQueueSize int, logger gxlog.Logger) WorkerPool {
-	if maxWorkers < 1 {
-		maxWorkers = 1
+var (
+	PoolBusyErr = perrors.New("pool is busy")
+)
+
+type ConnectionPoolConfig struct {
+	NumWorkers int
+	NumQueues  int
+	QueueSize  int
+	Logger     gxlog.Logger
+}
+
+func NewConnectionPool(config ConnectionPoolConfig) WorkerPool {
+	if config.NumWorkers < 1 {
+		config.NumWorkers = 1
 	}
-	if taskQueueSize < 0 {
-		taskQueueSize = 0
+	if config.NumQueues < 1 {
+		config.NumQueues = 1
+	}
+	if config.QueueSize < 0 {
+		config.QueueSize = 0
+	}
+
+	taskQueues := make([]chan task, config.NumQueues)
+	for i := range taskQueues {
+		taskQueues[i] = make(chan task, config.QueueSize)
 	}
 
 	p := &ConnectionPool{
-		logger:      logger,
-		maxWorkers:  maxWorkers,
-		workerQueue: make(chan task),
-		taskQueue:   make(chan task, taskQueueSize),
-		done:        make(chan struct{}),
+		&baseWorkerPool{
+			logger:     config.Logger,
+			taskQueues: taskQueues,
+			wg:         new(sync.WaitGroup),
+			done:       make(chan struct{}),
+		},
 	}
 
-	go p.dispatch()
+	p.dispatch(config.NumWorkers)
 
 	return p
 }
 
 type ConnectionPool struct {
-	logger gxlog.Logger
-
-	maxWorkers int
-
-	workerQueue chan task
-	taskQueue   chan task
-
-	done chan struct{}
+	*baseWorkerPool
 }
 
-func (p *ConnectionPool) dispatch() {
-	defer close(p.done)
-
-	var workerCount int
-
-loop:
-	for {
-		select {
-		case t, ok := <-p.taskQueue:
-			if !ok {
-				break loop
-			}
-			// select a worker to execute the task
-			select {
-			case p.workerQueue <- t:
-			default:
-				if workerCount < p.maxWorkers {
-					workerId := workerCount
-					// number of workers not reaches the limitation
-					gxruntime.GoSafely(nil, false, func() {
-						newWorker(t, p.workerQueue, p.logger, workerId)
-					}, nil)
-					workerCount++
-				} else {
-					// blocked and waiting for a worker
-					p.workerQueue <- t
-				}
-			}
-		}
+func (p *ConnectionPool) dispatch(numWorkers int) {
+	for i := 0; i < numWorkers; i++ {
+		p.wg.Add(1)
+		go newWorker(p.taskQueues[i%len(p.taskQueues)], p.logger, i, p.wg)
 	}
-
-	// waiting for the end of all tasks, and shutting down workers
-	for workerCount > 0 {
-		p.workerQueue <- nil
-		workerCount--
-	}
-
 }
 
-// Submit adds a task to queue asynchronously.
 func (p *ConnectionPool) Submit(t task) error {
 	if t == nil {
 		return perrors.New("task shouldn't be nil")
 	}
+
+	// put the task to a queue using Round Robin algorithm
+	taskId := atomic.AddUint32(&p.taskId, 1)
 	select {
-	case p.taskQueue <- t:
+	case p.taskQueues[int(taskId)%len(p.taskQueues)] <- t:
 		return nil
 	default:
-		return PoolBusyErr
 	}
+
+	// put the task to a random queue with a maximum of len(p.taskQueues)/2 attempts
+	for i := 0; i < len(p.taskQueues)/2; i++ {
+		select {
+		case p.taskQueues[rand.Intn(len(p.taskQueues))] <- t:
+			return nil
+		default:
+			continue
+		}
+	}
+
+	return PoolBusyErr
 }
 
-// SubmitSync adds a task to queue synchronously.
 func (p *ConnectionPool) SubmitSync(t task) error {
-	if t == nil {
-		return perrors.New("task shouldn't be nil")
-	}
-
 	done := make(chan struct{})
 	fn := func() {
 		t()
 		close(done)
 	}
-	select {
-	case p.taskQueue <- fn:
-		<-done
-		return nil
-	default:
-		return PoolBusyErr
-	}
-}
 
-func (p *ConnectionPool) Close() {
-	select {
-	case <-p.done:
-		return
-	default:
+	err := p.Submit(fn)
+	if err != nil {
+		return err
 	}
 
-	close(p.taskQueue)
-	<-p.done
-}
-
-func (p *ConnectionPool) IsClosed() bool {
-	select {
-	case <-p.done:
-		return true
-	default:
-	}
-	return false
-}
-
-func newWorker(t task, workerQueue chan task, logger gxlog.Logger, workerId int) {
-	t()
-	worker(workerQueue, logger, workerId)
-}
-
-func worker(workerQueue chan task, logger gxlog.Logger, workerId int) {
-	if logger != nil {
-		logger.Debugf("worker #%d is started\n", workerId)
-	}
-	for task := range workerQueue {
-		if task == nil {
-			if logger != nil {
-				logger.Debugf("worker #%d is closed\n", workerId)
-			}
-			return
-		}
-		task()
-	}
+	<-done
+	return nil
 }
