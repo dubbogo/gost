@@ -70,14 +70,14 @@ func newWorker(q chan task, logger gxlog.Logger, workerId int, wg *sync.WaitGrou
 	}
 	for {
 		select {
-		case task, ok := <-q:
+		case t, ok := <-q:
 			if !ok {
 				if logger != nil {
 					logger.Debugf("worker #%d is closed\n", workerId)
 				}
 				return
 			}
-			if task != nil {
+			if t != nil {
 				func() {
 					defer func() {
 						if r := recover(); r != nil {
@@ -86,7 +86,7 @@ func newWorker(q chan task, logger gxlog.Logger, workerId int, wg *sync.WaitGrou
 							}
 						}
 					}()
-					task()
+					t()
 				}()
 			}
 		}
