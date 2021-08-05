@@ -17,7 +17,9 @@
 
 package gxbig
 
-import "testing"
+import (
+	"testing"
+)
 
 func BenchmarkRound(b *testing.B) {
 	b.StopTimer()

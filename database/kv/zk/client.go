@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	perrors "github.com/pkg/errors"
 )
 

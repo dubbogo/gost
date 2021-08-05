@@ -16,7 +16,9 @@
  */
 package gxset
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSetNew(t *testing.T) {
 	set := NewSet(2, 1)
