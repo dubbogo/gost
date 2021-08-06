@@ -19,11 +19,13 @@ package gxsync
 
 import (
 	"fmt"
-	gxlog "github.com/dubbogo/gost/log"
-	"github.com/nacos-group/nacos-sdk-go/common/logger"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
+)
+
+import (
+	gxlog "github.com/dubbogo/gost/log"
 )
 
 type baseWorkerPool struct {
@@ -79,7 +81,7 @@ func (p *baseWorkerPool) worker(chanId, workerId int) {
 	}()
 
 	if p.logger != nil {
-		logger.Debugf("worker #%d is started\n", workerId)
+		p.logger.Debugf("worker #%d is started\n", workerId)
 	}
 
 	for {
@@ -87,7 +89,7 @@ func (p *baseWorkerPool) worker(chanId, workerId int) {
 		case t, ok := <-p.taskQueues[chanId]:
 			if !ok {
 				if p.logger != nil {
-					logger.Debugf("worker #%d is closed\n", workerId)
+					p.logger.Debugf("worker #%d is closed\n", workerId)
 				}
 				return
 			}
@@ -97,7 +99,7 @@ func (p *baseWorkerPool) worker(chanId, workerId int) {
 					defer func() {
 						if r := recover(); r != nil {
 							if p.logger != nil {
-								logger.Errorf("goroutine panic: %v\n%s\n", r, string(debug.Stack()))
+								p.logger.Errorf("goroutine panic: %v\n%s\n", r, string(debug.Stack()))
 							}
 						}
 					}()
