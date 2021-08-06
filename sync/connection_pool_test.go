@@ -31,7 +31,7 @@ import (
 
 func TestConnectionPool(t *testing.T) {
 	t.Run("Count", func(t *testing.T) {
-		p := NewConnectionPool(ConnectionPoolConfig{
+		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 100,
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  10,
@@ -55,7 +55,7 @@ func TestConnectionPool(t *testing.T) {
 	})
 
 	t.Run("PoolBusyErr", func(t *testing.T) {
-		p := NewConnectionPool(ConnectionPoolConfig{
+		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 1,
 			NumQueues:  1,
 			QueueSize:  1,
@@ -76,7 +76,7 @@ func TestConnectionPool(t *testing.T) {
 	})
 
 	t.Run("Close", func(t *testing.T) {
-		p := NewConnectionPool(ConnectionPoolConfig{
+		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: runtime.NumCPU(),
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  100,
@@ -95,7 +95,7 @@ func TestConnectionPool(t *testing.T) {
 }
 
 func BenchmarkConnectionPool(b *testing.B) {
-	p := NewConnectionPool(ConnectionPoolConfig{
+	p := NewConnectionPool(WorkerPoolConfig{
 		NumWorkers: 100,
 		NumQueues:  runtime.NumCPU(),
 		QueueSize:  100,

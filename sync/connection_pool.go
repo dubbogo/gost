@@ -26,20 +26,9 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"github.com/dubbogo/gost/log"
-)
-
 var (
 	PoolBusyErr = perrors.New("pool is busy")
 )
-
-type ConnectionPoolConfig struct {
-	NumWorkers int
-	NumQueues  int
-	QueueSize  int
-	Logger     gxlog.Logger
-}
 
 func NewConnectionPool(config WorkerPoolConfig) WorkerPool {
 	return &ConnectionPool{
