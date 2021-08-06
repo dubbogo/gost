@@ -19,7 +19,6 @@ package gxsync
 
 import (
 	"math/rand"
-	"sync"
 	"sync/atomic"
 )
 
@@ -42,43 +41,14 @@ type ConnectionPoolConfig struct {
 	Logger     gxlog.Logger
 }
 
-func NewConnectionPool(config ConnectionPoolConfig) WorkerPool {
-	if config.NumWorkers < 1 {
-		config.NumWorkers = 1
+func NewConnectionPool(config WorkerPoolConfig) WorkerPool {
+	return &ConnectionPool{
+		baseWorkerPool: newBaseWorkerPool(config),
 	}
-	if config.NumQueues < 1 {
-		config.NumQueues = 1
-	}
-	if config.QueueSize < 0 {
-		config.QueueSize = 0
-	}
-
-	taskQueues := make([]chan task, config.NumQueues)
-	for i := range taskQueues {
-		taskQueues[i] = make(chan task, config.QueueSize)
-	}
-
-	p := &ConnectionPool{
-		&baseWorkerPool{
-			logger:     config.Logger,
-			taskQueues: taskQueues,
-			wg:         new(sync.WaitGroup),
-		},
-	}
-
-	p.dispatch(config.NumWorkers)
-
-	return p
 }
 
 type ConnectionPool struct {
 	*baseWorkerPool
-}
-
-func (p *ConnectionPool) dispatch(numWorkers int) {
-	for i := 0; i < numWorkers; i++ {
-		p.newWorker(i%len(p.taskQueues), i)
-	}
 }
 
 func (p *ConnectionPool) Submit(t task) error {

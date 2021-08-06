@@ -28,6 +28,13 @@ import (
 	gxlog "github.com/dubbogo/gost/log"
 )
 
+type WorkerPoolConfig struct {
+	NumWorkers int
+	NumQueues  int
+	QueueSize  int
+	Logger     gxlog.Logger
+}
+
 type baseWorkerPool struct {
 	logger gxlog.Logger
 
@@ -37,6 +44,39 @@ type baseWorkerPool struct {
 	numWorkers int32
 
 	wg *sync.WaitGroup
+}
+
+func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
+	if config.NumWorkers < 1 {
+		config.NumWorkers = 1
+	}
+	if config.NumQueues < 1 {
+		config.NumQueues = 1
+	}
+	if config.QueueSize < 0 {
+		config.QueueSize = 0
+	}
+
+	taskQueues := make([]chan task, config.NumQueues)
+	for i := range taskQueues {
+		taskQueues[i] = make(chan task, config.QueueSize)
+	}
+
+	p := &baseWorkerPool{
+		logger:     config.Logger,
+		taskQueues: taskQueues,
+		wg:         new(sync.WaitGroup),
+	}
+
+	p.dispatch(config.NumWorkers)
+
+	return p
+}
+
+func (p *baseWorkerPool) dispatch(numWorkers int) {
+	for i := 0; i < numWorkers; i++ {
+		p.newWorker(i%len(p.taskQueues), i)
+	}
 }
 
 func (p *baseWorkerPool) Submit(t task) error {
