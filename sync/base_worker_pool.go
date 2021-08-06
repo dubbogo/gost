@@ -34,7 +34,7 @@ type baseWorkerPool struct {
 
 	numWorkers int32
 
-	wg   *sync.WaitGroup
+	wg *sync.WaitGroup
 }
 
 func (p *baseWorkerPool) Submit(t task) error {

@@ -110,8 +110,8 @@ func (p *ConnectionPool) Submit(t task) error {
 func (p *ConnectionPool) SubmitSync(t task) error {
 	done := make(chan struct{})
 	fn := func() {
+		defer close(done)
 		t()
-		close(done)
 	}
 
 	err := p.Submit(fn)
