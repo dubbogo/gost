@@ -63,7 +63,6 @@ func NewConnectionPool(config ConnectionPoolConfig) WorkerPool {
 			logger:     config.Logger,
 			taskQueues: taskQueues,
 			wg:         new(sync.WaitGroup),
-			done:       make(chan struct{}),
 		},
 	}
 
@@ -78,8 +77,7 @@ type ConnectionPool struct {
 
 func (p *ConnectionPool) dispatch(numWorkers int) {
 	for i := 0; i < numWorkers; i++ {
-		p.wg.Add(1)
-		go newWorker(p.taskQueues[i%len(p.taskQueues)], p.logger, i, p.wg)
+		p.newWorker(i%len(p.taskQueues), i)
 	}
 }
 

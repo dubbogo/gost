@@ -74,6 +74,24 @@ func TestConnectionPool(t *testing.T) {
 
 		p.Close()
 	})
+
+	t.Run("Close", func(t *testing.T) {
+		p := NewConnectionPool(ConnectionPoolConfig{
+			NumWorkers: runtime.NumCPU(),
+			NumQueues:  runtime.NumCPU(),
+			QueueSize:  100,
+			Logger:     nil,
+		})
+
+		assert.Equal(t, runtime.NumCPU(), int(p.NumWorkers()))
+
+		p.Close()
+		assert.True(t, p.IsClosed())
+
+		assert.Panics(t, func() {
+			_ = p.Submit(func() {})
+		})
+	})
 }
 
 func BenchmarkConnectionPool(b *testing.B) {

@@ -26,4 +26,6 @@ type WorkerPool interface {
 	Close()
 	// IsClosed returns close status of the worker pool
 	IsClosed() bool
+	// NumWorkers returns the number of workers
+	NumWorkers() int32
 }

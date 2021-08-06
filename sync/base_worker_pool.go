@@ -18,9 +18,12 @@
 package gxsync
 
 import (
+	"fmt"
 	gxlog "github.com/dubbogo/gost/log"
+	"github.com/nacos-group/nacos-sdk-go/common/logger"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 )
 
 type baseWorkerPool struct {
@@ -29,8 +32,9 @@ type baseWorkerPool struct {
 	taskId     uint32
 	taskQueues []chan task
 
+	numWorkers int32
+
 	wg   *sync.WaitGroup
-	done chan struct{}
 }
 
 func (p *baseWorkerPool) Submit(t task) error {
@@ -46,7 +50,6 @@ func (p *baseWorkerPool) Close() {
 		return
 	}
 
-	close(p.done)
 	for _, q := range p.taskQueues {
 		close(q)
 	}
@@ -54,38 +57,51 @@ func (p *baseWorkerPool) Close() {
 }
 
 func (p *baseWorkerPool) IsClosed() bool {
-	select {
-	case <-p.done:
-		return true
-	default:
-	}
-	return false
+	return p.numWorkers == 0
 }
 
-func newWorker(q chan task, logger gxlog.Logger, workerId int, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (p *baseWorkerPool) NumWorkers() int32 {
+	return p.numWorkers
+}
 
-	if logger != nil {
+func (p *baseWorkerPool) newWorker(chanId, workerId int) {
+	p.wg.Add(1)
+	p.numWorkers++
+	go p.worker(chanId, workerId)
+}
+
+func (p *baseWorkerPool) worker(chanId, workerId int) {
+	defer func() {
+		if n := atomic.AddInt32(&p.numWorkers, -1); n < 0 {
+			panic(fmt.Sprintf("numWorkers should be greater or equal to 0, but the value is %d", n))
+		}
+		p.wg.Done()
+	}()
+
+	if p.logger != nil {
 		logger.Debugf("worker #%d is started\n", workerId)
 	}
+
 	for {
 		select {
-		case t, ok := <-q:
+		case t, ok := <-p.taskQueues[chanId]:
 			if !ok {
-				if logger != nil {
+				if p.logger != nil {
 					logger.Debugf("worker #%d is closed\n", workerId)
 				}
 				return
 			}
 			if t != nil {
 				func() {
+					// prevent from goroutine panic
 					defer func() {
 						if r := recover(); r != nil {
-							if logger != nil {
+							if p.logger != nil {
 								logger.Errorf("goroutine panic: %v\n%s\n", r, string(debug.Stack()))
 							}
 						}
 					}()
+					// execute task
 					t()
 				}()
 			}
