@@ -40,7 +40,7 @@ type WorkerPoolConfig struct {
 // The below picture shows baseWorkerPool architecture.
 // Note that:
 // - TaskQueueX is a channel with buffer, please refer to taskQueues.
-// - Workers consume only tasks in the dispatched queue, please refer to dispatch(numWorkers).
+// - Workers consume tasks in the dispatched queue only, please refer to dispatch(numWorkers).
 // - taskId will be incremented by 1 after a task is enqueued.
 // ┌───────┐  ┌───────┐  ┌───────┐                 ┌─────────────────────────┐
 // │worker0│  │worker2│  │worker4│               ┌─┤ taskId % NumQueues == 0 │
