@@ -35,6 +35,30 @@ type WorkerPoolConfig struct {
 	Logger     gxlog.Logger
 }
 
+// baseWorkerPool is a worker pool with multiple queues.
+//
+// The below picture shows baseWorkerPool architecture.
+// Note that:
+// - TaskQueueX is a channel with buffer, please refer to taskQueues.
+// - Workers consume only tasks in the dispatched queue, please refer to dispatch(numWorkers).
+// - taskId will be incremented by 1 after a task is enqueued.
+// ┌───────┐  ┌───────┐  ┌───────┐                 ┌─────────────────────────┐
+// │worker0│  │worker2│  │worker4│               ┌─┤ taskId % NumQueues == 0 │
+// └───────┘  └───────┘  └───────┘               │ └─────────────────────────┘
+//     │          │          │                   │
+//     └───────consume───────┘                enqueue
+//                ▼                             task    ╔══════════════════╗
+//              ┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐  │      ║ baseWorkerPool:  ║
+//  TaskQueue0  │t0│t1│t2│t3│t4│t5│t6│t7│t8│t9│◀─┘      ║                  ║
+//              ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤         ║ *NumWorkers=6    ║
+//  TaskQueue1  │t0│t1│t2│t3│t4│t5│t6│t7│t8│t9│◀┐       ║ *NumQueues=2     ║
+//              └──┴──┴──┴──┴──┴──┴──┴──┴──┴──┘ │       ║ *QueueSize=10    ║
+//                ▲                          enqueue    ╚══════════════════╝
+//     ┌───────consume───────┐                 task
+//     │          │          │                  │
+// ┌───────┐  ┌───────┐  ┌───────┐              │  ┌─────────────────────────┐
+// │worker1│  │worker3│  │worker5│              └──│ taskId % NumQueues == 1 │
+// └───────┘  └───────┘  └───────┘                 └─────────────────────────┘
 type baseWorkerPool struct {
 	logger gxlog.Logger
 
