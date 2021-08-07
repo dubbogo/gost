@@ -115,9 +115,6 @@ func testQuota1(t *testing.T) {
 		ch.In() <- i
 	}
 
-	assert.True(t, 15 >= ch.Cap())
-	assert.True(t, 15 >= ch.Len())
-
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -125,17 +122,11 @@ func testQuota1(t *testing.T) {
 		ch.In() <- 15
 	}()
 
-	assert.True(t, 15 >= ch.Cap())
-	assert.True(t, 15 >= ch.Len())
-
 	for i := 0; i < 16; i++ {
 		v, ok := <-ch.Out()
 		assert.True(t, ok)
 		count += v.(int)
 	}
-
-	assert.True(t, 15 >= ch.Len())
-	assert.True(t, 10 >= ch.Cap())
 
 	wg.Wait()
 
