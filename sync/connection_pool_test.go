@@ -153,10 +153,12 @@ func TestConnectionPool(t *testing.T) {
 
 		task, v := newCountTask()
 		for i := 0; i < 100; i++ {
-			_ = p.SubmitSync(task)
+			err := p.SubmitSync(task)
+			assert.Nil(t, err)
 		}
 
 		assert.Equal(t, 100, int(*v))
+		p.Close()
 	})
 }
 
