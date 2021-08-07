@@ -153,7 +153,7 @@ func (p *baseWorkerPool) worker(chanId, workerId int) {
 		case t, ok := <-p.taskQueues[chanId]:
 			if !ok {
 				if p.logger != nil {
-					p.logger.Debugf("worker #%d is closed\n", workerId)
+					p.logger.Warnf("worker #%d is closed\n", workerId)
 				}
 				return
 			}
