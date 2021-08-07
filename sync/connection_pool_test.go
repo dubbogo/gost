@@ -143,20 +143,27 @@ func TestConnectionPool(t *testing.T) {
 		p.Close()
 	})
 
-	t.Run("CountTaskSync", func(t *testing.T) {
+	t.Run("CountTask", func(t *testing.T) {
 		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: runtime.NumCPU(),
 			NumQueues:  runtime.NumCPU(),
-			QueueSize:  0,
+			QueueSize:  10,
 			Logger:     nil,
 		})
 
 		task, v := newCountTask()
+		wg := new(sync.WaitGroup)
+		wg.Add(100)
 		for i := 0; i < 100; i++ {
-			err := p.SubmitSync(task)
-			assert.Nil(t, err)
+			if err := p.Submit(func() {
+				defer wg.Done()
+				task()
+			}); err != nil {
+				i--
+			}
 		}
 
+		wg.Wait()
 		assert.Equal(t, 100, int(*v))
 		p.Close()
 	})
