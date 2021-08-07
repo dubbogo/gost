@@ -58,17 +58,22 @@ func TestConnectionPool(t *testing.T) {
 		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 1,
 			NumQueues:  1,
-			QueueSize:  1,
+			QueueSize:  0,
 			Logger:     nil,
 		})
-		_ = p.Submit(func() {
-			time.Sleep(1 * time.Second)
+
+		wg := new(sync.WaitGroup)
+		wg.Add(1)
+		err := p.Submit(func() {
+			wg.Wait()
 		})
+		assert.Nil(t, err)
 
-		err := p.Submit(func() {})
-		assert.Equal(t, err, PoolBusyErr)
+		err = p.Submit(func() {})
+		assert.Equal(t, PoolBusyErr, err)
 
-		time.Sleep(1 * time.Second)
+		wg.Done()
+		time.Sleep(100 * time.Millisecond)
 		err = p.Submit(func() {})
 		assert.Nil(t, err)
 
@@ -91,6 +96,67 @@ func TestConnectionPool(t *testing.T) {
 		assert.Panics(t, func() {
 			_ = p.Submit(func() {})
 		})
+	})
+
+	t.Run("BorderCondition", func(t *testing.T) {
+		p := NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: 0,
+			NumQueues:  runtime.NumCPU(),
+			QueueSize:  100,
+			Logger:     nil,
+		})
+		assert.Equal(t, 1, int(p.NumWorkers()))
+		p.Close()
+
+		p = NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: 1,
+			NumQueues:  0,
+			QueueSize:  0,
+			Logger:     nil,
+		})
+		err := p.Submit(func() {})
+		assert.Nil(t, err)
+		p.Close()
+
+		p = NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: 1,
+			NumQueues:  1,
+			QueueSize:  -1,
+			Logger:     nil,
+		})
+
+		err = p.Submit(func() {})
+		assert.Nil(t, err)
+		p.Close()
+	})
+
+	t.Run("NilTask", func(t *testing.T) {
+		p := NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: 1,
+			NumQueues:  1,
+			QueueSize:  0,
+			Logger:     nil,
+		})
+
+		err := p.Submit(nil)
+		assert.NotNil(t, err)
+		p.Close()
+	})
+
+	t.Run("CountTaskSync", func(t *testing.T) {
+		p := NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: runtime.NumCPU(),
+			NumQueues:  runtime.NumCPU(),
+			QueueSize:  0,
+			Logger:     nil,
+		})
+
+		task, v := newCountTask()
+		for i:=0; i<100; i++ {
+			_ = p.SubmitSync(task)
+		}
+
+		assert.Equal(t, 100, int(*v))
 	})
 }
 

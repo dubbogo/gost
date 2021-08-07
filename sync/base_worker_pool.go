@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sync"
-	"sync/atomic"
+)
+
+import (
+	"go.uber.org/atomic"
 )
 
 import (
@@ -65,7 +68,7 @@ type baseWorkerPool struct {
 	taskId     uint32
 	taskQueues []chan task
 
-	numWorkers int32
+	numWorkers *atomic.Int32
 
 	wg *sync.WaitGroup
 }
@@ -89,17 +92,22 @@ func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
 	p := &baseWorkerPool{
 		logger:     config.Logger,
 		taskQueues: taskQueues,
+		numWorkers: new(atomic.Int32),
 		wg:         new(sync.WaitGroup),
 	}
 
-	p.dispatch(config.NumWorkers)
+	initWg := new(sync.WaitGroup)
+	initWg.Add(config.NumWorkers)
+	p.dispatch(config.NumWorkers, initWg)
+
+	initWg.Wait()
 
 	return p
 }
 
-func (p *baseWorkerPool) dispatch(numWorkers int) {
+func (p *baseWorkerPool) dispatch(numWorkers int, wg *sync.WaitGroup) {
 	for i := 0; i < numWorkers; i++ {
-		p.newWorker(i%len(p.taskQueues), i)
+		p.newWorker(i%len(p.taskQueues), i, wg)
 	}
 }
 
@@ -123,22 +131,22 @@ func (p *baseWorkerPool) Close() {
 }
 
 func (p *baseWorkerPool) IsClosed() bool {
-	return p.numWorkers == 0
+	return p.NumWorkers() == 0
 }
 
 func (p *baseWorkerPool) NumWorkers() int32 {
-	return p.numWorkers
+	return p.numWorkers.Load()
 }
 
-func (p *baseWorkerPool) newWorker(chanId, workerId int) {
+func (p *baseWorkerPool) newWorker(chanId, workerId int, wg *sync.WaitGroup) {
 	p.wg.Add(1)
-	p.numWorkers++
-	go p.worker(chanId, workerId)
+	p.numWorkers.Add(1)
+	go p.worker(chanId, workerId, wg)
 }
 
-func (p *baseWorkerPool) worker(chanId, workerId int) {
+func (p *baseWorkerPool) worker(chanId, workerId int, wg *sync.WaitGroup) {
 	defer func() {
-		if n := atomic.AddInt32(&p.numWorkers, -1); n < 0 {
+		if n := p.numWorkers.Add(-1); n < 0 {
 			panic(fmt.Sprintf("numWorkers should be greater or equal to 0, but the value is %d", n))
 		}
 		p.wg.Done()
@@ -148,6 +156,7 @@ func (p *baseWorkerPool) worker(chanId, workerId int) {
 		p.logger.Infof("worker #%d is started\n", workerId)
 	}
 
+	wg.Done()
 	for {
 		select {
 		case t, ok := <-p.taskQueues[chanId]:
