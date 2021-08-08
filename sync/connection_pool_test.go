@@ -167,6 +167,24 @@ func TestConnectionPool(t *testing.T) {
 		assert.Equal(t, 100, int(*v))
 		p.Close()
 	})
+
+	t.Run("CountTaskSync", func(t *testing.T) {
+		p := NewConnectionPool(WorkerPoolConfig{
+			NumWorkers: runtime.NumCPU(),
+			NumQueues:  runtime.NumCPU(),
+			QueueSize:  10,
+			Logger:     nil,
+		})
+
+		task, v := newCountTask()
+		for i:=0; i<100; i++ {
+			err := p.SubmitSync(task)
+			assert.Nil(t, err)
+		}
+
+		assert.Equal(t, 100, int(*v))
+		p.Close()
+	})
 }
 
 func BenchmarkConnectionPool(b *testing.B) {
