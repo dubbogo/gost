@@ -98,6 +98,7 @@ func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
 
 	initWg := new(sync.WaitGroup)
 	initWg.Add(config.NumWorkers)
+
 	p.dispatch(config.NumWorkers, initWg)
 
 	initWg.Wait()
@@ -107,7 +108,7 @@ func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
 
 func (p *baseWorkerPool) dispatch(numWorkers int, wg *sync.WaitGroup) {
 	for i := 0; i < numWorkers; i++ {
-		p.newWorker(i%len(p.taskQueues), i, wg)
+		p.newWorker(i, wg)
 	}
 }
 
@@ -138,13 +139,13 @@ func (p *baseWorkerPool) NumWorkers() int32 {
 	return p.numWorkers.Load()
 }
 
-func (p *baseWorkerPool) newWorker(chanId, workerId int, wg *sync.WaitGroup) {
+func (p *baseWorkerPool) newWorker(workerId int, wg *sync.WaitGroup) {
 	p.wg.Add(1)
 	p.numWorkers.Add(1)
-	go p.worker(chanId, workerId, wg)
+	go p.worker(workerId, wg)
 }
 
-func (p *baseWorkerPool) worker(chanId, workerId int, wg *sync.WaitGroup) {
+func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 	defer func() {
 		if n := p.numWorkers.Add(-1); n < 0 {
 			panic(fmt.Sprintf("numWorkers should be greater or equal to 0, but the value is %d", n))
@@ -155,6 +156,8 @@ func (p *baseWorkerPool) worker(chanId, workerId int, wg *sync.WaitGroup) {
 	if p.logger != nil {
 		p.logger.Infof("worker #%d is started\n", workerId)
 	}
+
+	chanId := workerId%len(p.taskQueues)
 
 	wg.Done()
 	for {

@@ -73,8 +73,7 @@ func (p *ConnectionPool) SubmitSync(t task) error {
 		t()
 	}
 
-	err := p.Submit(fn)
-	if err != nil {
+	if err := p.Submit(fn); err != nil {
 		return err
 	}
 
