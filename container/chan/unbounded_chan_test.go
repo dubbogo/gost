@@ -115,9 +115,6 @@ func testQuota1(t *testing.T) {
 		ch.In() <- i
 	}
 
-	assert.True(t, 15 >= ch.Cap())
-	assert.True(t, 15 >= ch.Len())
-
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -125,17 +122,11 @@ func testQuota1(t *testing.T) {
 		ch.In() <- 15
 	}()
 
-	assert.True(t, 15 >= ch.Cap())
-	assert.True(t, 15 >= ch.Len())
-
 	for i := 0; i < 16; i++ {
 		v, ok := <-ch.Out()
 		assert.True(t, ok)
 		count += v.(int)
 	}
-
-	assert.True(t, 15 >= ch.Len())
-	assert.True(t, 10 >= ch.Cap())
 
 	wg.Wait()
 
@@ -224,4 +215,52 @@ func testQuota2(t *testing.T) {
 		assert.Fail(t, "the chan should be blocked")
 	default:
 	}
+}
+
+func BenchmarkUnboundedChan_Fixed(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 1000)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
+}
+
+func BenchmarkUnboundedChan_Extension(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 100000)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
+}
+
+func BenchmarkUnboundedChan_ExtensionUnlimited(b *testing.B) {
+	ch := NewUnboundedChanWithQuota(1000, 0)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			select {
+			case ch.In() <- 1:
+			}
+
+			<-ch.Out()
+		}
+	})
+
+	close(ch.In())
 }
