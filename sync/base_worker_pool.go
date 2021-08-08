@@ -157,7 +157,7 @@ func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 		p.logger.Infof("worker #%d is started\n", workerId)
 	}
 
-	chanId := workerId%len(p.taskQueues)
+	chanId := workerId % len(p.taskQueues)
 
 	wg.Done()
 	for {
