@@ -133,7 +133,7 @@ func (p *baseWorkerPool) Close() {
 	}
 	p.wg.Wait()
 	if p.logger != nil {
-		p.logger.Infof("there are %d workers remained, all workers are closed",p.NumWorkers())
+		p.logger.Infof("there are %d workers remained, all workers are closed", p.NumWorkers())
 	}
 }
 
