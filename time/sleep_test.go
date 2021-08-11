@@ -26,8 +26,11 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log"
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"github.com/dubbogo/gost/log"
 )
 
 func TestNewTimerWheel(t *testing.T) {
