@@ -102,6 +102,9 @@ func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
 	p.dispatch(config.NumWorkers, initWg)
 
 	initWg.Wait()
+	if p.logger != nil {
+		p.logger.Infof("all %d workers are started", p.NumWorkers())
+	}
 
 	return p
 }
@@ -112,11 +115,11 @@ func (p *baseWorkerPool) dispatch(numWorkers int, wg *sync.WaitGroup) {
 	}
 }
 
-func (p *baseWorkerPool) Submit(t task) error {
+func (p *baseWorkerPool) Submit(_ task) error {
 	panic("implement me")
 }
 
-func (p *baseWorkerPool) SubmitSync(t task) error {
+func (p *baseWorkerPool) SubmitSync(_ task) error {
 	panic("implement me")
 }
 
@@ -129,6 +132,10 @@ func (p *baseWorkerPool) Close() {
 		close(q)
 	}
 	p.wg.Wait()
+	if p.logger != nil {
+		p.logger.Infof("all workers are closed")
+		p.logger.Debugf("there are %d workers remained", p.NumWorkers())
+	}
 }
 
 func (p *baseWorkerPool) IsClosed() bool {
@@ -153,10 +160,6 @@ func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 		p.wg.Done()
 	}()
 
-	if p.logger != nil {
-		p.logger.Infof("worker #%d is started\n", workerId)
-	}
-
 	chanId := workerId % len(p.taskQueues)
 
 	wg.Done()
@@ -164,9 +167,6 @@ func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 		select {
 		case t, ok := <-p.taskQueues[chanId]:
 			if !ok {
-				if p.logger != nil {
-					p.logger.Infof("worker #%d is closed\n", workerId)
-				}
 				return
 			}
 			if t != nil {
@@ -175,7 +175,7 @@ func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 					defer func() {
 						if r := recover(); r != nil {
 							if p.logger != nil {
-								p.logger.Errorf("goroutine panic: %v\n%s\n", r, string(debug.Stack()))
+								p.logger.Errorf("goroutine panic: %v\n%s", r, string(debug.Stack()))
 							}
 						}
 					}()
