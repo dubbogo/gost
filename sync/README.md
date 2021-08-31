@@ -23,7 +23,6 @@ There are some of benchmark results for your reference. The environment settings
 - MacBook Air 2020 with M1 Chip
 - Memory: 16GB
 - Golang: go1.16.6 darwin/arm64
-
 - #workers: 700
 - Tasks: CPUTask, IOTask and RandomTask
 
