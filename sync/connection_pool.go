@@ -45,6 +45,11 @@ func (p *ConnectionPool) Submit(t task) error {
 		return perrors.New("task shouldn't be nil")
 	}
 
+	if !p.enable {
+		go t()
+		return nil
+	}
+
 	// put the task to a queue using Round Robin algorithm
 	taskId := atomic.AddUint32(&p.taskId, 1)
 	select {
