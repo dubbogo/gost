@@ -44,3 +44,11 @@ func TestIsMatchPattern(t *testing.T) {
 	assert.Equal(t, true, IsMatchPattern("v*e", "value"))
 	assert.Equal(t, true, IsMatchPattern("val*e", "value"))
 }
+
+func TestIsEmpty(t *testing.T) {
+	assert.Equal(t, true, IsEmpty(""))
+}
+
+func TestIsNotEmpty(t *testing.T) {
+	assert.Equal(t, true, IsNotEmpty("gost"))
+}

@@ -35,6 +35,14 @@ func IsNil(i interface{}) bool {
 	return false
 }
 
+func IsEmpty(str string) bool {
+	return str == ""
+}
+
+func IsNotEmpty(str string) bool {
+	return !IsEmpty(str)
+}
+
 func RegSplit(text string, regexSplit string) []string {
 	reg := regexp.MustCompile(regexSplit)
 	indexes := reg.FindAllStringIndex(text, -1)
