@@ -36,6 +36,7 @@ type WorkerPoolConfig struct {
 	NumQueues  int
 	QueueSize  int
 	Logger     gxlog.Logger
+	Enable     bool
 }
 
 // baseWorkerPool is a worker pool with multiple queues.
@@ -69,6 +70,7 @@ type baseWorkerPool struct {
 	taskQueues []chan task
 
 	numWorkers *atomic.Int32
+	enable     bool
 
 	wg *sync.WaitGroup
 }
@@ -94,6 +96,11 @@ func newBaseWorkerPool(config WorkerPoolConfig) *baseWorkerPool {
 		taskQueues: taskQueues,
 		numWorkers: new(atomic.Int32),
 		wg:         new(sync.WaitGroup),
+		enable:     config.Enable,
+	}
+
+	if !config.Enable {
+		return p
 	}
 
 	initWg := new(sync.WaitGroup)

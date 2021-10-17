@@ -36,6 +36,7 @@ func TestConnectionPool(t *testing.T) {
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  10,
 			Logger:     nil,
+			Enable:     true,
 		})
 		var count int64
 		wg := new(sync.WaitGroup)
@@ -60,6 +61,7 @@ func TestConnectionPool(t *testing.T) {
 			NumQueues:  1,
 			QueueSize:  0,
 			Logger:     nil,
+			Enable:     true,
 		})
 
 		wg := new(sync.WaitGroup)
@@ -85,6 +87,7 @@ func TestConnectionPool(t *testing.T) {
 			NumWorkers: runtime.NumCPU(),
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  100,
+			Enable:     true,
 			Logger:     nil,
 		})
 
@@ -102,6 +105,7 @@ func TestConnectionPool(t *testing.T) {
 		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 0,
 			NumQueues:  runtime.NumCPU(),
+			Enable:     true,
 			QueueSize:  100,
 			Logger:     nil,
 		})
@@ -111,6 +115,7 @@ func TestConnectionPool(t *testing.T) {
 		p = NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 1,
 			NumQueues:  0,
+			Enable:     true,
 			QueueSize:  0,
 			Logger:     nil,
 		})
@@ -123,6 +128,7 @@ func TestConnectionPool(t *testing.T) {
 			NumQueues:  1,
 			QueueSize:  -1,
 			Logger:     nil,
+			Enable:     true,
 		})
 
 		err = p.Submit(func() {})
@@ -134,6 +140,7 @@ func TestConnectionPool(t *testing.T) {
 		p := NewConnectionPool(WorkerPoolConfig{
 			NumWorkers: 1,
 			NumQueues:  1,
+			Enable:     true,
 			QueueSize:  0,
 			Logger:     nil,
 		})
@@ -149,6 +156,7 @@ func TestConnectionPool(t *testing.T) {
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  10,
 			Logger:     nil,
+			Enable:     true,
 		})
 
 		task, v := newCountTask()
@@ -174,6 +182,7 @@ func TestConnectionPool(t *testing.T) {
 			NumQueues:  runtime.NumCPU(),
 			QueueSize:  10,
 			Logger:     nil,
+			Enable:     true,
 		})
 
 		task, v := newCountTask()
@@ -192,6 +201,7 @@ func BenchmarkConnectionPool(b *testing.B) {
 		NumWorkers: 100,
 		NumQueues:  runtime.NumCPU(),
 		QueueSize:  100,
+		Enable:     true,
 		Logger:     nil,
 	})
 
