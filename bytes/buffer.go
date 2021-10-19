@@ -1,8 +1,8 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 /*
- * Copyright 2009 The Go Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,6 @@ const smallBufferSize = 64
 // The zero value for Buffer is an empty buffer ready to use.
 type Buffer struct {
 	buf      []byte // contents are the bytes buf[off : len(buf)]
-	peekBuf  []byte // buf's temporary pointer
 	off      int    // read at &buf[off], write at &buf[len(buf)]
 	lastRead readOp // last read operation, so that Unread* can work correctly.
 }
@@ -203,7 +202,6 @@ func (b *Buffer) WriteNextBegin(n int) []byte {
 		m = b.grow(n)
 	}
 
-	b.peekBuf = b.buf
 	extra := b.buf[m:]
 	b.buf = b.buf[:m]
 
@@ -215,16 +213,15 @@ func (b *Buffer) WriteNextEnd(n int) (int, error) {
 	if n < 0 {
 		return 0, nil
 	}
-	peekBufLen := len(b.peekBuf)
+	peekBufLen := cap(b.buf)
 	bufLen := len(b.buf)
 	l := bufLen + n
-	if l > peekBufLen || b.peekBuf == nil {
+	if l > peekBufLen {
 		return 0, fmt.Errorf("U have not invoked @WriteNextBegin")
 	}
 
 	b.lastRead = opInvalid
-	b.buf = b.peekBuf[:l]
-	b.peekBuf = nil
+	b.buf = b.buf[:l]
 
 	return n, nil
 }

@@ -1,8 +1,8 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 /*
- * Copyright 2009 The Go Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,7 +39,6 @@ func TestBufferWithPeek(t *testing.T) {
 	assert.True(t, b.lastRead == b1.lastRead)
 	assert.True(t, len(b.buf) == len(b1.buf))
 	assert.True(t, cap(b.buf) < cap(b1.buf))
-	assert.NotNil(t, b1.peekBuf)
 
 	// out of range
 	l, err := b1.WriteNextEnd(101)
@@ -49,6 +48,5 @@ func TestBufferWithPeek(t *testing.T) {
 	l, err = b1.WriteNextEnd(99)
 	assert.Nil(t, err)
 	assert.True(t, l == 99)
-	assert.Nil(t, b1.peekBuf)
 	assert.NotNil(t, b1.buf)
 }
