@@ -34,6 +34,7 @@ limitations under the License.
 package sync2
 
 import (
+	"go.uber.org/atomic"
 	"testing"
 	"time"
 )
@@ -63,7 +64,7 @@ func TestBatcher(t *testing.T) {
 	afterFn, releaseBatch := makeAfterFnWithLatch(t)
 	b := newBatcherForTest(interval, afterFn)
 
-	waitersFinished := NewAtomicInt32(0)
+	waitersFinished := atomic.NewInt32(0)
 
 	startWaiter := func(testcase string, want int) {
 		go func() {
@@ -75,8 +76,8 @@ func TestBatcher(t *testing.T) {
 		}()
 	}
 
-	awaitVal := func(name string, val *AtomicInt32, expected int32) {
-		for count := 0; val.Get() != expected; count++ {
+	awaitVal := func(name string, val *atomic.Int32, expected int32) {
+		for count := 0; val.Load() != expected; count++ {
 			time.Sleep(50 * time.Millisecond)
 			if count > 5 {
 				t.Errorf("Timed out waiting for %s to be %v", name, expected)
@@ -87,16 +88,16 @@ func TestBatcher(t *testing.T) {
 
 	awaitBatch := func(name string, n int32) {
 		// Wait for all the waiters to register
-		awaitVal("Batcher.waiters for "+name, &b.waiters, n)
+		awaitVal("Batcher.waiters for "+name, b.waiters, n)
 		// Release the batch and wait for the batcher to catch up.
-		if waitersFinished.Get() != 0 {
+		if waitersFinished.Load() != 0 {
 			t.Errorf("Waiters finished before being released")
 		}
 		releaseBatch()
-		awaitVal("Batcher.waiters for "+name, &b.waiters, 0)
+		awaitVal("Batcher.waiters for "+name, b.waiters, 0)
 		// Make sure the waiters actually run so they can verify their batch number.
-		awaitVal("waitersFinshed for "+name, &waitersFinished, n)
-		waitersFinished.Set(0)
+		awaitVal("waitersFinshed for "+name, waitersFinished, n)
+		waitersFinished.Swap(0)
 	}
 
 	// test single waiter
