@@ -77,7 +77,8 @@ type Result struct {
 func (co *Consolidator) Create(query string) (r *Result, created bool) {
 	co.mu.Lock()
 	defer co.mu.Unlock()
-	if r, ok := co.queries[query]; ok {
+	ok := false
+	if r, ok = co.queries[query]; ok {
 		return r, false
 	}
 	r = &Result{consolidator: co, query: query}
