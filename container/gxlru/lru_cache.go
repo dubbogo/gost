@@ -38,7 +38,7 @@ limitations under the License.
 // elements. When an element is accessed, it is promoted to the head of the
 // list. When space is needed, the element at the tail of the list
 // (the least recently used element) is evicted.
-package cache
+package gxlru
 
 import (
 	"container/list"

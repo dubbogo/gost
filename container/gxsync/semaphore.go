@@ -31,7 +31,7 @@ limitations under the License.
  * limitations under the License.
  */
 
-package sync2
+package gxsync
 
 // What's in a name? Channels have all you need to emulate a counting
 // semaphore with a boatload of extra functionality. However, in some

@@ -31,12 +31,15 @@ limitations under the License.
  * limitations under the License.
  */
 
-package sync2
+package gxsync
+
+import (
+	"testing"
+	"time"
+)
 
 import (
 	"go.uber.org/atomic"
-	"testing"
-	"time"
 )
 
 // makeAfterFnWithLatch returns a fake alternative to time.After that blocks until

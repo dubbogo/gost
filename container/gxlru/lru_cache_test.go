@@ -31,7 +31,7 @@ limitations under the License.
  * limitations under the License.
  */
 
-package cache
+package gxlru
 
 import (
 	"encoding/json"

@@ -31,7 +31,7 @@ limitations under the License.
  * limitations under the License.
  */
 
-package sync2
+package gxsync
 
 import (
 	"reflect"
