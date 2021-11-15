@@ -312,33 +312,31 @@ func (z *ZookeeperClient) ZkConnValid() bool {
 // it will create parent node first.
 // And the value for the basePath is ""
 func (z *ZookeeperClient) Create(basePath string) error {
-	return z.CreateWithValue(basePath, []byte(""))
+	return z.CreateWithValue(basePath, []byte{})
 }
 
 // CreateWithValue will create the node recursively, which means that if the parent node is absent,
 // it will create parent node first.
 func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
-	var (
-		err     error
-		tmpPath string
-	)
-
 	conn := z.getConn()
-	err = ErrNilZkClientConn
 	if conn == nil {
-		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+		return perrors.WithMessagef(ErrNilZkClientConn, "zk.Create(path:%s)", basePath)
 	}
-	for _, str := range strings.Split(basePath, "/")[1:] {
-		tmpPath = path.Join(tmpPath, "/", str)
-		_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 
-		if err != nil {
-			if err != zk.ErrNodeExists {
-				return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
-			}
+	paths := strings.Split(basePath, "/")
+	// Check the ancestor's path
+	for idx := 2; idx < len(paths); idx++ {
+		tmpPath := strings.Join(paths[:idx], "/")
+		_, err := conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		if err != nil && err != zk.ErrNodeExists {
+			return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 		}
 	}
 
+	_, err := conn.Create(basePath, value, 0, zk.WorldACL(zk.PermAll))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -462,9 +460,6 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	}
 	if stat == nil {
 		return nil, nil, perrors.Errorf("path{%s} get stat is nil", path)
-	}
-	if len(children) == 0 {
-		return nil, nil, ErrNilChildren
 	}
 
 	return children, watcher.EvtCh, nil
