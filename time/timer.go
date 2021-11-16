@@ -33,12 +33,11 @@ import (
 
 import (
 	gxchan "github.com/dubbogo/gost/container/chan"
+	gxlog "github.com/dubbogo/gost/log"
 )
 
-var (
-	// nolint
-	ErrTimeChannelClosed = errors.New("timer channel closed")
-)
+// nolint
+var ErrTimeChannelClosed = errors.New("timer channel closed")
 
 // InitDefaultTimerWheel initializes a default timer wheel
 func InitDefaultTimerWheel() {
@@ -193,8 +192,8 @@ func NewTimerWheel() *TimerWheel {
 	go func() {
 		defer w.wg.Done()
 		var (
-			t          time.Time
-			cFlag      bool
+			t     time.Time
+			cFlag bool
 		)
 
 	LOOP:
@@ -563,6 +562,7 @@ func (w *TimerWheel) NewTimer(d time.Duration) *Timer {
 		return t
 	}
 
+	gxlog.CError("addTimer fail, err is %v\n", err)
 	close(c)
 	return nil
 }
@@ -619,6 +619,7 @@ func (w *TimerWheel) NewTicker(d time.Duration) *Ticker {
 		return (*Ticker)(timer)
 	}
 
+	gxlog.CError("addTimer fail, err is %v\n", err)
 	close(c)
 	return nil
 }
@@ -629,6 +630,7 @@ func (w *TimerWheel) TickFunc(d time.Duration, f func()) *Ticker {
 	if err == nil {
 		return (*Ticker)(t)
 	}
+	gxlog.CError("addTimer fail, err is %v\n", err)
 
 	return nil
 }
