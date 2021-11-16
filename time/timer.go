@@ -21,6 +21,7 @@ package gxtime
 import (
 	"container/list"
 	"errors"
+	gxchan "github.com/dubbogo/gost/container/chan"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -164,7 +165,7 @@ type TimerWheel struct {
 	slot   [maxTimerLevel]*list.List // timer list
 
 	enable uatomic.Bool          // timer ready or closed
-	timerQ chan *timerNodeAction // timer event notify channel
+	timerQ *gxchan.UnboundedChan // timer event notify channel
 
 	once   sync.Once      // for close ticker
 	ticker *time.Ticker   // virtual atomic clock
@@ -177,7 +178,7 @@ func NewTimerWheel() *TimerWheel {
 		clock: atomic.LoadInt64(&curGxTime),
 		// in fact, the minimum time accuracy is 10ms.
 		ticker: time.NewTicker(time.Duration(minTickerInterval)),
-		timerQ: make(chan *timerNodeAction, timerNodeQueueSize),
+		timerQ: gxchan.NewUnboundedChan(timerNodeQueueSize),
 	}
 
 	w.enable.Store(true)
@@ -214,7 +215,7 @@ func NewTimerWheel() *TimerWheel {
 				if ret == 0 {
 					w.run()
 				}
-			case nodeAction, qFlag = <-w.timerQ:
+			case nodeAction, qFlag = <-w.timerQ.Out():
 				if !qFlag {
 					break LOOP
 				}
@@ -509,7 +510,7 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
 	select {
-	case w.timerQ <- &timerNodeAction{node: node, action: TimerActionAdd}:
+	case w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}:
 		t.ID = node.ID
 		return t, nil
 	default:
@@ -524,7 +525,7 @@ func (w *TimerWheel) deleteTimer(t *Timer) error {
 	}
 
 	select {
-	case w.timerQ <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}:
+	case w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}:
 		return nil
 	default:
 	}
@@ -538,7 +539,7 @@ func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
 	}
 
 	select {
-	case w.timerQ <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}:
+	case w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}:
 		return nil
 	default:
 	}
