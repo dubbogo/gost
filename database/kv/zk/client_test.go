@@ -147,7 +147,7 @@ func TestCreate(t *testing.T) {
 		_ = ts.Stop()
 		assert.Nil(t, err)
 	}()
-	err = z.Create("test1/test2/test3/test4")
+	err = z.Create("/test1/test2/test3/test4")
 	assert.NoError(t, err)
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
