@@ -37,8 +37,6 @@ import (
 
 var (
 	// nolint
-	ErrTimeChannelFull = errors.New("timer channel full")
-	// nolint
 	ErrTimeChannelClosed = errors.New("timer channel closed")
 )
 
@@ -197,8 +195,6 @@ func NewTimerWheel() *TimerWheel {
 		var (
 			t          time.Time
 			cFlag      bool
-			nodeAction *timerNodeAction
-			qFlag      bool
 		)
 
 	LOOP:
@@ -218,11 +214,12 @@ func NewTimerWheel() *TimerWheel {
 				if ret == 0 {
 					w.run()
 				}
-			case nodeAction, qFlag = <-w.timerQ.Out():
+			case node, qFlag := <-w.timerQ.Out():
 				if !qFlag {
 					break LOOP
 				}
 
+				nodeAction := node.(*timerNodeAction)
 				// just one w.timerQ channel to ensure the exec sequence of timer event.
 				switch {
 				case nodeAction.action == TimerActionAdd:
@@ -516,10 +513,7 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 	case w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}:
 		t.ID = node.ID
 		return t, nil
-	default:
 	}
-
-	return nil, ErrTimeChannelFull
 }
 
 func (w *TimerWheel) deleteTimer(t *Timer) error {
@@ -530,10 +524,7 @@ func (w *TimerWheel) deleteTimer(t *Timer) error {
 	select {
 	case w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}:
 		return nil
-	default:
 	}
-
-	return ErrTimeChannelFull
 }
 
 func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
@@ -544,10 +535,7 @@ func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
 	select {
 	case w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}:
 		return nil
-	default:
 	}
-
-	return ErrTimeChannelFull
 }
 
 func sendTime(_ TimerID, t time.Time, arg interface{}) error {
