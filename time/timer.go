@@ -21,7 +21,6 @@ package gxtime
 import (
 	"container/list"
 	"errors"
-	gxchan "github.com/dubbogo/gost/container/chan"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -30,6 +29,10 @@ import (
 
 import (
 	uatomic "go.uber.org/atomic"
+)
+
+import (
+	gxchan "github.com/dubbogo/gost/container/chan"
 )
 
 var (
