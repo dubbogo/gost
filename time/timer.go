@@ -562,7 +562,7 @@ func (w *TimerWheel) NewTimer(d time.Duration) *Timer {
 		return t
 	}
 
-	gxlog.CError("addTimer fail, err is %v\n", err)
+	gxlog.CError("addTimer fail, err is %v", err)
 	close(c)
 	return nil
 }
@@ -619,7 +619,7 @@ func (w *TimerWheel) NewTicker(d time.Duration) *Ticker {
 		return (*Ticker)(timer)
 	}
 
-	gxlog.CError("addTimer fail, err is %v\n", err)
+	gxlog.CError("addTimer fail, err is %v", err)
 	close(c)
 	return nil
 }
@@ -630,7 +630,7 @@ func (w *TimerWheel) TickFunc(d time.Duration, f func()) *Ticker {
 	if err == nil {
 		return (*Ticker)(t)
 	}
-	gxlog.CError("addTimer fail, err is %v\n", err)
+	gxlog.CError("addTimer fail, err is %v", err)
 
 	return nil
 }
