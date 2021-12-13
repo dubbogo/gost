@@ -206,9 +206,10 @@ func TestRegisterTempSeq(t *testing.T) {
 
 func Test_UnregisterEvent(t *testing.T) {
 	client := &ZookeeperClient{}
-	client.eventRegistry = make(map[string][]*chan struct{})
-	array := []*chan struct{}{}
-	array = append(array, new(chan struct{}))
+	client.eventRegistry = make(map[string][]chan zk.Event)
+	mockEvent := make(chan zk.Event, 1)
+	var array []chan zk.Event
+	array = append(array, mockEvent)
 	client.eventRegistry["test"] = array
-	client.UnregisterEvent("test", new(chan struct{}))
+	client.UnregisterEvent("test", mockEvent)
 }

@@ -58,7 +58,7 @@ type ZookeeperClient struct {
 	share             bool
 	initialized       uint32
 	reconnectCh       chan struct{}
-	eventRegistry     map[string][]*chan struct{}
+	eventRegistry     map[string][]chan zk.Event
 	eventRegistryLock sync.RWMutex
 	zkEventHandler    ZkEventHandler
 	Session           <-chan zk.Event
@@ -98,10 +98,6 @@ func StateToString(state zk.State) string {
 		return "zookeeper has Session"
 	case zk.StateUnknown:
 		return "zookeeper unknown state"
-	case zk.State(zk.EventNodeDeleted):
-		return "zookeeper node deleted"
-	case zk.State(zk.EventNodeDataChanged):
-		return "zookeeper node data changed"
 	default:
 		return state.String()
 	}
@@ -138,7 +134,7 @@ func newClient(name string, zkAddrs []string, share bool, opts ...zkClientOption
 		activeNumber:   0,
 		share:          share,
 		reconnectCh:    make(chan struct{}),
-		eventRegistry:  make(map[string][]*chan struct{}),
+		eventRegistry:  make(map[string][]chan zk.Event),
 		Session:        make(<-chan zk.Event),
 		zkEventHandler: &DefaultHandler{},
 	}
@@ -188,7 +184,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		Timeout:        timeout,
 		share:          false,
 		reconnectCh:    make(chan struct{}),
-		eventRegistry:  make(map[string][]*chan struct{}),
+		eventRegistry:  make(map[string][]chan zk.Event),
 		Session:        make(<-chan zk.Event),
 		zkEventHandler: &DefaultHandler{},
 	}
@@ -226,20 +222,20 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 	for {
 		select {
 		case event = <-z.Session:
-			switch (int)(event.State) {
-			case (int)(zk.StateDisconnected):
+			switch event.State {
+			case zk.StateDisconnected:
 				atomic.StoreUint32(&z.valid, 0)
-			case (int)(zk.EventNodeDataChanged), (int)(zk.EventNodeChildrenChanged):
+			case zk.StateConnected:
 				z.eventRegistryLock.RLock()
-				for p, a := range z.eventRegistry {
-					if strings.HasPrefix(p, event.Path) {
+				for path, a := range z.eventRegistry {
+					if strings.HasPrefix(event.Path, path) {
 						for _, e := range a {
-							*e <- struct{}{}
+							e <- event
 						}
 					}
 				}
 				z.eventRegistryLock.RUnlock()
-			case (int)(zk.StateConnecting), (int)(zk.StateConnected), (int)(zk.StateHasSession):
+			case zk.StateConnecting, zk.StateHasSession:
 				if state == (int)(zk.StateHasSession) {
 					continue
 				}
@@ -254,7 +250,7 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 				z.eventRegistryLock.RLock()
 				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
 					for _, e := range a {
-						*e <- struct{}{}
+						e <- event
 					}
 				}
 				z.eventRegistryLock.RUnlock()
@@ -265,8 +261,8 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 }
 
 // RegisterEvent registers zookeeper events
-func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
-	if zkPath == "" || event == nil {
+func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
+	if zkPath == "" {
 		return
 	}
 
@@ -278,7 +274,7 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event *chan struct{}) {
 }
 
 // UnregisterEvent unregisters zookeeper events
-func (z *ZookeeperClient) UnregisterEvent(zkPath string, event *chan struct{}) {
+func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
 	}
