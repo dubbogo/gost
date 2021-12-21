@@ -45,7 +45,7 @@ const (
 
 // GetCPUNum gets current os's cpu number
 func GetCPUNum() int {
-	return runtime.NumCPU()
+	return numCPU()
 }
 
 // GetMemoryStat gets current os's memory size in bytes
