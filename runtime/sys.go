@@ -18,6 +18,7 @@
 package gxruntime
 
 import (
+	"bufio"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -41,10 +42,20 @@ var CurrentPID = os.Getpid()
 
 const (
 	cgroupMemLimitPath = "/sys/fs/cgroup/memory/memory.limit_in_bytes"
+
+	_cgroupPath    = "/proc/self/cgroup"
+	_dockerPath    = "/docker"
+	_kubepodsPath  = "/kubepods"
+	_cpuPeriodPath = "/sys/fs/cgroup/cpu/cpu.cfs_period_us"
+	_cpuQuotaPath  = "/sys/fs/cgroup/cpu/cpu.cfs_quota_us"
 )
 
 // GetCPUNum gets current os's cpu number
 func GetCPUNum() int {
+	if isContainer() {
+		cpus, _ := numCPU()
+		return cpus
+	}
 	return runtime.NumCPU()
 }
 
@@ -182,4 +193,60 @@ func GetCgroupProcessMemoryPercent() (float64, error) {
 	memPercent := float64(mem.RSS) * 100 / float64(memLimit)
 
 	return memPercent, nil
+}
+
+// readLinesFromFile reads the lines from a file.
+func readLinesFromFile(filepath string) []string {
+	res := make([]string, 0)
+	f, err := os.Open(filepath)
+	if err != nil {
+		return res
+	}
+	defer f.Close()
+	buff := bufio.NewReader(f)
+	for {
+		line, _, err := buff.ReadLine()
+		if err != nil {
+			return res
+		}
+		res = append(res, string(line))
+	}
+}
+
+// isContainer returns true if the process is running in a container.
+func isContainer() bool {
+	lines := readLinesFromFile(_cgroupPath)
+	for _, line := range lines {
+		if strings.HasPrefix(line, _dockerPath) ||
+			strings.HasPrefix(line, _kubepodsPath) {
+			return true
+		}
+	}
+	return false
+}
+
+// numCPU returns the CPU quota
+func numCPU() (num int, err error) {
+	if !isContainer() {
+		return runtime.NumCPU(), nil
+	}
+
+	// If the container is running in a cgroup, we can use the cgroup cpu
+	// quota to limit the number of CPUs.
+	period, err := readUint(_cpuPeriodPath)
+	if err != nil {
+		return runtime.NumCPU(), err
+	}
+	quota, err := readUint(_cpuQuotaPath)
+	if err != nil {
+		return runtime.NumCPU(), err
+	}
+
+	// The number of CPUs is the quota divided by the period.
+	// See https://www.kernel.org/doc/Documentation/scheduler/sched-bwc.txt
+	if quota <= 0 || period <= 0 {
+		return runtime.NumCPU(), err
+	}
+
+	return int(quota) / int(period), nil
 }
