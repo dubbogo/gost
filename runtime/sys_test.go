@@ -112,7 +112,7 @@ func Test_numCPU(t *testing.T) {
 }
 
 func Test_readUint(t *testing.T) {
-	uint, err := readUint("/dev/null")
-	assert.Equal(t, uint, uint64(0))
+	uInt, err := readUint("/dev/null")
+	assert.Equal(t, uInt, uint64(0))
 	assert.True(t, err != nil)
 }
