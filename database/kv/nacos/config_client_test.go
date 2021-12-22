@@ -19,7 +19,9 @@ package nacos
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -92,54 +94,71 @@ func TestPublishConfig(t *testing.T) {
 		LogLevel:            "debug",
 	}
 
-	client, err := NewNacosConfigClient("nacos", true, scs, cc)
+	client, clientErr := NewNacosConfigClient("nacos", true, scs, cc)
 
-	assert.Nil(t, err)
+	assert.Nil(t, clientErr)
 
-	//publish config
-	//config key=dataId+group+namespaceId
-	push, err := client.Client().PublishConfig(vo.ConfigParam{
-		DataId:  "nacos-config",
-		Group:   "dubbo",
-		Content: "dubbo-go nb",
+	defer client.Close()
+
+	t.Run("publishConfig", func(t *testing.T) {
+		//publish config
+		//config key=dataId+group+namespaceId
+		push, err := client.Client().PublishConfig(vo.ConfigParam{
+			DataId:  "nacos-config",
+			Group:   "dubbo",
+			Content: "dubbo-go nb",
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, push, true)
 	})
-	assert.Nil(t, err)
-	assert.Equal(t, push, true)
 
-	//get config
-	cfg, err := client.Client().GetConfig(vo.ConfigParam{
-		DataId: "nacos-config",
-		Group:  "dubbo",
+	t.Run("getConfig", func(t *testing.T) {
+		//get config
+		cfg, err := client.Client().GetConfig(vo.ConfigParam{
+			DataId: "nacos-config",
+			Group:  "dubbo",
+		})
+		assert.Nil(t, err)
+		fmt.Println("GetConfig,config :", cfg)
 	})
-	assert.Nil(t, err)
-	fmt.Println("GetConfig,config :", cfg)
 
-	//Listen config change,key=dataId+group+namespaceId.
-	err = client.Client().ListenConfig(vo.ConfigParam{
-		DataId: "nacos-config",
-		Group:  "dubbo",
-		OnChange: func(namespace, group, dataId, data string) {
-			assert.Equal(t, data, "test-listen")
-			fmt.Println("config changed group:" + group + ", dataId:" + dataId + ", content:" + data)
-		},
-	})
-	assert.Nil(t, err)
+	t.Run("listenConfig", func(t *testing.T) {
+		randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+		key := strconv.Itoa(randomizer.Intn(100))
+		//Listen config change,key=dataId+group+namespaceId.
+		err := client.Client().ListenConfig(vo.ConfigParam{
+			DataId: "nacos-config" + key,
+			Group:  "dubbo",
+			OnChange: func(namespace, group, dataId, data string) {
+				assert.Equal(t, data, "test-listen")
+				fmt.Println("config changed group:" + group + ", dataId:" + dataId + ", content:" + data)
+			},
+		})
+		assert.Nil(t, err)
 
-	_, err = client.Client().PublishConfig(vo.ConfigParam{
-		DataId:  "nacos-config",
-		Group:   "dubbo",
-		Content: "test-listen",
-	})
-	assert.Nil(t, err)
+		_, err = client.Client().PublishConfig(vo.ConfigParam{
+			DataId:  "nacos-config" + key,
+			Group:   "dubbo",
+			Content: "test-listen",
+		})
+		assert.Nil(t, err)
 
-	searchPage, _ := client.Client().SearchConfig(vo.SearchConfigParam{
-		Search:   "accurate",
-		DataId:   "",
-		Group:    "dubbo",
-		PageNo:   1,
-		PageSize: 10,
+		time.Sleep(2 * time.Second)
+		_, err = client.Client().DeleteConfig(vo.ConfigParam{
+			DataId: "nacos-config" + key,
+			Group:  "dubbo"})
+		assert.Nil(t, err)
 	})
-	fmt.Printf("Search config:%+v \n", searchPage)
-	time.Sleep(2 * time.Second)
-	client.Close()
+
+	t.Run("searchConfig", func(t *testing.T) {
+		searchPage, err := client.Client().SearchConfig(vo.SearchConfigParam{
+			Search:   "accurate",
+			DataId:   "",
+			Group:    "dubbo",
+			PageNo:   1,
+			PageSize: 10,
+		})
+		fmt.Printf("Search config:%+v \n", searchPage)
+		assert.Nil(t, err)
+	})
 }
