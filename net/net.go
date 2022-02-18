@@ -131,7 +131,7 @@ func isValidNetworkInterface(face net.Interface) bool {
 	return true
 }
 
-// refer from https://github.com/facebookarchive/grace/blob/master/gracenet/net.go#L180
+// IsSameAddr refer from https://github.com/facebookarchive/grace/blob/master/gracenet/net.go#L180
 func IsSameAddr(addr1, addr2 net.Addr) bool {
 	if addr1.Network() != addr2.Network() {
 		return false
@@ -170,7 +170,7 @@ func ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) {
 	return net.ListenTCP("tcp4", &localAddr)
 }
 
-// ListenOnUDPRandomPort a udp endpoint listening on a random port
+// ListenOnUDPRandomPort an udp endpoint listening on a random port
 func ListenOnUDPRandomPort(ip string) (*net.UDPConn, error) {
 	localAddr := net.UDPAddr{
 		IP:   net.IPv4zero,
@@ -309,4 +309,39 @@ func getNumOfIPSegment(ipSegment string, isIpv4 bool) int {
 	}
 	ipSeg, _ := strconv.ParseInt(ipSegment, 0, 16)
 	return int(ipSeg)
+}
+
+// HostAddress composes an ip:port style address. It's opposite function is net.SplitHostPort.
+func HostAddress(host string, port int) string {
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
+// WSHostAddress return a ws hostAddress
+func WSHostAddress(host string, port int, path string) string {
+	return "ws://" + net.JoinHostPort(host, strconv.Itoa(port)) + path
+}
+
+// WSSHostAddress return a wss hostAddress
+func WSSHostAddress(host string, port int, path string) string {
+	return "wss://" + net.JoinHostPort(host, strconv.Itoa(port)) + path
+}
+
+// HostAddress2 return a hostAddress
+func HostAddress2(host string, port string) string {
+	return net.JoinHostPort(host, port)
+}
+
+// WSHostAddress2 return a ws hostAddress
+func WSHostAddress2(host string, port string, path string) string {
+	return "ws://" + net.JoinHostPort(host, port) + path
+}
+
+// WSSHostAddress2 return a wss hostAddress
+func WSSHostAddress2(host string, port string, path string) string {
+	return "wss://" + net.JoinHostPort(host, port) + path
+}
+
+// HostPort return host, port, err
+func HostPort(addr string) (string, string, error) {
+	return net.SplitHostPort(addr)
 }
