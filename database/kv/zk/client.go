@@ -40,7 +40,8 @@ var (
 	clientPoolOnce sync.Once
 
 	// ErrNilZkClientConn no conn error
-	ErrNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
+	ErrNilZkClientConn = perrors.New("Zookeeper Client{conn} is nil")
+	ErrStatIsNil       = perrors.New("Stat of the node is nil")
 )
 
 // ZookeeperClient represents zookeeper Client Configuration
@@ -359,7 +360,7 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 	pathSlice := strings.Split(basePath, SLASH)[1:]
 	length := len(pathSlice)
 	for i, str := range pathSlice {
-		tmpPath = path.Join(tmpPath, "/", str)
+		tmpPath = path.Join(tmpPath, SLASH, str)
 		// last child need be ephemeral
 		if i == length-1 {
 			_, err = conn.Create(tmpPath, value, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
@@ -389,7 +390,7 @@ func (z *ZookeeperClient) Delete(basePath string) error {
 
 // RegisterTemp registers temporary node by @basePath and @node
 func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, error) {
-	zkPath := path.Join(basePath) + "/" + node
+	zkPath := path.Join(basePath) + SLASH + node
 	conn := z.getConn()
 	if conn == nil {
 		return "", ErrNilZkClientConn
@@ -414,7 +415,7 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	conn := z.getConn()
 	if conn != nil {
 		tmpPath, err = conn.Create(
-			path.Join(basePath)+"/",
+			path.Join(basePath)+SLASH,
 			data,
 			zk.FlagEphemeral|zk.FlagSequence,
 			zk.WorldACL(zk.PermAll),
@@ -439,7 +440,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		return nil, nil, perrors.WithMessagef(err, "Error while invoking zk.ChildrenW(path:%s), the reason maybe is: ", path)
 	}
 	if stat == nil {
-		return nil, nil, perrors.Errorf("Error while invokeing zk.ChildrenW(path:%s), the reason is that the stat is nil", path)
+		return nil, nil, perrors.WithMessagef(ErrStatIsNil, "Error while invokeing zk.ChildrenW(path:%s), the reason is: ", path)
 	}
 
 	return children, watcher.EvtCh, nil
