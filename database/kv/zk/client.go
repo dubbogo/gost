@@ -31,18 +31,17 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-var (
-	// ErrNilZkClientConn no conn error
-	ErrNilZkClientConn = perrors.New("zookeeper Client{conn} is nil")
-	// ErrNilChildren no children error
-	ErrNilChildren = perrors.Errorf("has none children")
-	// ErrNilNode no node error
-	ErrNilNode = perrors.Errorf("node does not exist")
+const (
+	SLASH = "/"
 )
 
 var (
 	zkClientPool   zookeeperClientPool
 	clientPoolOnce sync.Once
+
+	// ErrNilZkClientConn no conn error
+	ErrNilZkClientConn = perrors.New("Zookeeper Client{conn} is nil")
+	ErrStatIsNil       = perrors.New("Stat of the node is nil")
 )
 
 // ZookeeperClient represents zookeeper Client Configuration
@@ -314,19 +313,23 @@ func (z *ZookeeperClient) Create(basePath string) error {
 
 // CreateWithValue will create the node recursively, which means that if the parent node is absent,
 // it will create parent node first.
+// basePath should start with "/"
 func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
 	conn := z.getConn()
 	if conn == nil {
-		return perrors.WithMessagef(ErrNilZkClientConn, "zk.Create(path:%s)", basePath)
+		return ErrNilZkClientConn
 	}
 
-	paths := strings.Split(basePath, "/")
+	if !strings.HasPrefix(basePath, SLASH) {
+		basePath = SLASH + basePath
+	}
+	paths := strings.Split(basePath, SLASH)
 	// Check the ancestor's path
 	for idx := 2; idx < len(paths); idx++ {
-		tmpPath := strings.Join(paths[:idx], "/")
+		tmpPath := strings.Join(paths[:idx], SLASH)
 		_, err := conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil && err != zk.ErrNodeExists {
-			return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+			return perrors.WithMessagef(err, "Error while invoking zk.Create(path:%s), the reason maybe is: ", tmpPath)
 		}
 	}
 
@@ -347,28 +350,29 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 	)
 
 	conn := z.getConn()
-	err = ErrNilZkClientConn
 	if conn == nil {
-		return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
+		return ErrNilZkClientConn
 	}
 
-	pathSlice := strings.Split(basePath, "/")[1:]
+	if !strings.HasPrefix(basePath, SLASH) {
+		basePath = SLASH + basePath
+	}
+	pathSlice := strings.Split(basePath, SLASH)[1:]
 	length := len(pathSlice)
 	for i, str := range pathSlice {
-		tmpPath = path.Join(tmpPath, "/", str)
+		tmpPath = path.Join(tmpPath, SLASH, str)
 		// last child need be ephemeral
 		if i == length-1 {
 			_, err = conn.Create(tmpPath, value, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
-			if err == zk.ErrNodeExists {
-				return err
+			if err != nil {
+				return perrors.WithMessagef(err, "Error while invoking zk.Create(path:%s), the reason maybe is: ", tmpPath)
 			}
-		} else {
-			_, err = conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
+			break
 		}
-		if err != nil {
-			if err != zk.ErrNodeExists {
-				return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
-			}
+		// we need ignore node exists error for those parent node
+		_, err = conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		if err != nil && err != zk.ErrNodeExists {
+			return perrors.WithMessagef(err, "Error while invoking zk.Create(path:%s), the reason maybe is: ", tmpPath)
 		}
 	}
 
@@ -377,28 +381,21 @@ func (z *ZookeeperClient) CreateTempWithValue(basePath string, value []byte) err
 
 // Delete will delete basePath
 func (z *ZookeeperClient) Delete(basePath string) error {
-	err := ErrNilZkClientConn
 	conn := z.getConn()
-	if conn != nil {
-		err = conn.Delete(basePath, -1)
+	if conn == nil {
+		return ErrNilZkClientConn
 	}
-	return perrors.WithMessagef(err, "Delete(basePath:%s)", basePath)
+	return perrors.WithMessagef(conn.Delete(basePath, -1), "Delete(basePath:%s)", basePath)
 }
 
 // RegisterTemp registers temporary node by @basePath and @node
 func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, error) {
-	var (
-		err     error
-		zkPath  string
-		tmpPath string
-	)
-
-	err = ErrNilZkClientConn
-	zkPath = path.Join(basePath) + "/" + node
+	zkPath := path.Join(basePath) + SLASH + node
 	conn := z.getConn()
-	if conn != nil {
-		tmpPath, err = conn.Create(zkPath, []byte(""), zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+	if conn == nil {
+		return "", ErrNilZkClientConn
 	}
+	tmpPath, err := conn.Create(zkPath, []byte(""), zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 
 	if err != nil {
 		return zkPath, perrors.WithStack(err)
@@ -418,7 +415,7 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 	conn := z.getConn()
 	if conn != nil {
 		tmpPath, err = conn.Create(
-			path.Join(basePath)+"/",
+			path.Join(basePath)+SLASH,
 			data,
 			zk.FlagEphemeral|zk.FlagSequence,
 			zk.WorldACL(zk.PermAll),
@@ -433,30 +430,17 @@ func (z *ZookeeperClient) RegisterTempSeq(basePath string, data []byte) (string,
 
 // GetChildrenW gets children watch by @path
 func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, error) {
-	var (
-		err      error
-		children []string
-		stat     *zk.Stat
-		watcher  *zk.Watcher
-	)
-
-	err = ErrNilZkClientConn
 	conn := z.getConn()
-	if conn != nil {
-		children, stat, watcher, err = conn.ChildrenW(path)
+	if conn == nil {
+		return nil, nil, ErrNilZkClientConn
 	}
+	children, stat, watcher, err := conn.ChildrenW(path)
 
 	if err != nil {
-		if err == zk.ErrNoChildrenForEphemerals {
-			return nil, nil, ErrNilChildren
-		}
-		if err == zk.ErrNoNode {
-			return nil, nil, ErrNilNode
-		}
-		return nil, nil, perrors.WithMessagef(err, "zk.ChildrenW(path:%s)", path)
+		return nil, nil, perrors.WithMessagef(err, "Error while invoking zk.ChildrenW(path:%s), the reason maybe is: ", path)
 	}
 	if stat == nil {
-		return nil, nil, perrors.Errorf("path{%s} get stat is nil", path)
+		return nil, nil, perrors.WithMessagef(ErrStatIsNil, "Error while invokeing zk.ChildrenW(path:%s), the reason is: ", path)
 	}
 
 	return children, watcher.EvtCh, nil
@@ -464,29 +448,17 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 
 // GetChildren gets children by @path
 func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
-	var (
-		err      error
-		children []string
-		stat     *zk.Stat
-	)
-
-	err = ErrNilZkClientConn
 	conn := z.getConn()
-	if conn != nil {
-		children, stat, err = conn.Children(path)
+	if conn == nil {
+		return nil, ErrNilZkClientConn
 	}
+	children, stat, err := conn.Children(path)
 
 	if err != nil {
-		if err == zk.ErrNoNode {
-			return nil, perrors.Errorf("path{%s} has none children", path)
-		}
-		return nil, perrors.WithMessagef(err, "zk.Children(path:%s)", path)
+		return nil, perrors.WithMessagef(err, "Error while invoking zk.Children(path:%s), the reason maybe is: ", path)
 	}
 	if stat == nil {
-		return nil, perrors.Errorf("path{%s} has none children", path)
-	}
-	if len(children) == 0 {
-		return nil, ErrNilChildren
+		return nil, perrors.Errorf("Error while invokeing zk.Children(path:%s), the reason is that the stat is nil", path)
 	}
 
 	return children, nil
@@ -494,23 +466,14 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 
 // ExistW to judge watch whether it exists or not by @zkPath
 func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
-	var (
-		exist   bool
-		err     error
-		watcher *zk.Watcher
-	)
-
-	err = ErrNilZkClientConn
 	conn := z.getConn()
-	if conn != nil {
-		exist, _, watcher, err = conn.ExistsW(zkPath)
+	if conn == nil {
+		return nil, ErrNilZkClientConn
 	}
+	_, _, watcher, err := conn.ExistsW(zkPath)
 
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
-	}
-	if !exist {
-		return nil, perrors.Errorf("zkClient{%s} App zk path{%s} does not exist.", z.name, zkPath)
 	}
 
 	return watcher.EvtCh, nil
