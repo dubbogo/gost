@@ -40,7 +40,7 @@ func checkNum(num, expected int, t *testing.T) {
 func TestNewConsistentHash(t *testing.T) {
 	c := NewConsistentHash(WithReplicaNum(13), WithMaxVnodeNum(1023))
 	if c == nil {
-		t.Error("expected obj")
+		t.Fatal("expected obj")
 	}
 	checkNum(int(c.replicaFactor), 13, t)
 }
