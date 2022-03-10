@@ -217,8 +217,8 @@ func readLinesFromFile(filepath string) []string {
 func isContainer() bool {
 	lines := readLinesFromFile(_cgroupPath)
 	for _, line := range lines {
-		if strings.HasPrefix(line, _dockerPath) ||
-			strings.HasPrefix(line, _kubepodsPath) {
+		if strings.Contains(line, _dockerPath) ||
+			strings.Contains(line, _kubepodsPath) {
 			return true
 		}
 	}
