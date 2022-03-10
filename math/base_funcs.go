@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxmath
 
-import (
-	"time"
-)
-
-type CountWatch struct {
-	start time.Time
+// AbsInt64 abs of int64
+func AbsInt64(n int64) int64 {
+	y := n >> 63
+	return (n ^ y) - y
 }
 
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
-	}
+// AbsInt32 abs of int32
+func AbsInt32(n int32) int32 {
+	y := n >> 31
+	return (n ^ y) - y
 }
 
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
+// AbsInt16 abs of int16
+func AbsInt16(n int16) int16 {
+	y := n >> 15
+	return (n ^ y) - y
 }
 
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+// AbsInt8 abs of int8
+func AbsInt8(n int8) int8 {
+	y := n >> 7
+	return (n ^ y) - y
 }

@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxlog
 
-import (
-	"time"
-)
+type Logger interface {
+	Info(args ...interface{})
+	Warn(args ...interface{})
+	Error(args ...interface{})
+	Debug(args ...interface{})
 
-type CountWatch struct {
-	start time.Time
-}
-
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
-	}
-}
-
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
-
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+	Infof(fmt string, args ...interface{})
+	Warnf(fmt string, args ...interface{})
+	Errorf(fmt string, args ...interface{})
+	Debugf(fmt string, args ...interface{})
 }

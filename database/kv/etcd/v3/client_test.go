@@ -29,10 +29,14 @@ import (
 
 import (
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
 	"go.etcd.io/etcd/api/v3/mvccpb"
+
 	"go.etcd.io/etcd/server/v3/embed"
+
 	"google.golang.org/grpc/connectivity"
 )
 

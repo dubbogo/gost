@@ -23,7 +23,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 

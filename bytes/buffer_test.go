@@ -1,3 +1,7 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,28 +19,34 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxbytes
 
 import (
-	"time"
+	"testing"
 )
 
-type CountWatch struct {
-	start time.Time
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
-	}
-}
+func TestBufferWithPeek(t *testing.T) {
+	var b Buffer
+	b.WriteString("hello")
 
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
+	b1 := b
+	b1.WriteNextBegin(100)
+	assert.True(t, b.off == b1.off)
+	assert.True(t, b.lastRead == b1.lastRead)
+	assert.True(t, len(b.buf) == len(b1.buf))
+	assert.True(t, cap(b.buf) < cap(b1.buf))
 
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+	// out of range
+	//l, err := b1.WriteNextEnd(101)
+	//assert.Zero(t, l)
+	//assert.NotNil(t, err)
+
+	l, err := b1.WriteNextEnd(99)
+	assert.Nil(t, err)
+	assert.True(t, l == 99)
+	assert.NotNil(t, b1.buf)
 }

@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxstrings
 
 import (
-	"time"
+	"reflect"
+	"unsafe"
 )
 
-type CountWatch struct {
-	start time.Time
-}
-
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
-	}
-}
-
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
-
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+func Slice(s string) (b []byte) {
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Cap = sh.Len
+	bh.Len = sh.Len
+	return b
 }

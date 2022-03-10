@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxhash
 
-import (
-	"time"
-)
-
-type CountWatch struct {
-	start time.Time
-}
-
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
+// BKDRHash BKDR Hash (java str.hashCode())
+// s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+func BKDRHash(str string) int32 {
+	h := int32(0)
+	base := int32(1)
+	s := []rune(str)
+	for i := len(s) - 1; i >= 0; i-- {
+		h += s[i] * base
+		base = base<<5 - base
 	}
-}
-
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
-
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+	return h
 }

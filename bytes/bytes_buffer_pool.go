@@ -22,22 +22,50 @@ import (
 	"sync"
 )
 
-var defaultPool *ObjectPool
+import (
+	uatomic "go.uber.org/atomic"
+)
+
+var (
+	poolObjectNumber uatomic.Int64
+	defaultPool      *ObjectPool
+
+	minBufCap        = 512
+	maxBufCap        = 20 * 1024
+	maxPoolObjectNum = int64(4000)
+)
 
 func init() {
 	defaultPool = NewObjectPool(func() PoolObject {
 		return new(bytes.Buffer)
 	})
+	poolObjectNumber.Store(0)
 }
 
 // GetBytesBuffer returns bytes.Buffer from pool
 func GetBytesBuffer() *bytes.Buffer {
-	return defaultPool.Get().(*bytes.Buffer)
+	buf := defaultPool.Get().(*bytes.Buffer)
+	bufCap := buf.Cap()
+	if bufCap >= minBufCap && bufCap <= maxBufCap && poolObjectNumber.Load() > 0 {
+		poolObjectNumber.Dec()
+	}
+
+	return buf
 }
 
 // PutIoBuffer returns IoBuffer to pool
 func PutBytesBuffer(buf *bytes.Buffer) {
+	if poolObjectNumber.Load() > maxPoolObjectNum {
+		return
+	}
+
+	bufCap := buf.Cap()
+	if bufCap < minBufCap || bufCap > maxBufCap {
+		return
+	}
+
 	defaultPool.Put(buf)
+	poolObjectNumber.Add(1)
 }
 
 // Pool object

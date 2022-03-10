@@ -15,28 +15,30 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxhash
 
 import (
-	"time"
+	"testing"
 )
 
-type CountWatch struct {
-	start time.Time
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
+func TestBKDRHash(t *testing.T) {
+	valTable := []struct {
+		in   string
+		want int32
+	}{
+		{"", 0},
+		{"ab", 3105},
+		{"12345678", -1861353340},
+		{"ZD20221202XFSDSA", -1214774504},
+		{"www.eeee.com/", -1766224091},
+		{"Hello, 世界.", 417292690},
 	}
-}
 
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
-
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+	for i := 0; i < len(valTable); i++ {
+		assert.Equal(t, valTable[i].want, BKDRHash(valTable[i].in))
+	}
 }

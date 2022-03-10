@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxsync
 
-import (
-	"time"
-)
-
-type CountWatch struct {
-	start time.Time
-}
-
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
-	}
-}
-
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
-
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+type WorkerPool interface {
+	// Submit adds a task to queue asynchronously.
+	Submit(task) error
+	// SubmitSync adds a task to queue synchronously.
+	SubmitSync(task) error
+	// Close closes the worker pool
+	Close()
+	// IsClosed returns close status of the worker pool
+	IsClosed() bool
+	// NumWorkers returns the number of workers
+	NumWorkers() int32
 }

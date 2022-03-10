@@ -15,28 +15,36 @@
  * limitations under the License.
  */
 
-// Package gxtime encapsulates some golang.time functions
-package gxtime
+package gxmath
 
 import (
-	"time"
+	"math"
+	"testing"
 )
 
-type CountWatch struct {
-	start time.Time
-}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-func (w *CountWatch) Start() {
-	var t time.Time
-	if t.Equal(w.start) {
-		w.start = time.Now()
+func TestAbs(t *testing.T) {
+	mathTable := []struct {
+		in, want int64
+	}{
+		{-0, 0},
+		{1, 1},
+		{-1, 1},
+		{-3, 3},
 	}
-}
 
-func (w *CountWatch) Reset() {
-	w.start = time.Now()
-}
+	for _, val := range mathTable {
+		assert.Equal(t, val.want, AbsInt64(val.in))
+		assert.Equal(t, int32(val.want), AbsInt32(int32(val.in)))
+		assert.Equal(t, int16(val.want), AbsInt16(int16(val.in)))
+		assert.Equal(t, int8(val.want), AbsInt8(int8(val.in)))
+	}
 
-func (w *CountWatch) Count() int64 {
-	return time.Since(w.start).Nanoseconds()
+	assert.Equal(t, int64(math.MaxInt64), AbsInt64(-math.MaxInt64))
+	assert.Equal(t, int32(math.MaxInt32), AbsInt32(-math.MaxInt32))
+	assert.Equal(t, int16(math.MaxInt16), AbsInt16(-math.MaxInt16))
+	assert.Equal(t, int8(math.MaxInt8), AbsInt8(-math.MaxInt8))
 }
