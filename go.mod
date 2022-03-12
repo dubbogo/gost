@@ -1,5 +1,7 @@
 module github.com/dubbogo/gost
 
+go 1.16
+
 require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/buger/jsonparser v1.1.1
@@ -31,5 +33,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-go 1.16
