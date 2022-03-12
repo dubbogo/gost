@@ -123,8 +123,9 @@ func TestFromFloat(t *testing.T) {
 		{"1234500009876.5", 1234500009876.5},
 	}
 	for _, tt := range tests {
-		dec := NewDecFromFloatForTest(tt.f)
+		dec, err := NewDecFromFloat(tt.f)
 		str := dec.ToString()
+		require.Equal(t, err, nil)
 		require.Equal(t, tt.s, string(str))
 	}
 }
@@ -563,9 +564,10 @@ func TestNegMyDecimal(t *testing.T) {
 		{"0", "0"},
 	}
 	for _, tt := range tests {
-		a := NewDecFromStringForTest(tt.a)
+		a, err := NewDecFromString(tt.a)
 		negResult := DecimalNeg(a)
 		result := negResult.ToString()
+		require.Equal(t, err, nil)
 		require.Equal(t, tt.result, string(result))
 	}
 }
@@ -596,8 +598,10 @@ func TestAddMyDecimal(t *testing.T) {
 		{"-1234.1234", "1234.1234", "0.0000", nil},
 	}
 	for _, tt := range tests {
-		a := NewDecFromStringForTest(tt.a)
-		b := NewDecFromStringForTest(tt.b)
+		a, err1 := NewDecFromString(tt.a)
+		b, err2 := NewDecFromString(tt.b)
+		require.Equal(t, err1, nil)
+		require.Equal(t, err2, nil)
 		var sum Decimal
 		err := DecimalAdd(a, b, &sum)
 		require.Equal(t, tt.err, err)
