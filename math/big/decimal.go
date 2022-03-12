@@ -18,7 +18,6 @@
 package gxbig
 
 import (
-	"go.uber.org/zap"
 	"log"
 	"math"
 	"strconv"
@@ -2376,24 +2375,18 @@ func NewDecFromUint(i uint64) *Decimal {
 	return new(Decimal).FromUint(i)
 }
 
-// NewDecFromFloatForTest creates a Decimal from float, as it returns no error, it should only be used in test.
-func NewDecFromFloatForTest(f float64) *Decimal {
+// NewDecFromFloat creates a Decimal from float.
+func NewDecFromFloat(f float64) (*Decimal, error) {
 	dec := new(Decimal)
 	err := dec.FromFloat64(f)
-	if err != nil {
-		log.Panic("encountered error", zap.Error(err), zap.String("DecimalStr", strconv.FormatFloat(f, 'g', -1, 64)))
-	}
-	return dec
+	return dec, err
 }
 
-// NewDecFromStringForTest creates a Decimal from string, as it returns no error, it should only be used in test.
-func NewDecFromStringForTest(s string) *Decimal {
+// NewDecFromString creates a Decimal from string
+func NewDecFromString(s string) (*Decimal, error) {
 	dec := new(Decimal)
 	err := dec.FromString([]byte(s))
-	if err != nil {
-		log.Panic("encountered error", zap.Error(err), zap.String("DecimalStr", s))
-	}
-	return dec
+	return dec, err
 }
 
 // NewMaxOrMinDec returns the max or min value decimal for given precision and fraction.
