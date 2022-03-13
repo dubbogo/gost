@@ -1,5 +1,7 @@
 module github.com/dubbogo/gost
 
+go 1.16
+
 require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/davecgh/go-spew v1.1.1
@@ -30,4 +32,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-go 1.13

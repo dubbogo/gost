@@ -19,7 +19,7 @@ jobs:
         os:
           - ubuntu-latest
         go_version:
-          - 1.15
+          - 1.16
     env:
       DING_TOKEN: ${{ secrets.DING_TOKEN }}
       DING_SIGN: ${{ secrets.DING_SIGN }}
