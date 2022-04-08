@@ -50,8 +50,12 @@ func ConnCheck(conn net.Conn) error {
 	}
 
 	err = rawConn.Read(func(fd uintptr) bool {
-		var buf [1]byte
-		n, err := syscall.Read(int(fd), buf[:])
+		var (
+			buf [1]byte
+			n   int
+			err error
+		)
+		n, err = syscall.Read(int(fd), buf[:])
 		switch {
 		case n == 0 && err == nil:
 			sysErr = io.EOF
