@@ -26,7 +26,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
 package gxnet
 
 import (
@@ -38,7 +37,7 @@ import (
 
 var errUnexpectedRead = errors.New("unexpected read from socket")
 
-func connCheck(conn net.Conn) error {
+func ConnCheck(conn net.Conn) error {
 	var sysErr error
 
 	sysConn, ok := conn.(syscall.Conn)
@@ -71,4 +70,3 @@ func connCheck(conn net.Conn) error {
 
 	return sysErr
 }
-
