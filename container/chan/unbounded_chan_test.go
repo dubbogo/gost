@@ -78,7 +78,6 @@ func TestUnboundedChan(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, 720600, count)
-
 }
 
 func TestUnboundedChan_Quota(t *testing.T) {

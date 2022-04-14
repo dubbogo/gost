@@ -43,7 +43,7 @@ type NacosNamingClient struct {
 	name        string
 	clientLock  sync.Mutex // for Client
 	client      naming_client.INamingClient
-	config      vo.NacosClientParam //conn config
+	config      vo.NacosClientParam // conn config
 	valid       uint32
 	activeCount uint32
 	share       bool
@@ -55,8 +55,8 @@ func initNacosClientPool() {
 
 // NewNacosNamingClient create nacos client
 func NewNacosNamingClient(name string, share bool, sc []constant.ServerConfig,
-	cc constant.ClientConfig) (*NacosNamingClient, error) {
-
+	cc constant.ClientConfig,
+) (*NacosNamingClient, error) {
 	namingClient := &NacosNamingClient{
 		name:        name,
 		activeCount: 0,
@@ -107,7 +107,6 @@ func (n *NacosNamingClient) SetClient(client naming_client.INamingClient) {
 
 // NacosClientValid Get nacos client valid status
 func (n *NacosNamingClient) NacosClientValid() bool {
-
 	return atomic.LoadUint32(&n.valid) == 1
 }
 

@@ -28,7 +28,6 @@ import (
 )
 
 func TestNewNacosClient(t *testing.T) {
-
 	scs := []constant.ServerConfig{
 		*constant.NewServerConfig("console.nacos.io", 80),
 	}

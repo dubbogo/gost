@@ -226,6 +226,7 @@ func TestGetMultipleRemoveQuick(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
 func TestGetTwo(t *testing.T) {
 	c := NewConsistentHash(WithReplicaNum(13), WithMaxVnodeNum(10230))
 	c.Add("abcdefg")
@@ -550,6 +551,7 @@ func TestSet(t *testing.T) {
 		t.Error("expected a != b, they were both ", a)
 	}
 }
+
 func TestRemove(t *testing.T) {
 	c := NewConsistentHash(WithReplicaNum(10), WithMaxVnodeNum(1023))
 
@@ -560,7 +562,6 @@ func TestRemove(t *testing.T) {
 	if c.sortedHashes.Len() != 0 && len(c.circle) != 0 && c.totalLoad == 0 {
 		t.Fatal("remove is not working")
 	}
-
 }
 
 func TestRemoveNonExisting(t *testing.T) {
@@ -613,7 +614,6 @@ func TestIncDone(t *testing.T) {
 	if c.loadMap[host].Load != 0 {
 		t.Fatalf("host %s load should be 0\n", host)
 	}
-
 }
 
 func TestHosts(t *testing.T) {

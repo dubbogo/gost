@@ -240,7 +240,7 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 				}
 				if event.State == zk.StateHasSession {
 					atomic.StoreUint32(&z.valid, 1)
-					//if this is the first connection, don't trigger reconnect event
+					// if this is the first connection, don't trigger reconnect event
 					if !atomic.CompareAndSwapUint32(&z.initialized, 0, 1) {
 						close(z.reconnectCh)
 						z.reconnectCh = make(chan struct{})
@@ -396,7 +396,6 @@ func (z *ZookeeperClient) RegisterTemp(basePath string, node string) (string, er
 		return "", ErrNilZkClientConn
 	}
 	tmpPath, err := conn.Create(zkPath, []byte(""), zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
-
 	if err != nil {
 		return zkPath, perrors.WithStack(err)
 	}
@@ -435,7 +434,6 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		return nil, nil, ErrNilZkClientConn
 	}
 	children, stat, watcher, err := conn.ChildrenW(path)
-
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "Error while invoking zk.ChildrenW(path:%s), the reason maybe is: ", path)
 	}
@@ -453,7 +451,6 @@ func (z *ZookeeperClient) GetChildren(path string) ([]string, error) {
 		return nil, ErrNilZkClientConn
 	}
 	children, stat, err := conn.Children(path)
-
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "Error while invoking zk.Children(path:%s), the reason maybe is: ", path)
 	}
@@ -471,7 +468,6 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 		return nil, ErrNilZkClientConn
 	}
 	_, _, watcher, err := conn.ExistsW(zkPath)
-
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
 	}

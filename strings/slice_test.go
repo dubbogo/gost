@@ -20,14 +20,14 @@ package gxstrings
 import "testing"
 
 func BenchmarkStrConvByteFast(b *testing.B) {
-	var s = "gost"
+	s := "gost"
 	for i := 0; i < b.N; i++ {
 		_ = Slice(s)
 	}
 }
 
 func BenchmarkBStrConvByte(b *testing.B) {
-	var s = "gost"
+	s := "gost"
 	for i := 0; i < b.N; i++ {
 		_ = []byte(s)
 	}

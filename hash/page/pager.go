@@ -19,7 +19,6 @@ package gxpage
 
 // Pager is the abstraction for pagination usage.
 type Pager interface {
-
 	// GetOffset will return the offset
 	GetOffset() int
 

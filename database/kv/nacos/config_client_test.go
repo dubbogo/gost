@@ -45,9 +45,8 @@ func TestStructAlign(t *testing.T) {
 	}
 }
 
-//TestNewNacosConfigClient config client
+// TestNewNacosConfigClient config client
 func TestNewNacosConfigClient(t *testing.T) {
-
 	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
 	cc := constant.ClientConfig{TimeoutMs: 5 * 1000, NotLoadCacheAtStart: true}
 
@@ -79,12 +78,11 @@ func TestNewNacosConfigClient(t *testing.T) {
 }
 
 func TestPublishConfig(t *testing.T) {
-
 	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
 
 	cc := constant.ClientConfig{
 		AppName:             "nacos",
-		NamespaceId:         "14e01fa8-a4aa-44cc-ad5b-c768f3c62bd5", //namespace id
+		NamespaceId:         "14e01fa8-a4aa-44cc-ad5b-c768f3c62bd5", // namespace id
 		TimeoutMs:           5000,
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
@@ -101,8 +99,8 @@ func TestPublishConfig(t *testing.T) {
 	defer client.Close()
 
 	t.Run("publishConfig", func(t *testing.T) {
-		//publish config
-		//config key=dataId+group+namespaceId
+		// publish config
+		// config key=dataId+group+namespaceId
 		push, err := client.Client().PublishConfig(vo.ConfigParam{
 			DataId:  "nacos-config",
 			Group:   "dubbo",
@@ -113,7 +111,7 @@ func TestPublishConfig(t *testing.T) {
 	})
 
 	t.Run("getConfig", func(t *testing.T) {
-		//get config
+		// get config
 		cfg, err := client.Client().GetConfig(vo.ConfigParam{
 			DataId: "nacos-config",
 			Group:  "dubbo",
@@ -125,7 +123,7 @@ func TestPublishConfig(t *testing.T) {
 	t.Run("listenConfig", func(t *testing.T) {
 		randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 		key := strconv.Itoa(randomizer.Intn(100))
-		//Listen config change,key=dataId+group+namespaceId.
+		// Listen config change,key=dataId+group+namespaceId.
 		err := client.Client().ListenConfig(vo.ConfigParam{
 			DataId: "nacos-config" + key,
 			Group:  "dubbo",
@@ -146,7 +144,8 @@ func TestPublishConfig(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		_, err = client.Client().DeleteConfig(vo.ConfigParam{
 			DataId: "nacos-config" + key,
-			Group:  "dubbo"})
+			Group:  "dubbo",
+		})
 		assert.Nil(t, err)
 	})
 

@@ -43,7 +43,7 @@ type NacosConfigClient struct {
 	name        string
 	clientLock  sync.Mutex // for Client
 	client      config_client.IConfigClient
-	config      vo.NacosClientParam //conn config
+	config      vo.NacosClientParam // conn config
 	valid       uint32
 	activeCount uint32
 	share       bool
@@ -66,8 +66,8 @@ func (n *NacosConfigClient) newConfigClient() error {
 
 // NewNacosConfigClient create config client
 func NewNacosConfigClient(name string, share bool, sc []constant.ServerConfig,
-	cc constant.ClientConfig) (*NacosConfigClient, error) {
-
+	cc constant.ClientConfig,
+) (*NacosConfigClient, error) {
 	configClient := &NacosConfigClient{
 		name:        name,
 		activeCount: 0,
@@ -106,7 +106,6 @@ func (n *NacosConfigClient) SetClient(client config_client.IConfigClient) {
 
 // NacosClientValid Get nacos client valid status
 func (n *NacosConfigClient) NacosClientValid() bool {
-
 	return atomic.LoadUint32(&n.valid) == 1
 }
 

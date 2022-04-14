@@ -28,7 +28,6 @@ import (
 )
 
 func TestTickFunc(t *testing.T) {
-
 	// num     int
 	var cw CountWatch // xassert *assert.Assertions
 

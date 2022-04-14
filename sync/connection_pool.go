@@ -26,9 +26,7 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-var (
-	PoolBusyErr = perrors.New("pool is busy")
-)
+var PoolBusyErr = perrors.New("pool is busy")
 
 func NewConnectionPool(config WorkerPoolConfig) WorkerPool {
 	return &ConnectionPool{

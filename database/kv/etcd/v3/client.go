@@ -50,7 +50,6 @@ var (
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
 	newClient, err := NewConfigClientWithErr(opts...)
-
 	if err != nil {
 		log.Printf("new etcd client = error{%v}", err)
 	}
