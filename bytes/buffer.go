@@ -513,3 +513,6 @@ func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
 func NewBufferString(s string) *Buffer {
 	return &Buffer{buf: []byte(s)}
 }
+
+func test() {
+}
