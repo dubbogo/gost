@@ -23,11 +23,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/go-zookeeper/zk"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -319,24 +316,23 @@ func (z *ZookeeperClient) Create(basePath string) error {
 // CreateWithValue will create the node recursively, which means that if the parent node is absent,
 // it will create parent node first.
 func (z *ZookeeperClient) CreateWithValue(basePath string, value []byte) error {
+	var (
+		err     error
+		tmpPath string
+	)
+
 	conn := z.getConn()
 	if conn == nil {
 		return perrors.WithMessagef(ErrNilZkClientConn, "zk.Create(path:%s)", basePath)
 	}
 
-	paths := strings.Split(basePath, "/")
 	// Check the ancestor's path
-	for idx := 2; idx < len(paths); idx++ {
-		tmpPath := strings.Join(paths[:idx], "/")
-		_, err := conn.Create(tmpPath, []byte{}, 0, zk.WorldACL(zk.PermAll))
+	for _, str := range strings.Split(basePath, "/")[1:] {
+		tmpPath = path.Join(tmpPath, "/", str)
+		_, err = conn.Create(tmpPath, value, 0, zk.WorldACL(zk.PermAll))
 		if err != nil && err != zk.ErrNodeExists {
 			return perrors.WithMessagef(err, "zk.Create(path:%s)", basePath)
 		}
-	}
-
-	_, err := conn.Create(basePath, value, 0, zk.WorldACL(zk.PermAll))
-	if err != nil {
-		return err
 	}
 	return nil
 }
