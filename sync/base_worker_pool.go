@@ -21,13 +21,9 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sync"
-)
 
-import (
 	"go.uber.org/atomic"
-)
 
-import (
 	gxlog "github.com/dubbogo/gost/log"
 )
 
