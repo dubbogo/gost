@@ -78,7 +78,7 @@ func TestToInt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(tt.input))
+		err := dec.FromString(tt.input)
 		require.NoError(t, err)
 		result, ec := dec.ToInt()
 		require.Equal(t, tt.err, ec)
@@ -103,7 +103,7 @@ func TestToUint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(tt.input))
+		err := dec.FromString(tt.input)
 		require.NoError(t, err)
 		result, ec := dec.ToUint()
 		require.Equal(t, tt.err, ec)
@@ -177,7 +177,7 @@ func TestToFloat(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.in))
+		err := dec.FromString(ca.in)
 		require.NoError(t, err)
 		f, err := dec.ToFloat64()
 		require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestToHashKey(t *testing.T) {
 		keys := make([]string, 0, len(ca.numbers))
 		for _, num := range ca.numbers {
 			var dec Decimal
-			require.NoError(t, dec.FromString([]byte(num)))
+			require.NoError(t, dec.FromString(num))
 			key, err := dec.ToHashKey()
 			require.NoError(t, err)
 			keys = append(keys, string(key))
@@ -242,7 +242,7 @@ func TestToHashKey(t *testing.T) {
 		keys := make([]string, 0, len(ca.hashNumbers)+len(ca.binNumbers))
 		for _, num := range ca.hashNumbers {
 			var dec Decimal
-			require.NoError(t, dec.FromString([]byte(num)))
+			require.NoError(t, dec.FromString(num))
 			key, err := dec.ToHashKey()
 			// remove digit len
 			key = key[:len(key)-1]
@@ -251,7 +251,7 @@ func TestToHashKey(t *testing.T) {
 		}
 		for _, num := range ca.binNumbers {
 			var dec Decimal
-			require.NoError(t, dec.FromString([]byte(num)))
+			require.NoError(t, dec.FromString(num))
 			prec, frac := dec.PrecisionAndFrac() // remove leading zeros but trailing zeros remain
 			key, err := dec.ToBin(prec, frac)
 			require.NoError(t, err)
@@ -275,7 +275,7 @@ func TestRemoveTrailingZeros(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		require.NoError(t, dec.FromString([]byte(ca)))
+		require.NoError(t, dec.FromString(ca))
 
 		// calculate the number of digits after point but trailing zero
 		digitsFracExp := 0
@@ -323,7 +323,7 @@ func TestRoundWithHalfEven(t *testing.T) {
 
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.input))
+		err := dec.FromString(ca.input)
 		require.NoError(t, err)
 		var rounded Decimal
 		err = dec.Round(&rounded, ca.scale, ModeHalfEven)
@@ -358,7 +358,7 @@ func TestRoundWithTruncate(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.input))
+		err := dec.FromString(ca.input)
 		require.NoError(t, err)
 		var rounded Decimal
 		err = dec.Round(&rounded, ca.scale, ModeTruncate)
@@ -394,7 +394,7 @@ func TestRoundWithCeil(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.input))
+		err := dec.FromString(ca.input)
 		require.NoError(t, err)
 		var rounded Decimal
 		err = dec.Round(&rounded, ca.scale, modeCeiling)
@@ -416,7 +416,7 @@ func TestToString(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.input))
+		err := dec.FromString(ca.input)
 		require.NoError(t, err)
 		result := dec.ToString()
 		require.Equal(t, ca.output, string(result))
@@ -466,7 +466,7 @@ func TestToBinFromBin(t *testing.T) {
 	}
 	for _, ca := range tests {
 		var dec Decimal
-		err := dec.FromString([]byte(ca.input))
+		err := dec.FromString(ca.input)
 		require.NoError(t, err)
 		buf, err := dec.ToBin(ca.precision, ca.frac)
 		require.Equal(t, ca.err, err)
@@ -514,9 +514,9 @@ func TestCompareMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		require.Equal(t, tt.cmp, a.Compare(&b))
 	}
@@ -636,9 +636,9 @@ func TestSubMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, sum Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		err = DecimalSub(&a, &b, &sum)
 		require.Equal(t, tt.err, err)
@@ -670,9 +670,9 @@ func TestMulMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, product Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		err = DecimalMul(&a, &b, &product)
 		require.Equal(t, tt.err, err)
@@ -707,9 +707,9 @@ func TestDivModMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, to Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		err = DecimalDiv(&a, &b, &to, 5)
 		require.Equal(t, tt.err, err)
@@ -732,9 +732,9 @@ func TestDivModMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, to Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		ec := DecimalMod(&a, &b, &to)
 		require.Equal(t, tt.err, ec)
@@ -755,9 +755,9 @@ func TestDivModMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, to Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		ec := DecimalDiv(&a, &b, &to, DivFracIncr)
 		require.Equal(t, tt.err, ec)
@@ -775,9 +775,9 @@ func TestDivModMyDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var a, b, to Decimal
-		err := a.FromString([]byte(tt.a))
+		err := a.FromString(tt.a)
 		require.NoError(t, err)
-		err = b.FromString([]byte(tt.b))
+		err = b.FromString(tt.b)
 		require.NoError(t, err)
 		ec := DecimalMod(&a, &b, &to)
 		require.Equal(t, tt.err, ec)
@@ -810,13 +810,13 @@ func TestMaxOrMinMyDecimal(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	var x1, y1, z1 Decimal
-	require.NoError(t, x1.FromString([]byte("38520.130741106671")))
-	require.NoError(t, y1.FromString([]byte("9863.944799797851")))
+	require.NoError(t, x1.FromString("38520.130741106671"))
+	require.NoError(t, y1.FromString("9863.944799797851"))
 	require.NoError(t, DecimalAdd(&x1, &y1, &z1))
 
 	var x2, y2, z2 Decimal
-	require.NoError(t, x2.FromString([]byte("121519.080207244")))
-	require.NoError(t, y2.FromString([]byte("54982.444519146")))
+	require.NoError(t, x2.FromString("121519.080207244"))
+	require.NoError(t, y2.FromString("54982.444519146"))
 	require.NoError(t, DecimalAdd(&x2, &y2, &z2))
 
 	require.NoError(t, DecimalAdd(&x2, &y2, &z1))
@@ -836,7 +836,7 @@ func TestShiftMyDecimal(t *testing.T) {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("%v (shift: %v, wordBufLen: %v)", test.input, test.shift, wordBufLen), func(t *testing.T) {
 				var dec Decimal
-				require.NoError(t, dec.FromString([]byte(test.input)))
+				require.NoError(t, dec.FromString(test.input))
 				require.Equal(t, test.err, dec.Shift(test.shift))
 				require.Equal(t, test.output, string(dec.ToString()))
 			})
@@ -953,7 +953,7 @@ func TestFromStringMyDecimal(t *testing.T) {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("%v (wordBufLen: %v)", test.input, wordBufLen), func(t *testing.T) {
 				var dec Decimal
-				require.Equal(t, test.err, dec.FromString([]byte(test.input)))
+				require.Equal(t, test.err, dec.FromString(test.input))
 				require.Equal(t, test.output, string(dec.ToString()))
 			})
 		}

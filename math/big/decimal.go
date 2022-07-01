@@ -410,8 +410,13 @@ func (d *Decimal) ToString() (str []byte) {
 	return
 }
 
-// FromString parses decimal from string.
-func (d *Decimal) FromString(str []byte) error {
+// FromString parses decimal from string .
+func (d *Decimal) FromString(str string) error {
+	return d.FromBytes([]byte(str))
+}
+
+// FromString parses decimal from []byte.
+func (d *Decimal) FromBytes(str []byte) error {
 	for i := 0; i < len(str); i++ {
 		if !isSpace(str[i]) {
 			str = str[i:]
@@ -1103,7 +1108,7 @@ func (d *Decimal) ToUint() (uint64, error) {
 // FromFloat64 creates a decimal from float64 value.
 func (d *Decimal) FromFloat64(f float64) error {
 	s := strconv.FormatFloat(f, 'g', -1, 64)
-	return d.FromString([]byte(s))
+	return d.FromString(s)
 }
 
 // ToFloat64 converts decimal to float64 value.
@@ -2385,7 +2390,7 @@ func NewDecFromFloat(f float64) (*Decimal, error) {
 // NewDecFromString creates a Decimal from string
 func NewDecFromString(s string) (*Decimal, error) {
 	dec := new(Decimal)
-	err := dec.FromString([]byte(s))
+	err := dec.FromString(s)
 	return dec, err
 }
 
@@ -2402,7 +2407,7 @@ func NewMaxOrMinDec(negative bool, prec, frac int) *Decimal {
 	}
 	str[1+prec-frac] = '.'
 	dec := new(Decimal)
-	err := dec.FromString(str)
+	err := dec.FromBytes(str)
 	if err != nil {
 		log.Printf("newMaxOrMinDec client = error{%v}", err)
 	}

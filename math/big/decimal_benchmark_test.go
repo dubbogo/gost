@@ -74,7 +74,7 @@ func BenchmarkRound(b *testing.B) {
 	}
 
 	for i := 0; i < len(tests); i++ {
-		err := tests[i].inputDec.FromString([]byte(tests[i].input))
+		err := tests[i].inputDec.FromString(tests[i].input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -139,7 +139,7 @@ func BenchmarkMyDecimalToBin(b *testing.B) {
 	decs := make([]*Decimal, 0, len(cases))
 	for _, ca := range cases {
 		var dec Decimal
-		if err := dec.FromString([]byte(ca)); err != nil {
+		if err := dec.FromString(ca); err != nil {
 			b.Fatal(err)
 		}
 		decs = append(decs, &dec)
@@ -162,7 +162,7 @@ func BenchmarkMyDecimalToHashKey(b *testing.B) {
 	decs := make([]*Decimal, 0, len(cases))
 	for _, ca := range cases {
 		var dec Decimal
-		if err := dec.FromString([]byte(ca)); err != nil {
+		if err := dec.FromString(ca); err != nil {
 			b.Fatal(err)
 		}
 		decs = append(decs, &dec)
