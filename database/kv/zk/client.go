@@ -23,7 +23,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
