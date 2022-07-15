@@ -129,3 +129,35 @@ func TestMatchIpIpv6Range(t *testing.T) {
 	assert.True(t, MatchIP("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:1", "8080"))
 	assert.False(t, MatchIP("234e:0:4567:0:0:0:3d:1-2", "234e:0:4567:0:0:0:3d:3", "8080"))
 }
+
+func TestHostAddress(t *testing.T) {
+	assert.Equal(t, "127.0.0.1:8080", HostAddress("127.0.0.1", 8080))
+}
+
+func TestWSHostAddress(t *testing.T) {
+	assert.Equal(t, "ws://127.0.0.1:8080ws", WSHostAddress("127.0.0.1", 8080, "ws"))
+}
+
+func TestWSSHostAddress(t *testing.T) {
+	assert.Equal(t, "wss://127.0.0.1:8080wss", WSSHostAddress("127.0.0.1", 8080, "wss"))
+}
+
+func TestHostAddress2(t *testing.T) {
+	assert.Equal(t, "127.0.0.1:8080", HostAddress2("127.0.0.1", "8080"))
+}
+
+func TestWSHostAddress2(t *testing.T) {
+	assert.Equal(t, "ws://127.0.0.1:8080ws", WSHostAddress2("127.0.0.1", "8080", "ws"))
+}
+
+func TestWSSHostAddress2(t *testing.T) {
+	assert.Equal(t, "wss://127.0.0.1:8080wss", WSSHostAddress2("127.0.0.1", "8080", "wss"))
+	assert.False(t, WSSHostAddress2("127.0.0.1", "8080", "wss") == "wss://127.0.0.1:8081wss")
+}
+
+func TestHostPort(t *testing.T) {
+	host, port, err := HostPort("127.0.0.1:8080")
+	assert.Equal(t, "127.0.0.1", host)
+	assert.Equal(t, "8080", port)
+	assert.Nil(t, err)
+}

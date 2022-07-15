@@ -1,3 +1,6 @@
+.idea
+.DS_Store
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -13,6 +16,7 @@
 
 *.idea
 *.iml
+*.vscode
 target/
 classes
 

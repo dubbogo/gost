@@ -18,8 +18,13 @@
 package gxruntime
 
 import (
+	"runtime"
 	"testing"
 	"time"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSysStat(t *testing.T) {
@@ -75,4 +80,39 @@ func TestSysStat(t *testing.T) {
 		}
 		t.Logf("GetCgroupProcessMemoryPercent(ps:%d) = %+v", CurrentPID, memoryPercent)
 	}
+}
+
+func Test_readLinesFromFile(t *testing.T) {
+	assert.Equal(t, readLinesFromFile("/dev/null"), []string{})
+}
+
+func Test_numCPU(t *testing.T) {
+	cpus, err := numCPU()
+	if err != nil {
+		assert.Equal(t, runtime.NumCPU(), cpus)
+		return
+	}
+
+	if !isContainer() {
+		assert.Equal(t, runtime.NumCPU(), cpus)
+		return
+	}
+
+	period, err := readUint(_cpuPeriodPath)
+	if err != nil {
+		assert.Equal(t, runtime.NumCPU(), cpus)
+	}
+
+	quota, err := readUint(_cpuQuotaPath)
+	if err != nil {
+		assert.Equal(t, runtime.NumCPU(), cpus)
+	}
+
+	assert.Equal(t, int(quota/period), cpus)
+}
+
+func Test_readUint(t *testing.T) {
+	uInt, err := readUint("/dev/null")
+	assert.Equal(t, uInt, uint64(0))
+	assert.True(t, err != nil)
 }
