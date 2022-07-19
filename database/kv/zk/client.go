@@ -215,12 +215,17 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 // HandleZkEvent handles zookeeper events
 func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 	var (
+		ok    bool
 		state int
 		event zk.Event
 	)
 	for {
 		select {
-		case event = <-z.Session:
+		case event, ok = <-z.Session:
+			if !ok {
+				// channel already closed
+				return
+			}
 			switch event.State {
 			case zk.StateDisconnected:
 				atomic.StoreUint32(&z.valid, 0)
