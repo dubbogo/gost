@@ -3,10 +3,10 @@ module github.com/dubbogo/gost
 go 1.16
 
 require (
-	github.com/apache/dubbo-getty v1.4.8
 	github.com/buger/jsonparser v1.1.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
+	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/mattn/go-isatty v0.0.14
 	github.com/nacos-group/nacos-sdk-go v1.0.8
