@@ -18,6 +18,7 @@
 package gxbig
 
 import (
+	"encoding/json"
 	"log"
 	"math"
 	"strconv"
@@ -824,7 +825,7 @@ func (d *Decimal) doMiniRightShift(shift, beg, end int) {
 //
 //    to			- result buffer. d == to is allowed
 //    frac			- to what position after fraction point to round. can be negative!
-//    roundMode		- round to nearest even or truncate
+//    roundMode		- round to the nearest even or truncate
 // 			ModeHalfEven rounds normally.
 // 			Truncate just truncates the decimal.
 //
@@ -1424,7 +1425,13 @@ func (d *Decimal) FromBin(bin []byte, precision, frac int) (binSize int, err err
 	if bin[binIdx]&0x80 > 0 {
 		mask = 0
 	}
-	binSize = DecimalBinSize(precision, frac)
+	binSize, err = DecimalBinSize(precision, frac)
+	if err != nil {
+		return 0, err
+	}
+	if binSize < 0 || binSize > 40 {
+		return 0, ErrBadNumber
+	}
 	dCopy := make([]byte, 40)
 	dCopy = dCopy[:binSize]
 	copy(dCopy, bin)
@@ -1500,13 +1507,16 @@ func (d *Decimal) FromBin(bin []byte, precision, frac int) (binSize int, err err
 }
 
 // DecimalBinSize returns the size of array to hold a binary representation of a decimal.
-func DecimalBinSize(precision, frac int) int {
+func DecimalBinSize(precision, frac int) (int, error) {
 	digitsInt := precision - frac
 	wordsInt := digitsInt / digitsPerWord
 	wordsFrac := frac / digitsPerWord
 	xInt := digitsInt - wordsInt*digitsPerWord
 	xFrac := frac - wordsFrac*digitsPerWord
-	return wordsInt*wordSize + dig2bytes[xInt] + wordsFrac*wordSize + dig2bytes[xFrac]
+	if xInt < 0 || xInt >= len(dig2bytes) || xFrac < 0 || xFrac >= len(dig2bytes) {
+		return 0, ErrBadNumber
+	}
+	return wordsInt*wordSize + dig2bytes[xInt] + wordsFrac*wordSize + dig2bytes[xFrac], nil
 }
 
 func readWord(b []byte, size int) int32 {
@@ -1561,6 +1571,41 @@ func (d *Decimal) Compare(to *Decimal) int {
 		return -1
 	}
 	return 1
+}
+
+// None of ToBin, ToFloat64, or ToString can encode MyDecimal without loss.
+// So we still need a MarshalJSON/UnmarshalJSON function.
+type jsonDecimal struct {
+	DigitsInt  int8
+	DigitsFrac int8
+	ResultFrac int8
+	Negative   bool
+	WordBuf    [maxWordBufLen]int32
+}
+
+// MarshalJSON implements Marshaler.MarshalJSON interface.
+func (d *Decimal) MarshalJSON() ([]byte, error) {
+	var r jsonDecimal
+	r.DigitsInt = d.digitsInt
+	r.DigitsFrac = d.digitsFrac
+	r.ResultFrac = d.resultFrac
+	r.Negative = d.negative
+	r.WordBuf = d.wordBuf
+	return json.Marshal(r)
+}
+
+// UnmarshalJSON implements Unmarshaler.UnmarshalJSON interface.
+func (d *Decimal) UnmarshalJSON(data []byte) error {
+	var r jsonDecimal
+	err := json.Unmarshal(data, &r)
+	if err == nil {
+		d.digitsInt = r.DigitsInt
+		d.digitsFrac = r.DigitsFrac
+		d.resultFrac = r.ResultFrac
+		d.negative = r.Negative
+		d.wordBuf = r.WordBuf
+	}
+	return err
 }
 
 // DecimalNeg reverses decimal's sign.
@@ -2367,7 +2412,11 @@ func DecimalPeak(b []byte) (int, error) {
 	}
 	precision := int(b[0])
 	frac := int(b[1])
-	return DecimalBinSize(precision, frac) + 2, nil
+	binSize, err := DecimalBinSize(precision, frac)
+	if err != nil {
+		return 0, err
+	}
+	return binSize + 2, nil
 }
 
 // NewDecFromInt creates a Decimal from int.
