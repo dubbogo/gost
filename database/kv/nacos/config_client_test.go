@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -89,8 +89,7 @@ func TestPublishConfig(t *testing.T) {
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		RotateTime:          "1h",
-		MaxAge:              3,
+		LogRollingConfig:    &constant.ClientLogRollingConfig{MaxAge: 3},
 		LogLevel:            "debug",
 	}
 
@@ -151,7 +150,7 @@ func TestPublishConfig(t *testing.T) {
 	})
 
 	t.Run("searchConfig", func(t *testing.T) {
-		searchPage, err := client.Client().SearchConfig(vo.SearchConfigParam{
+		searchPage, err := client.Client().SearchConfig(vo.SearchConfigParm{
 			Search:   "accurate",
 			DataId:   "",
 			Group:    "dubbo",

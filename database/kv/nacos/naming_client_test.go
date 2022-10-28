@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +30,7 @@ import (
 func TestNewNacosClient(t *testing.T) {
 
 	scs := []constant.ServerConfig{
-		*constant.NewServerConfig("console.nacos.io", 80),
+		*constant.NewServerConfig("console.nacos.io", 8848),
 	}
 
 	cc := constant.ClientConfig{
