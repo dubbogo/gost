@@ -48,7 +48,7 @@ func TestStructAlign(t *testing.T) {
 //TestNewNacosConfigClient config client
 func TestNewNacosConfigClient(t *testing.T) {
 
-	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
+	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 8848)}
 	cc := constant.ClientConfig{TimeoutMs: 5 * 1000, NotLoadCacheAtStart: true}
 
 	client1, err := NewNacosConfigClient("nacos", true, scs, cc)
@@ -80,7 +80,7 @@ func TestNewNacosConfigClient(t *testing.T) {
 
 func TestPublishConfig(t *testing.T) {
 
-	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
+	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 8848)}
 
 	cc := constant.ClientConfig{
 		AppName:             "nacos",
