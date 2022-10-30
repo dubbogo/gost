@@ -150,7 +150,7 @@ func TestPublishConfig(t *testing.T) {
 	})
 
 	t.Run("searchConfig", func(t *testing.T) {
-		searchPage, err := client.Client().SearchConfig(vo.SearchConfigParm{
+		searchPage, err := client.Client().SearchConfig(vo.SearchConfigParam{
 			Search:   "accurate",
 			DataId:   "",
 			Group:    "dubbo",

@@ -120,12 +120,12 @@ func (n *NacosConfigClient) Close() {
 	n.activeCount--
 	if n.share {
 		if n.activeCount == 0 {
-			n.client = nil
+			n.client.CloseClient()
 			atomic.StoreUint32(&n.valid, 0)
 			delete(configClientPool.configClient, n.name)
 		}
 	} else {
-		n.client = nil
+		n.client.CloseClient()
 		atomic.StoreUint32(&n.valid, 0)
 		delete(configClientPool.configClient, n.name)
 	}
