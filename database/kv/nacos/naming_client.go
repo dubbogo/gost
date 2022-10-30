@@ -122,11 +122,13 @@ func (n *NacosNamingClient) Close() {
 	if n.share {
 		if n.activeCount == 0 {
 			n.client.CloseClient()
+			n.client = nil
 			atomic.StoreUint32(&n.valid, 0)
 			delete(namingClientPool.namingClient, n.name)
 		}
 	} else {
 		n.client.CloseClient()
+		n.client = nil
 		atomic.StoreUint32(&n.valid, 0)
 		delete(namingClientPool.namingClient, n.name)
 	}
