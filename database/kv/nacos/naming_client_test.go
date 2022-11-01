@@ -18,6 +18,7 @@
 package nacos
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -37,35 +38,16 @@ func TestNewNacosClient(t *testing.T) {
 	}
 
 	client1, err := NewNacosNamingClient("nacos", true, scs, cc)
-	if err != nil && client1.client == nil {
-		t.Fatal(err)
-	}
+	assert.True(t, err == nil && client1 != nil)
 	client2, err := NewNacosNamingClient("nacos", true, scs, cc)
-	if err != nil && client2.client == nil {
-		t.Fatal(err)
-	}
+	assert.True(t, err == nil && client2 != nil)
 	client3, err := NewNacosNamingClient("nacos", false, scs, cc)
-	if err != nil && client3.client == nil {
-		t.Fatal(err)
-	}
+	assert.True(t, err == nil && client3 != nil)
 	client4, err := NewNacosNamingClient("test", true, scs, cc)
-	if err != nil && client4.client == nil {
-		t.Fatal(err)
-	}
+	assert.True(t, err == nil && client4 != nil)
 
-	if client1 != client2 {
-		t.Fatal()
-	}
-
-	if client1.activeCount != uint32(2) {
-		t.Fatal()
-	}
-
-	if client1 == client3 {
-		t.Fatal()
-	}
-
-	if client1 == client4 {
-		t.Fatal()
-	}
+	assert.Equal(t, client1, client2)
+	assert.Equal(t, client1.activeCount, uint32(2))
+	assert.True(t, client1 != client3)
+	assert.True(t, client1 != client4)
 }
