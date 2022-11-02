@@ -18,12 +18,12 @@
 package nacos
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewNacosClient(t *testing.T) {
