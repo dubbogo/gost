@@ -22,15 +22,14 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewNacosClient(t *testing.T) {
 
 	scs := []constant.ServerConfig{
-		*constant.NewServerConfig("console.nacos.io", 80),
+		*constant.NewServerConfig("console.nacos.io", 8848),
 	}
 
 	cc := constant.ClientConfig{
@@ -39,16 +38,16 @@ func TestNewNacosClient(t *testing.T) {
 	}
 
 	client1, err := NewNacosNamingClient("nacos", true, scs, cc)
-	assert.Nil(t, err)
+	assert.True(t, err == nil && client1 != nil)
 	client2, err := NewNacosNamingClient("nacos", true, scs, cc)
-	assert.Nil(t, err)
+	assert.True(t, err == nil && client2 != nil)
 	client3, err := NewNacosNamingClient("nacos", false, scs, cc)
-	assert.Nil(t, err)
+	assert.True(t, err == nil && client3 != nil)
 	client4, err := NewNacosNamingClient("test", true, scs, cc)
-	assert.Nil(t, err)
+	assert.True(t, err == nil && client4 != nil)
 
 	assert.Equal(t, client1, client2)
 	assert.Equal(t, client1.activeCount, uint32(2))
-	assert.NotEqual(t, client1, client3)
-	assert.NotEqual(t, client1, client4)
+	assert.True(t, client1 != client3)
+	assert.True(t, client1 != client4)
 }

@@ -27,8 +27,8 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -80,7 +80,7 @@ func TestNewNacosConfigClient(t *testing.T) {
 
 func TestPublishConfig(t *testing.T) {
 
-	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 80)}
+	scs := []constant.ServerConfig{*constant.NewServerConfig("console.nacos.io", 8848)}
 
 	cc := constant.ClientConfig{
 		AppName:             "nacos",
@@ -89,8 +89,7 @@ func TestPublishConfig(t *testing.T) {
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		RotateTime:          "1h",
-		MaxAge:              3,
+		LogRollingConfig:    &constant.ClientLogRollingConfig{MaxAge: 3},
 		LogLevel:            "debug",
 	}
 

@@ -18,8 +18,6 @@
 package logger
 
 import (
-	"github.com/apache/dubbo-getty"
-
 	"github.com/natefinch/lumberjack"
 
 	"go.uber.org/zap"
@@ -106,15 +104,11 @@ func InitLogger(conf *Config) {
 	}
 
 	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: config.ZapConfig.Level}
-
-	// set getty log
-	getty.SetLogger(logger)
 }
 
 // SetLogger sets logger for dubbo and getty
 func SetLogger(log Logger) {
 	logger = log
-	getty.SetLogger(logger)
 }
 
 // GetLogger gets the logger
