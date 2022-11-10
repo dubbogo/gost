@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"testing"
 )
+import (
+	"github.com/stretchr/testify/assert"
+)
 
 func Test_findIndex(t *testing.T) {
 	bp := NewBytesPool([]int{16, 4 << 10, 16 << 10, 32 << 10, 64 << 10})
@@ -71,4 +74,14 @@ func benchmarkfindIndex(b *testing.B, size int) {
 	for i := 0; i < b.N; i++ {
 		defaultBytesPool.findIndex(size)
 	}
+}
+
+func TestAcquireBytes(t *testing.T) {
+	bytes := AcquireBytes(10)
+	assert.Equal(t, 10, len(*bytes))
+	assert.Equal(t, 512, cap(*bytes))
+
+	bytes3 := AcquireBytes(1000000)
+	assert.Equal(t, 1000000, cap(*bytes3))
+	assert.Equal(t, 1000000, cap(*bytes3))
 }
