@@ -17,7 +17,9 @@
 
 package gxstrings
 
-import "testing"
+import (
+	"testing"
+)
 
 func BenchmarkStrConvByteFast(b *testing.B) {
 	var s = "gost"

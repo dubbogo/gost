@@ -22,7 +22,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/require"
 )
 

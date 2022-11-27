@@ -23,10 +23,10 @@ import (
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/v2/clients"
-	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
-	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 var (
@@ -120,13 +120,11 @@ func (n *NacosConfigClient) Close() {
 	n.activeCount--
 	if n.share {
 		if n.activeCount == 0 {
-			n.client.CloseClient()
 			n.client = nil
 			atomic.StoreUint32(&n.valid, 0)
 			delete(configClientPool.configClient, n.name)
 		}
 	} else {
-		n.client.CloseClient()
 		n.client = nil
 		atomic.StoreUint32(&n.valid, 0)
 		delete(configClientPool.configClient, n.name)
