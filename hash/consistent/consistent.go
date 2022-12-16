@@ -133,7 +133,7 @@ func (c *Consistent) eltKey(elt string, idx int) string {
 	return strconv.Itoa(idx) + elt
 }
 
-func (c *Consistent) hash(key string) uint32 {
+func (c *Consistent) Hash(key string) uint32 {
 	return uint32(c.hashFunc(gxstrings.Slice(key))) % c.bucketNum
 }
 
@@ -165,7 +165,7 @@ func (c *Consistent) add(host string) {
 
 	c.loadMap[host] = &Host{Name: host}
 	for i := uint32(0); i < c.replicaFactor; i++ {
-		h := c.hash(c.eltKey(host, int(i)))
+		h := c.Hash(c.eltKey(host, int(i)))
 		c.circle[h] = host
 		c.sortedHashes = append(c.sortedHashes, h)
 	}
@@ -219,7 +219,7 @@ func (c *Consistent) Get(key string) (string, error) {
 	if len(c.circle) == 0 {
 		return "", ErrNoHosts
 	}
-	return c.circle[c.sortedHashes[c.search(c.hash(key))]], nil
+	return c.circle[c.sortedHashes[c.search(c.Hash(key))]], nil
 }
 
 // GetHash It returns ErrNoHosts if the ring has no hosts in it
@@ -242,7 +242,7 @@ func (c *Consistent) GetTwo(name string) (string, string, error) {
 		return "", "", ErrNoHosts
 	}
 
-	i := c.search(c.hash(name))
+	i := c.search(c.Hash(name))
 	a := c.circle[c.sortedHashes[i]]
 
 	if len(c.loadMap) == 1 {
@@ -287,7 +287,7 @@ func (c *Consistent) GetN(name string, n int) ([]string, error) {
 	}
 
 	var (
-		i     = c.search(c.hash(name))
+		i     = c.search(c.Hash(name))
 		start = i
 		res   = make([]string, 0, n)
 		elem  = c.circle[c.sortedHashes[i]]
@@ -327,7 +327,7 @@ func (c *Consistent) GetLeast(key string) (string, error) {
 		return "", ErrNoHosts
 	}
 
-	idx := c.search(c.hash(key))
+	idx := c.search(c.Hash(key))
 
 	i := idx
 	for {
@@ -397,7 +397,7 @@ func (c *Consistent) Remove(host string) bool {
 
 func (c *Consistent) remove(host string) bool {
 	for i := uint32(0); i < c.replicaFactor; i++ {
-		h := c.hash(c.eltKey(host, int(i)))
+		h := c.Hash(c.eltKey(host, int(i)))
 		delete(c.circle, h)
 		c.delSlice(h)
 	}
