@@ -30,7 +30,7 @@ zapConfig:
     nameEncoder: ""
 
   outputPaths:
-    - "stderr"
+    - "stdout"
   errorOutputPaths:
     - "stderr"
   initialFields:

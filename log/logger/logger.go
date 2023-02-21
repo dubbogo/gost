@@ -81,7 +81,7 @@ func InitLogger(conf *Config) {
 			Development:      false,
 			Encoding:         "console",
 			EncoderConfig:    zapLoggerEncoderConfig,
-			OutputPaths:      []string{"stderr"},
+			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		}
 	} else {
