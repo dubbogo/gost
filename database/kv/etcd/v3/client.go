@@ -23,14 +23,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	perrors "github.com/pkg/errors"
 
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
-
 	"google.golang.org/grpc"
 )
 
@@ -420,8 +417,28 @@ func (c *Client) keepAliveKV(k string, v string) error {
 		return perrors.New("keep alive lease")
 	}
 
+	// listen keepAlive to avoid useless warning:
+	//    'lease keepalive response queue is full; dropping response send'
+	go c.listenKeepAliveRsp(k, keepAlive)
+
 	_, err = rawClient.Put(c.ctx, k, v, clientv3.WithLease(lease.ID))
 	return perrors.WithMessage(err, "put k/v with lease")
+}
+
+// listenKeepAliveRsp listens to `keepAliveRspCh` channel.
+func (c *Client) listenKeepAliveRsp(k string, keepAliveRspCh <-chan *clientv3.LeaseKeepAliveResponse) {
+	for {
+		select {
+		case <-c.ctx.Done():
+			log.Printf("listenKeepAliveRsp canceled: %v: %s", c.ctx.Err(), k)
+			return
+		case _, ok := <-keepAliveRspCh:
+			if !ok {
+				log.Printf("listenKeepAliveRsp canceled: unexpected lease expired: %s", k)
+				return
+			}
+		}
+	}
 }
 
 // Done return exit chan
