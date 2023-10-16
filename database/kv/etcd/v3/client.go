@@ -19,6 +19,7 @@ package gxetcd
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"strings"
 	"sync"
@@ -63,7 +64,7 @@ func NewConfigClientWithErr(opts ...Option) (*Client, error) {
 		opt(options)
 	}
 
-	newClient, err := NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
+	newClient, err := NewClientWithOptions(context.Background(), options)
 	if err != nil {
 		log.Printf("new etcd client (Name{%s}, etcd addresses{%v}, Timeout{%d}) = error{%v}",
 			options.Name, options.Endpoints, options.Timeout, err)
@@ -82,6 +83,9 @@ type Client struct {
 	endpoints []string
 	timeout   time.Duration
 	heartbeat int
+	username  string
+	password  string
+	tls       *tls.Config
 
 	ctx       context.Context    // if etcd server connection lose, the ctx.Done will be sent msg
 	cancel    context.CancelFunc // cancel the ctx, all watcher will stopped
@@ -113,6 +117,47 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		heartbeat: heartbeat,
 
 		ctx:       ctx,
+		cancel:    cancel,
+		rawClient: rawClient,
+
+		exit: make(chan struct{}),
+	}
+
+	if err := c.keepSession(); err != nil {
+		cancel()
+		return nil, perrors.WithMessage(err, "client keep session")
+	}
+	return c, nil
+}
+
+// NewClientWithOptions create a client instance from Options.
+func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
+	nctx, cancel := context.WithCancel(ctx)
+
+	rawClient, err := clientv3.New(clientv3.Config{
+		Context:     nctx,
+		Endpoints:   opts.Endpoints,
+		DialTimeout: opts.Timeout,
+		TLS:         opts.TLS,
+		Username:    opts.Username,
+		Password:    opts.Password,
+		DialOptions: []grpc.DialOption{grpc.WithBlock()},
+	})
+	if err != nil {
+		cancel()
+		return nil, perrors.WithMessage(err, "new raw client block connect to server")
+	}
+
+	c := &Client{
+		name:      opts.Name,
+		timeout:   opts.Timeout,
+		endpoints: opts.Endpoints,
+		heartbeat: opts.Heartbeat,
+		username:  opts.Username,
+		password:  opts.Password,
+		tls:       opts.TLS,
+
+		ctx:       nctx,
 		cancel:    cancel,
 		rawClient: rawClient,
 
