@@ -18,6 +18,7 @@
 package gxetcd
 
 import (
+	"crypto/tls"
 	"time"
 )
 
@@ -44,6 +45,12 @@ type Options struct {
 	Timeout time.Duration
 	// Heartbeat second
 	Heartbeat int
+	// Username is a user name for authentication.
+	Username string
+	// Password is a password for authentication.
+	Password string
+	// TLS holds the client secure credentials, if any.
+	TLS *tls.Config
 }
 
 // Option will define a function of handling Options
@@ -74,5 +81,20 @@ func WithTimeout(timeout time.Duration) Option {
 func WithHeartbeat(heartbeat int) Option {
 	return func(opt *Options) {
 		opt.Heartbeat = heartbeat
+	}
+}
+
+// WithAuthentication sets etcd client authentication
+func WithAuthentication(username, password string) Option {
+	return func(opt *Options) {
+		opt.Username = username
+		opt.Password = password
+	}
+}
+
+// WithTLS sets etcd client secure credentials
+func WithTLS(tls *tls.Config) Option {
+	return func(opt *Options) {
+		opt.TLS = tls
 	}
 }
