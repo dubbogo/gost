@@ -18,8 +18,6 @@
 package logger
 
 import (
-	"github.com/natefinch/lumberjack"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -28,18 +26,6 @@ var logger Logger
 
 func init() {
 	InitLogger(nil)
-}
-
-// nolint
-type DubboLogger struct {
-	Logger
-	dynamicLevel zap.AtomicLevel
-}
-
-type Config struct {
-	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
-	ZapConfig        *zap.Config        `yaml:"zap-config"`
-	CallerSkip       int
 }
 
 // Logger is the interface for Logger types
@@ -116,51 +102,16 @@ func GetLogger() Logger {
 	return logger
 }
 
-// SetLoggerLevel use for set logger level
-func SetLoggerLevel(level string) bool {
-	if l, ok := logger.(OpsLogger); ok {
-		l.SetLoggerLevel(level)
-		return true
-	}
-	return false
-}
-
 // OpsLogger use for the SetLoggerLevel
 type OpsLogger interface {
 	Logger
-	SetLoggerLevel(level string)
+	SetLoggerLevel(level string) bool
 }
 
 // SetLoggerLevel use for set logger level
-func (dl *DubboLogger) SetLoggerLevel(level string) {
-	l := new(zapcore.Level)
-	if err := l.Set(level); err == nil {
-		dl.dynamicLevel.SetLevel(*l)
+func SetLoggerLevel(level string) bool {
+	if l, ok := logger.(OpsLogger); ok {
+		return l.SetLoggerLevel(level)
 	}
-}
-
-// initZapLoggerWithSyncer init zap Logger with syncer
-func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
-	core := zapcore.NewCore(
-		conf.getEncoder(),
-		conf.getLogWriter(),
-		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
-	)
-
-	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
-}
-
-// getEncoder get encoder by config, zapcore support json and console encoder
-func (c *Config) getEncoder() zapcore.Encoder {
-	if c.ZapConfig.Encoding == "json" {
-		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
-	} else if c.ZapConfig.Encoding == "console" {
-		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
-	}
-	return nil
-}
-
-// getLogWriter get Lumberjack writer by LumberjackConfig
-func (c *Config) getLogWriter() zapcore.WriteSyncer {
-	return zapcore.AddSync(c.LumberjackConfig)
+	return false
 }
