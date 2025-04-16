@@ -18,6 +18,8 @@
 package logger
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -26,6 +28,35 @@ var logger Logger
 
 func init() {
 	InitLogger(nil)
+}
+
+type DubboLogger struct {
+	Logger
+	dynamicLevel zap.AtomicLevel
+}
+
+// NewDubboLogger new a DubboLogger
+func NewDubboLogger(lg Logger, lv zap.AtomicLevel) *DubboLogger {
+	return &DubboLogger{
+		Logger:       lg,
+		dynamicLevel: lv,
+	}
+}
+
+// SetLoggerLevel use for set logger level
+func (dl *DubboLogger) SetLoggerLevel(level string) bool {
+	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
+		if lv, err := zapcore.ParseLevel(level); err == nil {
+			dl.dynamicLevel.SetLevel(lv)
+			return true
+		}
+	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
+		if lv, err := logrus.ParseLevel(level); err == nil {
+			l.SetLevel(lv)
+			return true
+		}
+	}
+	return false
 }
 
 // Logger is the interface for Logger types
