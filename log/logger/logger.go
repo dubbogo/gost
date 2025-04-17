@@ -32,22 +32,14 @@ func init() {
 
 type DubboLogger struct {
 	Logger
-	dynamicLevel zap.AtomicLevel
-}
-
-// NewDubboLogger new a DubboLogger
-func NewDubboLogger(lg Logger, lv zap.AtomicLevel) *DubboLogger {
-	return &DubboLogger{
-		Logger:       lg,
-		dynamicLevel: lv,
-	}
+	DynamicLevel zap.AtomicLevel
 }
 
 // SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) bool {
 	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
 		if lv, err := zapcore.ParseLevel(level); err == nil {
-			dl.dynamicLevel.SetLevel(lv)
+			dl.DynamicLevel.SetLevel(lv)
 			return true
 		}
 	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
@@ -119,8 +111,7 @@ func InitLogger(conf *Config) {
 		config.LumberjackConfig = conf.LumberjackConfig
 		zapLogger = initZapLoggerWithSyncer(config)
 	}
-
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: config.ZapConfig.Level}
+	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
 }
 
 // SetLogger sets logger for dubbo and getty
