@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log"
+	gxlog "github.com/dubbogo/gost/log"
 )
 
 func TestNewTimerWheel(t *testing.T) {
