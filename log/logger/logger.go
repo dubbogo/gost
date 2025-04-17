@@ -18,6 +18,7 @@
 package logger
 
 import (
+	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
 
 	"go.uber.org/zap"
@@ -30,25 +31,16 @@ func init() {
 	InitLogger(nil)
 }
 
+// nolint
 type DubboLogger struct {
 	Logger
 	DynamicLevel zap.AtomicLevel
 }
 
-// SetLoggerLevel use for set logger level
-func (dl *DubboLogger) SetLoggerLevel(level string) bool {
-	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
-		if lv, err := zapcore.ParseLevel(level); err == nil {
-			dl.DynamicLevel.SetLevel(lv)
-			return true
-		}
-	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
-		if lv, err := logrus.ParseLevel(level); err == nil {
-			l.SetLevel(lv)
-			return true
-		}
-	}
-	return false
+type Config struct {
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
+	ZapConfig        *zap.Config        `yaml:"zap-config"`
+	CallerSkip       int
 }
 
 // Logger is the interface for Logger types
@@ -111,6 +103,7 @@ func InitLogger(conf *Config) {
 		config.LumberjackConfig = conf.LumberjackConfig
 		zapLogger = initZapLoggerWithSyncer(config)
 	}
+
 	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
 }
 
@@ -124,6 +117,14 @@ func GetLogger() Logger {
 	return logger
 }
 
+// SetLoggerLevel use for set logger level
+func SetLoggerLevel(level string) bool {
+	if l, ok := logger.(OpsLogger); ok {
+		return l.SetLoggerLevel(level)
+	}
+	return false
+}
+
 // OpsLogger use for the SetLoggerLevel
 type OpsLogger interface {
 	Logger
@@ -131,9 +132,43 @@ type OpsLogger interface {
 }
 
 // SetLoggerLevel use for set logger level
-func SetLoggerLevel(level string) bool {
-	if l, ok := logger.(OpsLogger); ok {
-		return l.SetLoggerLevel(level)
+func (dl *DubboLogger) SetLoggerLevel(level string) bool {
+	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
+		if lv, err := zapcore.ParseLevel(level); err == nil {
+			dl.DynamicLevel.SetLevel(lv)
+			return true
+		}
+	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
+		if lv, err := logrus.ParseLevel(level); err == nil {
+			l.SetLevel(lv)
+			return true
+		}
 	}
 	return false
+}
+
+// initZapLoggerWithSyncer init zap Logger with syncer
+func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
+	core := zapcore.NewCore(
+		conf.getEncoder(),
+		conf.getLogWriter(),
+		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
+	)
+
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
+}
+
+// getEncoder get encoder by config, zapcore support json and console encoder
+func (c *Config) getEncoder() zapcore.Encoder {
+	if c.ZapConfig.Encoding == "json" {
+		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
+	} else if c.ZapConfig.Encoding == "console" {
+		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
+	}
+	return nil
+}
+
+// getLogWriter get Lumberjack writer by LumberjackConfig
+func (c *Config) getLogWriter() zapcore.WriteSyncer {
+	return zapcore.AddSync(c.LumberjackConfig)
 }
