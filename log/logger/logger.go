@@ -19,6 +19,7 @@ package logger
 
 import (
 	"github.com/natefinch/lumberjack"
+	"github.com/sirupsen/logrus"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,7 +34,7 @@ func init() {
 // nolint
 type DubboLogger struct {
 	Logger
-	dynamicLevel zap.AtomicLevel
+	DynamicLevel zap.AtomicLevel
 }
 
 type Config struct {
@@ -103,7 +104,7 @@ func InitLogger(conf *Config) {
 		zapLogger = initZapLoggerWithSyncer(config)
 	}
 
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), dynamicLevel: config.ZapConfig.Level}
+	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
 }
 
 // SetLogger sets logger for dubbo and getty
@@ -119,8 +120,7 @@ func GetLogger() Logger {
 // SetLoggerLevel use for set logger level
 func SetLoggerLevel(level string) bool {
 	if l, ok := logger.(OpsLogger); ok {
-		l.SetLoggerLevel(level)
-		return true
+		return l.SetLoggerLevel(level)
 	}
 	return false
 }
@@ -128,15 +128,23 @@ func SetLoggerLevel(level string) bool {
 // OpsLogger use for the SetLoggerLevel
 type OpsLogger interface {
 	Logger
-	SetLoggerLevel(level string)
+	SetLoggerLevel(level string) bool
 }
 
 // SetLoggerLevel use for set logger level
-func (dl *DubboLogger) SetLoggerLevel(level string) {
-	l := new(zapcore.Level)
-	if err := l.Set(level); err == nil {
-		dl.dynamicLevel.SetLevel(*l)
+func (dl *DubboLogger) SetLoggerLevel(level string) bool {
+	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
+		if lv, err := zapcore.ParseLevel(level); err == nil {
+			dl.DynamicLevel.SetLevel(lv)
+			return true
+		}
+	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
+		if lv, err := logrus.ParseLevel(level); err == nil {
+			l.SetLevel(lv)
+			return true
+		}
 	}
+	return false
 }
 
 // initZapLoggerWithSyncer init zap Logger with syncer
