@@ -19,13 +19,8 @@ package observer
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // Event is align with Event interface in Java.
 // it's the top abstraction

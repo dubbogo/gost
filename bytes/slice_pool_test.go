@@ -19,16 +19,23 @@ package gxbytes
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+var (
+	localRand *rand.Rand
+	once      sync.Once
+)
 
+func init() {
+	once.Do(func() {
+		localRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	})
+}
 func intRange(min, max int) int {
-	return rand.Intn(max-min) + min
+	return localRand.Intn(max-min) + min
 }
 
 func intN(n int) int {

@@ -18,15 +18,10 @@
 package gxstrings
 
 import (
-	"reflect"
 	"unsafe"
 )
 
-func Slice(s string) (b []byte) {
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh.Data = sh.Data
-	bh.Cap = sh.Len
-	bh.Len = sh.Len
-	return b
+func Slice(s string) []byte {
+	ptr := unsafe.StringData(s)
+	return unsafe.Slice((*byte)(ptr), len(s))
 }

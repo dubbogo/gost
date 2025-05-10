@@ -19,7 +19,6 @@ package gxruntime
 
 import (
 	"bufio"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -165,7 +164,7 @@ func parseUint(s string, base, bitSize int) (uint64, error) {
 
 // copied from https://github.com/containerd/cgroups/blob/318312a373405e5e91134d8063d04d59768a1bff/utils.go#L243
 func readUint(path string) (uint64, error) {
-	v, err := ioutil.ReadFile(path)
+	v, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err
 	}

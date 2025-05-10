@@ -18,8 +18,8 @@
 package json
 
 import (
-	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -192,7 +192,7 @@ func (jsp *jsonStructParser) json2Struct(jsonData []byte) interface{} {
 
 // jsonFilePath2Struct read file from @filePath and parse data to interface
 func (jsp *jsonStructParser) jsonFilePath2Struct(filePath string) ([]HessianRegisterPair, interface{}, error) {
-	jsonData, err := ioutil.ReadFile(filePath)
+	jsonData, err := os.ReadFile(filePath)
 	if err != nil {
 		return []HessianRegisterPair{}, nil, err
 	}
