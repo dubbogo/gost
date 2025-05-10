@@ -10,16 +10,15 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} - Go${{ matrix.go_version }} - JDK${{ matrix.jdk_version }}
-
-    runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         os:
           - ubuntu-latest
         go_version:
-          - 1.16
+          - '1.23'
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - Go${{ matrix.go_version }}
+
     env:
       DING_TOKEN: ${{ secrets.DING_TOKEN }}
       DING_SIGN: ${{ secrets.DING_SIGN }}
