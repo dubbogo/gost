@@ -497,10 +497,11 @@ const (
 // if it may take a long time.
 //
 // args:
-//   @f: timer function.
-//   @typ: timer type
-//   @period: timer loop interval. its unit is nanosecond.
-//   @arg: timer argument which is used by @f.
+//
+//	@f: timer function.
+//	@typ: timer type
+//	@period: timer loop interval. its unit is nanosecond.
+//	@arg: timer argument which is used by @f.
 func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, arg interface{}) (*Timer, error) {
 	if !w.enable.Load() {
 		return nil, ErrTimeChannelClosed
