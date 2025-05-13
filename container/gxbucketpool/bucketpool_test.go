@@ -186,7 +186,8 @@ func TestPoolWeirdMaxSize(t *testing.T) {
 func TestFuzz(t *testing.T) {
 	maxTestSize := 16384
 	for i := 0; i < 20000; i++ {
-		minSize := rand.Intn(maxTestSize)
+		// minSize must be at least 1
+		minSize := rand.Intn(maxTestSize-1) + 1
 		maxSize := rand.Intn(maxTestSize-minSize) + minSize
 		p := New(minSize, maxSize)
 		bufSize := rand.Intn(maxTestSize)
