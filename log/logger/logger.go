@@ -133,16 +133,20 @@ type OpsLogger interface {
 
 // SetLoggerLevel use for set logger level
 func (dl *DubboLogger) SetLoggerLevel(level string) bool {
-	if _, ok := dl.Logger.(*zap.SugaredLogger); ok {
+	switch logger := dl.Logger.(type) {
+	case *zap.SugaredLogger:
 		if lv, err := zapcore.ParseLevel(level); err == nil {
 			dl.DynamicLevel.SetLevel(lv)
 			return true
 		}
-	} else if l, ok := dl.Logger.(*logrus.Logger); ok {
+	case *logrus.Logger:
 		if lv, err := logrus.ParseLevel(level); err == nil {
-			l.SetLevel(lv)
+			logger.SetLevel(lv)
 			return true
 		}
+	default:
+		// Handle other logger types or unsupported cases
+		return false
 	}
 	return false
 }
