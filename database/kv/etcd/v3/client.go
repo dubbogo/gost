@@ -29,7 +29,6 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -103,11 +102,10 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		Context:     ctx,
 		Endpoints:   endpoints,
 		DialTimeout: timeout,
-		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "new raw client block connect to server")
+		return nil, perrors.WithMessage(err, "new raw client connect to server")
 	}
 
 	c := &Client{
@@ -141,11 +139,10 @@ func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
 		TLS:         opts.TLS,
 		Username:    opts.Username,
 		Password:    opts.Password,
-		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "new raw client block connect to server")
+		return nil, perrors.WithMessage(err, "new raw client connect to server")
 	}
 
 	c := &Client{
