@@ -20,6 +20,7 @@ package gxetcd
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -105,7 +106,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 	})
 	if err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "new raw client connect to server")
+		return nil, perrors.WithMessage(err, fmt.Sprintf("failed to create new raw client of endpoint %v", endpoints))
 	}
 
 	c := &Client{
@@ -123,7 +124,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 
 	if err := c.keepSession(); err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, "client keep session")
+		return nil, perrors.WithMessage(err, fmt.Sprintf("failed to create new raw client of endpoint %v", endpoints))
 	}
 	return c, nil
 }
