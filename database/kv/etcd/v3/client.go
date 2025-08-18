@@ -124,7 +124,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 
 	if err := c.keepSession(); err != nil {
 		cancel()
-		return nil, perrors.WithMessage(err, fmt.Sprintf("failed to create new raw client of endpoint %v", endpoints))
+		return nil, perrors.WithMessage(err, "client keep session")
 	}
 	return c, nil
 }
