@@ -143,8 +143,7 @@ func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
 	})
 	if err != nil {
 		cancel()
-		endpoints := 0
-		return nil, perrors.WithMessage(err, fmt.Sprintf("failed to create new raw client of endpoint %v", endpoints))
+		return nil, perrors.WithMessage(err, fmt.Sprintf("failed to create new raw client of endpoint %v", opts.Endpoints))
 	}
 
 	c := &Client{
