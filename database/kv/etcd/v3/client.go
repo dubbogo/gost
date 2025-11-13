@@ -27,6 +27,7 @@ import (
 	"time"
 
 	perrors "github.com/pkg/errors"
+	"google.golang.org/grpc"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -103,6 +104,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 		Context:     ctx,
 		Endpoints:   endpoints,
 		DialTimeout: timeout,
+		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
 		cancel()
@@ -140,6 +142,7 @@ func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
 		TLS:         opts.TLS,
 		Username:    opts.Username,
 		Password:    opts.Password,
+		DialOptions: []grpc.DialOption{grpc.WithBlock()},
 	})
 	if err != nil {
 		cancel()
