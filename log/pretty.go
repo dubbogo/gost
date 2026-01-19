@@ -42,13 +42,16 @@ func ColorSprintf(fmt string, args ...interface{}) string {
 }
 
 func ColorPrint(i interface{}) {
-	pp.Print(i)
+	// print error is non-critical
+	_, _ = pp.Print(i)
 }
 
 func ColorPrintln(i interface{}) {
-	pp.Println(i)
+	// print error is non-critical
+	_, _ = pp.Println(i)
 }
 
 func ColorPrintf(fmt string, args ...interface{}) {
-	pp.Printf(fmt, args...)
+	// print error is non-critical
+	_, _ = pp.Printf(fmt, args...)
 }

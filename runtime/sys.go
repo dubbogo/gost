@@ -201,7 +201,10 @@ func readLinesFromFile(filepath string) []string {
 	if err != nil {
 		return res
 	}
-	defer f.Close()
+	defer func() {
+		// file is read-only
+		_ = f.Close()
+	}()
 	buff := bufio.NewReader(f)
 	for {
 		line, _, err := buff.ReadLine()

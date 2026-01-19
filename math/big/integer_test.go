@@ -113,7 +113,10 @@ func TestInteger_FromSignAndMag(t *testing.T) {
 
 func TestInteger_Json(t *testing.T) {
 	i := new(Integer)
-	i.FromString(`1234567`)
+	err := i.FromString(`1234567`)
+	if err != nil {
+		t.Fatal("FromString failed:", err)
+	}
 	bytes, err := json.Marshal(i.String())
 	if err != nil || string(bytes) != `"1234567"` {
 		t.Error(string(bytes), err)

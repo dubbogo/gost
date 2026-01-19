@@ -175,7 +175,8 @@ func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
 // NOTICE: need to get the lock before calling this method
 func (c *Client) clean() {
 	// close raw client
-	c.rawClient.Close()
+	// cleanup prioritizes resource release
+	_ = c.rawClient.Close()
 
 	// cancel ctx for raw client
 	c.cancel()
@@ -456,7 +457,8 @@ func (c *Client) keepAliveKV(k string, v string) error {
 
 	keepAlive, err := rawClient.KeepAlive(c.ctx, lease.ID)
 	if err != nil || keepAlive == nil {
-		rawClient.Revoke(c.ctx, lease.ID)
+		// prioritize returning keepalive failure
+		_, _ = rawClient.Revoke(c.ctx, lease.ID)
 		if err != nil {
 			return perrors.WithMessage(err, "keep alive lease")
 		}

@@ -70,18 +70,22 @@ func funcFileLine() string {
 func CPrintf(color []byte, format string, args ...interface{}) {
 	logStr := fmt.Sprintf(format, args...)
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Fprintf(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset), logStr)
+		// print error is non-critical
+		_, _ = fmt.Fprintf(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset), logStr)
 	} else {
-		fmt.Fprintf(os.Stdout, "%s", logStr)
+		// print error is non-critical
+		_, _ = fmt.Fprintf(os.Stdout, "%s", logStr)
 	}
 }
 
 func CPrintfln(color []byte, format string, args ...interface{}) {
 	logStr := fmt.Sprintf(format, args...)
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Fprintf(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset)+"\n", logStr)
+		// print error is non-critical
+		_, _ = fmt.Fprintf(os.Stdout, string(color)+funcFileLine()+"%s"+string(reset)+"\n", logStr)
 	} else {
-		fmt.Fprintf(os.Stdout, "%s\n", logStr)
+		// print error is non-critical
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n", logStr)
 	}
 }
 

@@ -31,7 +31,8 @@ import (
 func TestPut(t *testing.T) {
 	q := New(10)
 
-	q.Put(`test`)
+	err := q.Put(`test`)
+	assert.Nil(t, err)
 	assert.Equal(t, int64(1), q.Len())
 
 	results, err := q.Get(1)
@@ -41,7 +42,8 @@ func TestPut(t *testing.T) {
 	assert.Equal(t, `test`, result)
 	assert.True(t, q.Empty())
 
-	q.Put(`test2`)
+	err = q.Put(`test2`)
+	assert.Nil(t, err)
 	assert.Equal(t, int64(1), q.Len())
 
 	results, err = q.Get(1)
@@ -55,7 +57,8 @@ func TestPut(t *testing.T) {
 func TestGet(t *testing.T) {
 	q := New(10)
 
-	q.Put(`test`)
+	err := q.Put(`test`)
+	assert.Nil(t, err)
 	result, err := q.Get(2)
 	if !assert.Nil(t, err) {
 		return
@@ -65,8 +68,10 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, `test`, result[0])
 	assert.Equal(t, int64(0), q.Len())
 
-	q.Put(`1`)
-	q.Put(`2`)
+	err = q.Put(`1`)
+	assert.Nil(t, err)
+	err = q.Put(`2`)
+	assert.Nil(t, err)
 
 	result, err = q.Get(1)
 	if !assert.Nil(t, err) {
@@ -89,9 +94,11 @@ func TestPoll(t *testing.T) {
 	q := New(10)
 
 	// should be able to Poll() before anything is present, without breaking future Puts
-	q.Poll(1, time.Millisecond)
+	// testing timeout behavior on empty queue
+	_, _ = q.Poll(1, time.Millisecond)
 
-	q.Put(`test`)
+	err := q.Put(`test`)
+	assert.Nil(t, err)
 	result, err := q.Poll(2, 0)
 	if !assert.Nil(t, err) {
 		return
@@ -101,8 +108,10 @@ func TestPoll(t *testing.T) {
 	assert.Equal(t, `test`, result[0])
 	assert.Equal(t, int64(0), q.Len())
 
-	q.Put(`1`)
-	q.Put(`2`)
+	err = q.Put(`1`)
+	assert.Nil(t, err)
+	err = q.Put(`2`)
+	assert.Nil(t, err)
 
 	result, err = q.Poll(1, time.Millisecond)
 	if !assert.Nil(t, err) {
@@ -135,7 +144,8 @@ func TestPollNoMemoryLeak(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		// Poll() should cleanup waiters after timeout
-		q.Poll(1, time.Nanosecond)
+		// testing waiter cleanup mechanism
+		_, _ = q.Poll(1, time.Nanosecond)
 		assert.Len(t, q.waiters, 0)
 	}
 }
@@ -143,7 +153,8 @@ func TestPollNoMemoryLeak(t *testing.T) {
 func TestAddEmptyPut(t *testing.T) {
 	q := New(10)
 
-	q.Put()
+	// testing empty parameters behavior
+	_ = q.Put()
 
 	if q.Len() != 0 {
 		t.Errorf(`Expected len: %d, received: %d`, 0, q.Len())
@@ -153,7 +164,8 @@ func TestAddEmptyPut(t *testing.T) {
 func TestGetNonPositiveNumber(t *testing.T) {
 	q := New(10)
 
-	q.Put(`test`)
+	err := q.Put(`test`)
+	assert.Nil(t, err)
 	result, err := q.Get(0)
 	if !assert.Nil(t, err) {
 		return
@@ -171,7 +183,8 @@ func TestEmpty(t *testing.T) {
 		t.Errorf(`Expected empty queue.`)
 	}
 
-	q.Put(`test`)
+	err := q.Put(`test`)
+	assert.Nil(t, err)
 	if q.Empty() {
 		t.Errorf(`Expected non-empty queue.`)
 	}
@@ -182,7 +195,8 @@ func TestGetEmpty(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Second)
-		q.Put(`a`)
+		// test setup, not test target
+		_ = q.Put(`a`)
 	}()
 
 	result, err := q.Get(2)
@@ -219,7 +233,8 @@ func TestMultipleGetEmpty(t *testing.T) {
 	wg.Wait()
 	wg.Add(2)
 
-	q.Put(`a`, `b`, `c`)
+	err := q.Put(`a`, `b`, `c`)
+	assert.Nil(t, err)
 	wg.Wait()
 
 	if assert.Len(t, results[0], 1) && assert.Len(t, results[1], 1) {
@@ -238,7 +253,8 @@ func TestDispose(t *testing.T) {
 
 	// when the queue is not empty
 	q = New(10)
-	q.Put(`1`)
+	err := q.Put(`1`)
+	assert.Nil(t, err)
 	itemsDisposed = q.Dispose()
 
 	expected := []interface{}{`1`}
@@ -305,7 +321,8 @@ func BenchmarkQueue(b *testing.B) {
 
 	go func() {
 		for {
-			q.Get(1)
+			// benchmark focuses on throughput
+			_, _ = q.Get(1)
 			i++
 			if i == b.N {
 				wg.Done()
@@ -315,7 +332,8 @@ func BenchmarkQueue(b *testing.B) {
 	}()
 
 	for i := 0; i < b.N; i++ {
-		q.Put(`a`)
+		// benchmark focuses on throughput
+		_ = q.Put(`a`)
 	}
 
 	wg.Wait()
@@ -347,9 +365,12 @@ func BenchmarkChannel(b *testing.B) {
 
 func TestPeek(t *testing.T) {
 	q := New(10)
-	q.Put(`a`)
-	q.Put(`b`)
-	q.Put(`c`)
+	err := q.Put(`a`)
+	assert.Nil(t, err)
+	err = q.Put(`b`)
+	assert.Nil(t, err)
+	err = q.Put(`c`)
+	assert.Nil(t, err)
 	peekResult, err := q.Peek()
 	peekExpected := `a`
 	assert.Nil(t, err)
@@ -373,7 +394,8 @@ func TestPeekOnDisposedQueue(t *testing.T) {
 
 func TestGetUntil(t *testing.T) {
 	q := New(10)
-	q.Put(`a`, `b`, `c`)
+	err := q.Put(`a`, `b`, `c`)
+	assert.Nil(t, err)
 	result, err := q.GetUntil(func(item interface{}) bool {
 		return item != `c`
 	})
@@ -402,7 +424,8 @@ func TestGetUntilEmptyQueue(t *testing.T) {
 
 func TestGetUntilThenGet(t *testing.T) {
 	q := New(10)
-	q.Put(`a`, `b`, `c`)
+	err := q.Put(`a`, `b`, `c`)
+	assert.Nil(t, err)
 	takeItems, _ := q.GetUntil(func(item interface{}) bool {
 		return item != `c`
 	})
@@ -414,7 +437,8 @@ func TestGetUntilThenGet(t *testing.T) {
 
 func TestGetUntilNoMatches(t *testing.T) {
 	q := New(10)
-	q.Put(`a`, `b`, `c`)
+	err := q.Put(`a`, `b`, `c`)
+	assert.Nil(t, err)
 	takeItems, _ := q.GetUntil(func(item interface{}) bool {
 		return item != `a`
 	})
@@ -500,7 +524,8 @@ func TestWaiters(t *testing.T) {
 func TestExecuteInParallel(t *testing.T) {
 	q := New(10)
 	for i := 0; i < 10; i++ {
-		q.Put(i)
+		err := q.Put(i)
+		assert.Nil(t, err)
 	}
 
 	numCalls := uint64(0)
@@ -537,7 +562,8 @@ func BenchmarkQueuePut(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := qs[i]
 		for j := int64(0); j < numItems; j++ {
-			q.Put(j)
+			// benchmark focuses on throughput
+			_ = q.Put(j)
 		}
 	}
 }
@@ -550,7 +576,8 @@ func BenchmarkQueueGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := New(numItems)
 		for j := int64(0); j < numItems; j++ {
-			q.Put(j)
+			// benchmark setup
+			_ = q.Put(j)
 		}
 		qs = append(qs, q)
 	}
@@ -560,7 +587,8 @@ func BenchmarkQueueGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := qs[i]
 		for j := int64(0); j < numItems; j++ {
-			q.Get(1)
+			// benchmark focuses on throughput
+			_, _ = q.Get(1)
 		}
 	}
 }
@@ -573,7 +601,8 @@ func BenchmarkQueuePoll(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := New(numItems)
 		for j := int64(0); j < numItems; j++ {
-			q.Put(j)
+			// benchmark setup
+			_ = q.Put(j)
 		}
 		qs = append(qs, q)
 	}
@@ -582,7 +611,8 @@ func BenchmarkQueuePoll(b *testing.B) {
 
 	for _, q := range qs {
 		for j := int64(0); j < numItems; j++ {
-			q.Poll(1, time.Millisecond)
+			// benchmark focuses on throughput
+			_, _ = q.Poll(1, time.Millisecond)
 		}
 	}
 }
@@ -595,7 +625,8 @@ func BenchmarkExecuteInParallel(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := New(numItems)
 		for j := int64(0); j < numItems; j++ {
-			q.Put(j)
+			// benchmark setup
+			_ = q.Put(j)
 		}
 		qs = append(qs, q)
 	}
