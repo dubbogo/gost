@@ -111,7 +111,6 @@ func (suite *ClientTestSuite) SetupSuite() {
 	}
 
 	suite.etcd = e
-	return
 }
 
 // stop etcd server
@@ -140,7 +139,6 @@ func (suite *ClientTestSuite) SetupTest() {
 		suite.T().Fatal("CleanKV failed:", err)
 	}
 	suite.client = c
-	return
 }
 
 func (suite *ClientTestSuite) TestClientClose() {

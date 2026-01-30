@@ -979,10 +979,7 @@ func (d *Decimal) Round(to *Decimal, frac int, roundMode RoundMode) (err error) 
 			}
 		}
 	} else {
-		for {
-			if to.wordBuf[toIdx] != 0 {
-				break
-			}
+		for to.wordBuf[toIdx] == 0 {
 			if toIdx == 0 {
 				/* making 'zero' with the proper scale */
 				idx := wordsFracTo + 1
@@ -2078,10 +2075,7 @@ func DecimalMul(from1, from2, to *Decimal) error {
 	if to.negative {
 		idx := 0
 		end := wordsIntTo + wordsFracTo
-		for {
-			if to.wordBuf[idx] != 0 {
-				break
-			}
+		for to.wordBuf[idx] == 0 {
 			idx++
 			/* We got decimal zero */
 			if idx == end {

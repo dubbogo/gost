@@ -103,7 +103,7 @@ func TestInteger_FromSignAndMag(t *testing.T) {
 			}
 
 			sign, mag := s.GetSignAndMag()
-			if !(sign == tt.args.signum && reflect.DeepEqual(mag, tt.args.mag)) {
+			if sign != tt.args.signum || !reflect.DeepEqual(mag, tt.args.mag) {
 				t.Error("want ", tt.args.signum, tt.args.mag,
 					"got", sign, mag)
 			}

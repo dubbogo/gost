@@ -71,11 +71,7 @@ func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
 // IsCgroup checks whether current os is a container or not
 func IsCgroup() bool {
 	ok, _ := gxfilepath.Exists(cgroupMemLimitPath)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 // GetCgroupMemoryLimit returns a container's total memory in bytes

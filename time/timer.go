@@ -220,14 +220,14 @@ func NewTimerWheel() *TimerWheel {
 
 				nodeAction := node.(*timerNodeAction)
 				// just one w.timerQ channel to ensure the exec sequence of timer event.
-				switch {
-				case nodeAction.action == TimerActionAdd:
+				switch nodeAction.action {
+				case TimerActionAdd:
 					w.number.Add(1)
 					w.insertTimerNode(nodeAction.node)
-				case nodeAction.action == TimerActionDel:
+				case TimerActionDel:
 					w.number.Add(-1)
 					w.deleteTimerNode(nodeAction.node)
-				case nodeAction.action == TimerActionReset:
+				case TimerActionReset:
 					// log.CInfo("node action:%#v", nodeAction)
 					w.resetTimerNode(nodeAction.node)
 				default:
@@ -449,7 +449,7 @@ func (w *TimerWheel) timerUpdate(curTime time.Time) int {
 
 	maxIdx = 0
 	for idx = 0; idx < maxTimerLevel; idx++ {
-		if 0 != inc[idx] {
+		if inc[idx] != 0 {
 			w.hand[idx] += inc[idx]
 			inc[idx+1] += w.hand[idx] / limit[idx]
 			w.hand[idx] %= limit[idx]
@@ -509,11 +509,9 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
-	select {
-	case w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}:
-		t.ID = node.ID
-		return t, nil
-	}
+	w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}
+	t.ID = node.ID
+	return t, nil
 }
 
 func (w *TimerWheel) deleteTimer(t *Timer) error {
@@ -521,10 +519,8 @@ func (w *TimerWheel) deleteTimer(t *Timer) error {
 		return ErrTimeChannelClosed
 	}
 
-	select {
-	case w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}:
-		return nil
-	}
+	w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}
+	return nil
 }
 
 func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
@@ -532,10 +528,8 @@ func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
 		return ErrTimeChannelClosed
 	}
 
-	select {
-	case w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}:
-		return nil
-	}
+	w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}
+	return nil
 }
 
 func sendTime(_ TimerID, t time.Time, arg interface{}) error {

@@ -47,14 +47,9 @@ func TestNewTimerWheel(t *testing.T) {
 	}()
 
 	cw.Start()
-	for {
-		select {
-		case <-wheel.After(TimeMillisecondDuration(100)):
-			index++
-			if index >= 10 {
-				return
-			}
-		}
+	for index < 10 {
+		<-wheel.After(TimeMillisecondDuration(100))
+		index++
 	}
 }
 
@@ -82,14 +77,9 @@ func TestAfter(t *testing.T) {
 		}()
 
 		cw.Start()
-		for {
-			select {
-			case <-wheel.After(d):
-				index++
-				if index >= num {
-					return
-				}
-			}
+		for index < num {
+			<-wheel.After(d)
+			index++
 		}
 	}
 

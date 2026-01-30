@@ -51,7 +51,7 @@ func RegSplit(text string, regexSplit string) []string {
 // IsMatchPattern is used to determine whether pattern
 // and value match with wildcards currently supported *
 func IsMatchPattern(pattern string, value string) bool {
-	if "*" == pattern {
+	if pattern == "*" {
 		return true
 	}
 	if len(pattern) == 0 && len(value) == 0 {

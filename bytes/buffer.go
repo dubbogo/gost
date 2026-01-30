@@ -219,7 +219,7 @@ func (b *Buffer) WriteNextEnd(n int) (int, error) {
 	bufLen := len(b.buf)
 	l := bufLen + n
 	if l > peekBufLen {
-		return 0, fmt.Errorf("U have not invoked @WriteNextBegin")
+		return 0, fmt.Errorf("you have not invoked @WriteNextBegin")
 	}
 
 	b.lastRead = opInvalid

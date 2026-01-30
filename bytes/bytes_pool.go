@@ -65,7 +65,7 @@ func (bp *BytesPool) findIndex(size int) int {
 func (bp *BytesPool) AcquireBytes(size int) *[]byte {
 	idx := bp.findIndex(size)
 	if idx >= bp.length {
-		buf := make([]byte, size, size)
+		buf := make([]byte, size)
 		return &buf
 	}
 
