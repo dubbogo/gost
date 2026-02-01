@@ -580,14 +580,13 @@ func (w *TimerWheel) NewTimer(d time.Duration) *Timer {
 
 // After waits for the duration to elapse and then sends the current time
 // on the returned channel.
+// Returns nil if the timer cannot be created (e.g., timer queue is full).
 func (w *TimerWheel) After(d time.Duration) <-chan time.Time {
-	//timer := defaultTimer.NewTimer(d)
-	//if timer == nil {
-	//	return nil
-	//}
-	//
-	//return timer.C
-	return w.NewTimer(d).C
+	t := w.NewTimer(d)
+	if t == nil {
+		return nil
+	}
+	return t.C
 }
 
 func goFunc(_ TimerID, _ time.Time, arg interface{}) error {
@@ -599,16 +598,21 @@ func goFunc(_ TimerID, _ time.Time, arg interface{}) error {
 // AfterFunc waits for the duration to elapse and then calls f
 // in its own goroutine. It returns a Timer that can
 // be used to cancel the call using its Stop method.
+// Returns nil if the timer cannot be created (e.g., timer queue is full).
 func (w *TimerWheel) AfterFunc(d time.Duration, f func()) *Timer {
 	t, _ := w.AddTimer(goFunc, TimerOnce, d, f)
-
 	return t
 }
 
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
+// If the timer cannot be created, Sleep returns immediately.
 func (w *TimerWheel) Sleep(d time.Duration) {
-	<-w.NewTimer(d).C
+	t := w.NewTimer(d)
+	if t == nil {
+		return
+	}
+	<-t.C
 }
 
 ////////////////////////////////////////////////
@@ -650,7 +654,11 @@ func (w *TimerWheel) TickFunc(d time.Duration, f func()) *Ticker {
 // channel only. While Tick is useful for clients that have no need to shut down
 // the Ticker, be aware that without a way to shut it down the underlying
 // Ticker cannot be recovered by the garbage collector; it "leaks".
-// Unlike NewTicker, Tick will return nil if d <= 0.
+// Unlike NewTicker, Tick will return nil if d <= 0 or if the ticker cannot be created.
 func (w *TimerWheel) Tick(d time.Duration) <-chan time.Time {
-	return w.NewTicker(d).C
+	ticker := w.NewTicker(d)
+	if ticker == nil {
+		return nil
+	}
+	return ticker.C
 }

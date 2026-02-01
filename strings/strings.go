@@ -27,16 +27,19 @@ import (
 // It performs a deep nil check by examining both the interface itself
 // and the underlying value using reflection.
 // Returns true if the value is nil or if the underlying value is nil.
+// For non-nilable types (e.g., int, string, struct), it returns false.
 func IsNil(i interface{}) bool {
 	if i == nil {
 		return true
 	}
 
-	if reflect.ValueOf(i).IsNil() {
-		return true
+	v := reflect.ValueOf(i)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+		return v.IsNil()
+	default:
+		return false
 	}
-
-	return false
 }
 
 // RegSplit splits a string by a regular expression pattern.
