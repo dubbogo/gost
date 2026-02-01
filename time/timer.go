@@ -464,6 +464,22 @@ func (w *TimerWheel) timerUpdate(curTime time.Time) int {
 	return 0
 }
 
+// enqueueTimerAction attempts to enqueue a timer action in a non-blocking way.
+// It returns an error if the operation would block, preventing potential deadlocks
+// when called from the timer wheel goroutine.
+func (w *TimerWheel) enqueueTimerAction(action *timerNodeAction) error {
+	if !w.enable.Load() {
+		return ErrTimeChannelClosed
+	}
+
+	select {
+	case w.timerQ.In() <- action:
+		return nil
+	default:
+		return errors.New("timer queue is full, cannot enqueue action without blocking")
+	}
+}
+
 // Stop stops the ticker
 func (w *TimerWheel) Stop() {
 	w.once.Do(func() {
@@ -509,7 +525,9 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
-	w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}
+	if err := w.enqueueTimerAction(&timerNodeAction{node: node, action: TimerActionAdd}); err != nil {
+		return nil, err
+	}
 	t.ID = node.ID
 	return t, nil
 }
@@ -519,8 +537,7 @@ func (w *TimerWheel) deleteTimer(t *Timer) error {
 		return ErrTimeChannelClosed
 	}
 
-	w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}
-	return nil
+	return w.enqueueTimerAction(&timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}})
 }
 
 func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
@@ -528,8 +545,7 @@ func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
 		return ErrTimeChannelClosed
 	}
 
-	w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}
-	return nil
+	return w.enqueueTimerAction(&timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}})
 }
 
 func sendTime(_ TimerID, t time.Time, arg interface{}) error {

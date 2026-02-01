@@ -23,6 +23,10 @@ import (
 	"strings"
 )
 
+// IsNil checks whether the given interface value is nil.
+// It performs a deep nil check by examining both the interface itself
+// and the underlying value using reflection.
+// Returns true if the value is nil or if the underlying value is nil.
 func IsNil(i interface{}) bool {
 	if i == nil {
 		return true
@@ -35,6 +39,19 @@ func IsNil(i interface{}) bool {
 	return false
 }
 
+// RegSplit splits a string by a regular expression pattern.
+// It uses the provided regex pattern to find all split positions in the text
+// and returns a slice of substrings between those positions.
+//
+// Parameters:
+//   - text: The string to be split
+//   - regexSplit: The regular expression pattern used as delimiter
+//
+// Returns a slice of strings containing the split results.
+//
+// Example:
+//
+//	RegSplit("a;b;c", "\\s*[;]+\\s*") returns ["a", "b", "c"]
 func RegSplit(text string, regexSplit string) []string {
 	reg := regexp.MustCompile(regexSplit)
 	indexes := reg.FindAllStringIndex(text, -1)

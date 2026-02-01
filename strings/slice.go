@@ -21,6 +21,21 @@ import (
 	"unsafe"
 )
 
+// Slice converts a string to a byte slice without memory allocation.
+// It uses unsafe operations to directly reference the underlying string data,
+// avoiding the overhead of copying bytes.
+//
+// WARNING: This function uses unsafe operations. The returned byte slice
+// shares the same underlying memory as the string. Modifying the returned
+// slice will cause undefined behavior since strings are immutable in Go.
+//
+// Parameters:
+//   - s: The string to convert
+//
+// Returns a byte slice that references the string's underlying data.
+//
+// Use this function only when you need read-only access to string bytes
+// with zero allocation, and you understand the safety implications.
 func Slice(s string) []byte {
 	ptr := unsafe.StringData(s)
 	return unsafe.Slice((*byte)(ptr), len(s))
