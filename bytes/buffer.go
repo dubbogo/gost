@@ -219,7 +219,7 @@ func (b *Buffer) WriteNextEnd(n int) (int, error) {
 	bufLen := len(b.buf)
 	l := bufLen + n
 	if l > peekBufLen {
-		return 0, fmt.Errorf("U have not invoked @WriteNextBegin")
+		return 0, fmt.Errorf("you have not invoked @WriteNextBegin")
 	}
 
 	b.lastRead = opInvalid
@@ -331,7 +331,8 @@ func (b *Buffer) WriteByte(c byte) error {
 func (b *Buffer) WriteRune(r rune) (n int, err error) {
 	// Compare as uint32 to correctly handle negative runes.
 	if uint32(r) < utf8.RuneSelf {
-		b.WriteByte(byte(r))
+		// WriteByte returns nil for bytes.Buffer
+		_ = b.WriteByte(byte(r))
 		return 1, nil
 	}
 	b.lastRead = opInvalid

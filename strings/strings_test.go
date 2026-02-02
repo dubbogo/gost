@@ -44,3 +44,55 @@ func TestIsMatchPattern(t *testing.T) {
 	assert.Equal(t, true, IsMatchPattern("v*e", "value"))
 	assert.Equal(t, true, IsMatchPattern("val*e", "value"))
 }
+
+func TestIsNil(t *testing.T) {
+	// Test nil interface
+	assert.True(t, IsNil(nil))
+
+	// Test nilable types that are nil
+	var nilChan chan int
+	assert.True(t, IsNil(nilChan))
+
+	var nilFunc func()
+	assert.True(t, IsNil(nilFunc))
+
+	var nilInterface interface{}
+	assert.True(t, IsNil(nilInterface))
+
+	var nilMap map[string]int
+	assert.True(t, IsNil(nilMap))
+
+	var nilPtr *int
+	assert.True(t, IsNil(nilPtr))
+
+	var nilSlice []int
+	assert.True(t, IsNil(nilSlice))
+
+	// Test nilable types that are not nil
+	ch := make(chan int)
+	assert.False(t, IsNil(ch))
+
+	fn := func() {}
+	assert.False(t, IsNil(fn))
+
+	m := map[string]int{}
+	assert.False(t, IsNil(m))
+
+	i := 42
+	ptr := &i
+	assert.False(t, IsNil(ptr))
+
+	s := []int{}
+	assert.False(t, IsNil(s))
+
+	// Test non-nilable types (should not panic)
+	assert.False(t, IsNil(42))
+	assert.False(t, IsNil("hello"))
+	assert.False(t, IsNil(true))
+	assert.False(t, IsNil(3.14))
+
+	type testStruct struct {
+		field int
+	}
+	assert.False(t, IsNil(testStruct{field: 1}))
+}

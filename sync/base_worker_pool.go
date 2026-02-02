@@ -171,26 +171,20 @@ func (p *baseWorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 	chanId := workerId % len(p.taskQueues)
 
 	wg.Done()
-	for {
-		select {
-		case t, ok := <-p.taskQueues[chanId]:
-			if !ok {
-				return
-			}
-			if t != nil {
-				func() {
-					// prevent from goroutine panic
-					defer func() {
-						if r := recover(); r != nil {
-							if p.logger != nil {
-								p.logger.Errorf("goroutine panic: %v\n%s", r, string(debug.Stack()))
-							}
+	for t := range p.taskQueues[chanId] {
+		if t != nil {
+			func() {
+				// prevent from goroutine panic
+				defer func() {
+					if r := recover(); r != nil {
+						if p.logger != nil {
+							p.logger.Errorf("goroutine panic: %v\n%s", r, string(debug.Stack()))
 						}
-					}()
-					// execute task
-					t()
+					}
 				}()
-			}
+				// execute task
+				t()
+			}()
 		}
 	}
 }

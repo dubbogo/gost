@@ -71,11 +71,7 @@ func GetMemoryStat() (total, used, free uint64, usedPercent float64) {
 // IsCgroup checks whether current os is a container or not
 func IsCgroup() bool {
 	ok, _ := gxfilepath.Exists(cgroupMemLimitPath)
-	if ok {
-		return true
-	}
-
-	return false
+	return ok
 }
 
 // GetCgroupMemoryLimit returns a container's total memory in bytes
@@ -201,7 +197,10 @@ func readLinesFromFile(filepath string) []string {
 	if err != nil {
 		return res
 	}
-	defer f.Close()
+	defer func() {
+		// file is read-only
+		_ = f.Close()
+	}()
 	buff := bufio.NewReader(f)
 	for {
 		line, _, err := buff.ReadLine()

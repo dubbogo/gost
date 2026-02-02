@@ -220,14 +220,14 @@ func NewTimerWheel() *TimerWheel {
 
 				nodeAction := node.(*timerNodeAction)
 				// just one w.timerQ channel to ensure the exec sequence of timer event.
-				switch {
-				case nodeAction.action == TimerActionAdd:
+				switch nodeAction.action {
+				case TimerActionAdd:
 					w.number.Add(1)
 					w.insertTimerNode(nodeAction.node)
-				case nodeAction.action == TimerActionDel:
+				case TimerActionDel:
 					w.number.Add(-1)
 					w.deleteTimerNode(nodeAction.node)
-				case nodeAction.action == TimerActionReset:
+				case TimerActionReset:
 					// log.CInfo("node action:%#v", nodeAction)
 					w.resetTimerNode(nodeAction.node)
 				default:
@@ -449,7 +449,7 @@ func (w *TimerWheel) timerUpdate(curTime time.Time) int {
 
 	maxIdx = 0
 	for idx = 0; idx < maxTimerLevel; idx++ {
-		if 0 != inc[idx] {
+		if inc[idx] != 0 {
 			w.hand[idx] += inc[idx]
 			inc[idx+1] += w.hand[idx] / limit[idx]
 			w.hand[idx] %= limit[idx]
@@ -462,6 +462,22 @@ func (w *TimerWheel) timerUpdate(curTime time.Time) int {
 	}
 
 	return 0
+}
+
+// enqueueTimerAction attempts to enqueue a timer action in a non-blocking way.
+// It returns an error if the operation would block, preventing potential deadlocks
+// when called from the timer wheel goroutine.
+func (w *TimerWheel) enqueueTimerAction(action *timerNodeAction) error {
+	if !w.enable.Load() {
+		return ErrTimeChannelClosed
+	}
+
+	select {
+	case w.timerQ.In() <- action:
+		return nil
+	default:
+		return errors.New("timer queue is full, cannot enqueue action without blocking")
+	}
 }
 
 // Stop stops the ticker
@@ -509,11 +525,11 @@ func (w *TimerWheel) AddTimer(f TimerFunc, typ TimerType, period time.Duration, 
 
 	t := &Timer{w: w}
 	node := newTimerNode(f, typ, int64(period), arg)
-	select {
-	case w.timerQ.In() <- &timerNodeAction{node: node, action: TimerActionAdd}:
-		t.ID = node.ID
-		return t, nil
+	if err := w.enqueueTimerAction(&timerNodeAction{node: node, action: TimerActionAdd}); err != nil {
+		return nil, err
 	}
+	t.ID = node.ID
+	return t, nil
 }
 
 func (w *TimerWheel) deleteTimer(t *Timer) error {
@@ -521,10 +537,7 @@ func (w *TimerWheel) deleteTimer(t *Timer) error {
 		return ErrTimeChannelClosed
 	}
 
-	select {
-	case w.timerQ.In() <- &timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}}:
-		return nil
-	}
+	return w.enqueueTimerAction(&timerNodeAction{action: TimerActionDel, node: &timerNode{ID: t.ID}})
 }
 
 func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
@@ -532,10 +545,7 @@ func (w *TimerWheel) resetTimer(t *Timer, d time.Duration) error {
 		return ErrTimeChannelClosed
 	}
 
-	select {
-	case w.timerQ.In() <- &timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}}:
-		return nil
-	}
+	return w.enqueueTimerAction(&timerNodeAction{action: TimerActionReset, node: &timerNode{ID: t.ID, period: int64(d)}})
 }
 
 func sendTime(_ TimerID, t time.Time, arg interface{}) error {
@@ -570,14 +580,13 @@ func (w *TimerWheel) NewTimer(d time.Duration) *Timer {
 
 // After waits for the duration to elapse and then sends the current time
 // on the returned channel.
+// Returns nil if the timer cannot be created (e.g., timer queue is full).
 func (w *TimerWheel) After(d time.Duration) <-chan time.Time {
-	//timer := defaultTimer.NewTimer(d)
-	//if timer == nil {
-	//	return nil
-	//}
-	//
-	//return timer.C
-	return w.NewTimer(d).C
+	t := w.NewTimer(d)
+	if t == nil {
+		return nil
+	}
+	return t.C
 }
 
 func goFunc(_ TimerID, _ time.Time, arg interface{}) error {
@@ -589,16 +598,21 @@ func goFunc(_ TimerID, _ time.Time, arg interface{}) error {
 // AfterFunc waits for the duration to elapse and then calls f
 // in its own goroutine. It returns a Timer that can
 // be used to cancel the call using its Stop method.
+// Returns nil if the timer cannot be created (e.g., timer queue is full).
 func (w *TimerWheel) AfterFunc(d time.Duration, f func()) *Timer {
 	t, _ := w.AddTimer(goFunc, TimerOnce, d, f)
-
 	return t
 }
 
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
+// If the timer cannot be created, Sleep returns immediately.
 func (w *TimerWheel) Sleep(d time.Duration) {
-	<-w.NewTimer(d).C
+	t := w.NewTimer(d)
+	if t == nil {
+		return
+	}
+	<-t.C
 }
 
 ////////////////////////////////////////////////
@@ -640,7 +654,11 @@ func (w *TimerWheel) TickFunc(d time.Duration, f func()) *Ticker {
 // channel only. While Tick is useful for clients that have no need to shut down
 // the Ticker, be aware that without a way to shut it down the underlying
 // Ticker cannot be recovered by the garbage collector; it "leaks".
-// Unlike NewTicker, Tick will return nil if d <= 0.
+// Unlike NewTicker, Tick will return nil if d <= 0 or if the ticker cannot be created.
 func (w *TimerWheel) Tick(d time.Duration) <-chan time.Time {
-	return w.NewTicker(d).C
+	ticker := w.NewTicker(d)
+	if ticker == nil {
+		return nil
+	}
+	return ticker.C
 }

@@ -214,53 +214,42 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 
 // HandleZkEvent handles zookeeper events
 func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
-	var (
-		ok    bool
-		state int
-		event zk.Event
-	)
-	for {
-		select {
-		case event, ok = <-z.Session:
-			if !ok {
-				// channel already closed
-				return
-			}
-			switch event.State {
-			case zk.StateDisconnected:
-				atomic.StoreUint32(&z.valid, 0)
-			case zk.StateConnected:
-				z.eventRegistryLock.RLock()
-				for path, a := range z.eventRegistry {
-					if strings.HasPrefix(event.Path, path) {
-						for _, e := range a {
-							e <- event
-						}
-					}
-				}
-				z.eventRegistryLock.RUnlock()
-			case zk.StateConnecting, zk.StateHasSession:
-				if state == (int)(zk.StateHasSession) {
-					continue
-				}
-				if event.State == zk.StateHasSession {
-					atomic.StoreUint32(&z.valid, 1)
-					//if this is the first connection, don't trigger reconnect event
-					if !atomic.CompareAndSwapUint32(&z.initialized, 0, 1) {
-						close(z.reconnectCh)
-						z.reconnectCh = make(chan struct{})
-					}
-				}
-				z.eventRegistryLock.RLock()
-				if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
+	var state int
+	for event := range z.Session {
+		switch event.State {
+		case zk.StateDisconnected:
+			atomic.StoreUint32(&z.valid, 0)
+		case zk.StateConnected:
+			z.eventRegistryLock.RLock()
+			for path, a := range z.eventRegistry {
+				if strings.HasPrefix(event.Path, path) {
 					for _, e := range a {
 						e <- event
 					}
 				}
-				z.eventRegistryLock.RUnlock()
 			}
-			state = (int)(event.State)
+			z.eventRegistryLock.RUnlock()
+		case zk.StateConnecting, zk.StateHasSession:
+			if state == (int)(zk.StateHasSession) {
+				continue
+			}
+			if event.State == zk.StateHasSession {
+				atomic.StoreUint32(&z.valid, 1)
+				//if this is the first connection, don't trigger reconnect event
+				if !atomic.CompareAndSwapUint32(&z.initialized, 0, 1) {
+					close(z.reconnectCh)
+					z.reconnectCh = make(chan struct{})
+				}
+			}
+			z.eventRegistryLock.RLock()
+			if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
+				for _, e := range a {
+					e <- event
+				}
+			}
+			z.eventRegistryLock.RUnlock()
 		}
+		state = (int)(event.State)
 	}
 }
 
@@ -303,10 +292,7 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 
 // ZkConnValid validates zookeeper connection
 func (z *ZookeeperClient) ZkConnValid() bool {
-	if atomic.LoadUint32(&z.valid) == 1 {
-		return true
-	}
-	return false
+	return atomic.LoadUint32(&z.valid) == 1
 }
 
 // Create will create the node recursively, which means that if the parent node is absent,

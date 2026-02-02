@@ -146,10 +146,11 @@ func strToInt(str string) (int64, error) {
 	}
 	negative := false
 	i := 0
-	if str[i] == '-' {
+	switch str[i] {
+	case '-':
 		negative = true
 		i++
-	} else if str[i] == '+' {
+	case '+':
 		i++
 	}
 

@@ -37,7 +37,7 @@ func TestUnboundedChan(t *testing.T) {
 	}
 
 	for i := 1; i < 60; i++ {
-		v, _ := <-ch.Out()
+		v := <-ch.Out()
 		count += v.(int)
 	}
 
@@ -222,9 +222,7 @@ func BenchmarkUnboundedChan_Fixed(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			select {
-			case ch.In() <- 1:
-			}
+			ch.In() <- 1
 
 			<-ch.Out()
 		}
@@ -238,9 +236,7 @@ func BenchmarkUnboundedChan_Extension(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			select {
-			case ch.In() <- 1:
-			}
+			ch.In() <- 1
 
 			<-ch.Out()
 		}
@@ -254,9 +250,7 @@ func BenchmarkUnboundedChan_ExtensionUnlimited(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			select {
-			case ch.In() <- 1:
-			}
+			ch.In() <- 1
 
 			<-ch.Out()
 		}

@@ -31,7 +31,8 @@ import (
 
 func TestBufferWithPeek(t *testing.T) {
 	var b Buffer
-	b.WriteString("hello")
+	_, err := b.WriteString("hello")
+	assert.Nil(t, err)
 
 	b1 := b
 	b1.WriteNextBegin(100)

@@ -60,7 +60,7 @@ func TestListenOnTCPRandomPort(t *testing.T) {
 	l, err := ListenOnTCPRandomPort("")
 	assert.Nil(t, err)
 	t.Logf("a tcp server listen on a random addr:%s", l.Addr())
-	l.Close()
+	_ = l.Close()
 
 	localIP, err := GetLocalIP()
 	if err == nil {
@@ -68,7 +68,7 @@ func TestListenOnTCPRandomPort(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, strings.Contains(l.Addr().String(), localIP))
 		t.Logf("a tcp server listen on a random addr:%s", l.Addr())
-		l.Close()
+		_ = l.Close()
 	}
 }
 
@@ -76,7 +76,7 @@ func TestListenOnUDPRandomPort(t *testing.T) {
 	l, err := ListenOnUDPRandomPort("")
 	assert.Nil(t, err)
 	t.Logf("a udp peer listen on a random addr:%s", l.LocalAddr())
-	l.Close()
+	_ = l.Close()
 
 	localIP, err := GetLocalIP()
 	if err == nil {
@@ -84,7 +84,7 @@ func TestListenOnUDPRandomPort(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, strings.Contains(l.LocalAddr().String(), localIP))
 		t.Logf("a udp server listen on a random addr:%s", l.LocalAddr())
-		l.Close()
+		_ = l.Close()
 	}
 }
 

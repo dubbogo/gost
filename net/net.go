@@ -200,7 +200,7 @@ func matchIPRange(pattern, host, port string) bool {
 	}
 
 	pattern = strings.TrimSpace(pattern)
-	if "*.*.*.*" == pattern || "*" == pattern {
+	if pattern == "*.*.*.*" || pattern == "*" {
 		return true
 	}
 
@@ -240,7 +240,7 @@ func matchIPRange(pattern, host, port string) bool {
 
 	ipAddress := strings.Split(host, splitCharacter)
 	for i := 0; i < len(mask); i++ {
-		if "*" == mask[i] || mask[i] == ipAddress[i] {
+		if mask[i] == "*" || mask[i] == ipAddress[i] {
 			continue
 		} else if strings.Contains(mask[i], "-") {
 			rangeNumStrs := strings.Split(mask[i], "-")
@@ -254,7 +254,7 @@ func matchIPRange(pattern, host, port string) bool {
 			if ip < min || ip > max {
 				return false
 			}
-		} else if "0" == ipAddress[i] && "0" == mask[i] || "00" == mask[i] || "000" == mask[i] || "0000" == mask[i] {
+		} else if ipAddress[i] == "0" && mask[i] == "0" || mask[i] == "00" || mask[i] == "000" || mask[i] == "0000" {
 			continue
 		} else if mask[i] != ipAddress[i] {
 			return false

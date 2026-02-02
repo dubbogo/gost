@@ -78,7 +78,7 @@ func Test_getZookeeperClient(t *testing.T) {
 	client2.Close()
 	client3.Close()
 	client4.Close()
-	tc.Stop()
+	_ = tc.Stop()
 }
 
 func Test_Close(t *testing.T) {
@@ -126,7 +126,7 @@ func Test_Close(t *testing.T) {
 	client6.Close()
 	assert.Equal(t, client6.activeNumber, uint32(0))
 	assert.Equal(t, client6.Conn, (*zk.Conn)(nil))
-	tc.Stop()
+	_ = tc.Stop()
 }
 
 func Test_newMockZookeeperClient(t *testing.T) {
