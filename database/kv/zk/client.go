@@ -224,7 +224,7 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 		switch event.State {
 		case zk.StateDisconnected:
 			atomic.StoreUint32(&z.valid, 0)
-		case zk.StateConnected:
+		case zk.StateConnected, zk.StateSyncConnected:
 			z.eventRegistryLock.RLock()
 			for path, a := range z.eventRegistry {
 				if strings.HasPrefix(event.Path, path) {

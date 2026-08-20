@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/buger/jsonparser v1.1.2
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5
+	github.com/dubbogo/go-zookeeper v1.0.5
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/mattn/go-isatty v0.0.16
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.2
