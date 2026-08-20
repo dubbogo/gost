@@ -21,15 +21,11 @@ import (
 	"time"
 )
 
-import (
-	"github.com/dubbogo/go-zookeeper/zk"
-)
-
 // nolint
 type options struct {
 	ZkName string
 	Client *ZookeeperClient
-	Ts     *zk.TestCluster
+	Ts     *TestCluster
 }
 
 // Option will define a function of handling Options

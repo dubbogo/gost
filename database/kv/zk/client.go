@@ -163,18 +163,19 @@ func (z *ZookeeperClient) createZookeeperConn() error {
 }
 
 // WithTestCluster sets test cluster for zk Client
-func WithTestCluster(ts *zk.TestCluster) Option {
+func WithTestCluster(ts *TestCluster) Option {
 	return func(opt *options) {
 		opt.Ts = ts
 	}
 }
 
 // NewMockZookeeperClient returns a mock Client instance
-func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event, error) {
+func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) (*TestCluster, *ZookeeperClient, <-chan zk.Event, error) {
 	var (
-		err error
-		z   *ZookeeperClient
-		ts  *zk.TestCluster
+		err         error
+		z           *ZookeeperClient
+		ts          *TestCluster
+		ownsCluster bool
 	)
 
 	z = &ZookeeperClient{
@@ -197,14 +198,18 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 	if option.Ts != nil {
 		ts = option.Ts
 	} else {
-		ts, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
+		ts, err = StartTestCluster(1, nil, nil, WithRetryTimes(40))
 		if err != nil {
 			return nil, nil, nil, perrors.WithMessagef(err, "zk.StartTestCluster fail")
 		}
+		ownsCluster = true
 	}
 
 	z.Conn, z.Session, err = ts.ConnectWithOptions(timeout)
 	if err != nil {
+		if ownsCluster {
+			_ = ts.Stop()
+		}
 		return nil, nil, nil, perrors.WithMessagef(err, "zk.Connect fail")
 	}
 	atomic.StoreUint32(&z.valid, 1)
