@@ -44,7 +44,10 @@ var (
 	ErrRevision int64 = -1
 )
 
-const defaultSessionTTL = 60
+const (
+	defaultSessionTTL          = 60
+	defaultInitialGrantTimeout = 5 * time.Second
+)
 
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
@@ -232,12 +235,12 @@ func (c *Client) keepSession() error {
 		grantTTL = defaultSessionTTL
 	}
 
-	grantCtx := c.ctx
-	if c.timeout > 0 {
-		var cancel context.CancelFunc
-		grantCtx, cancel = context.WithTimeout(c.ctx, c.timeout)
-		defer cancel()
+	grantTimeout := c.timeout
+	if grantTimeout <= 0 {
+		grantTimeout = defaultInitialGrantTimeout
 	}
+	grantCtx, cancel := context.WithTimeout(c.ctx, grantTimeout)
+	defer cancel()
 
 	lease, err := c.rawClient.Grant(grantCtx, int64(grantTTL))
 	if err != nil {
