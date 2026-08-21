@@ -18,16 +18,65 @@
 package gxzookeeper
 
 import (
-	"strconv"
+	"net"
+	"os"
+	"path"
 	"testing"
 	"time"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// zkTestAddrEnvKey is the environment variable used to point these tests at
+// a real zookeeper server.
+const zkTestAddrEnvKey = "ZK_ADDR"
+
+// defaultZkTestAddr is used when ZK_ADDR is not set.
+const defaultZkTestAddr = "127.0.0.1:2181"
+
+// testZkAddr returns the zookeeper address these tests should run against.
+//
+// github.com/go-zookeeper/zk (the upstream package this module now depends
+// on) does not expose an importable TestCluster/StartTestCluster API the
+// way the previous github.com/dubbogo/go-zookeeper fork did (upstream only
+// has it in the module's own _test.go files, which cannot be imported), so
+// these tests can no longer boot an in-process zk server on demand. Instead
+// they require a real, reachable zookeeper server; point ZK_ADDR at one
+// (defaults to 127.0.0.1:2181). When no server is reachable, the calling
+// test is skipped rather than failed.
+func testZkAddr(t *testing.T) string {
+	addr := os.Getenv(zkTestAddrEnvKey)
+	if addr == "" {
+		addr = defaultZkTestAddr
+	}
+	conn, err := net.DialTimeout("tcp", addr, time.Second)
+	if err != nil {
+		t.Skipf("skipping: no zookeeper server reachable at %s (set %s to run this test): %v", addr, zkTestAddrEnvKey, err)
+		return ""
+	}
+	_ = conn.Close()
+	return addr
+}
+
+// cleanupZkPath best-effort recursively removes a zk path (and its
+// children) so tests that assert on Create() are repeatable against a
+// long-lived real zk server instead of a freshly booted test cluster.
+func cleanupZkPath(z *ZookeeperClient, zkPath string) {
+	if z == nil || z.Conn == nil {
+		return
+	}
+	children, _, err := z.Conn.Children(zkPath)
+	if err == nil {
+		for _, c := range children {
+			cleanupZkPath(z, path.Join(zkPath, c))
+		}
+	}
+	_ = z.Conn.Delete(zkPath, -1)
+}
 
 func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.State, source string) {
 	for _, state := range expectedStates {
@@ -49,14 +98,9 @@ func verifyEventStateOrder(t *testing.T, c <-chan zk.Event, expectedStates []zk.
 }
 
 func Test_getZookeeperClient(t *testing.T) {
-	var err error
-	var tc *zk.TestCluster
-	var address []string
-	tc, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
-	assert.NoError(t, err)
-	assert.NotNil(t, tc.Servers[0])
+	addr := testZkAddr(t)
+	address := []string{addr}
 
-	address = append(address, "127.0.0.1:"+strconv.Itoa(tc.Servers[0].Port))
 	client1, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
 	client2, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
@@ -78,17 +122,12 @@ func Test_getZookeeperClient(t *testing.T) {
 	client2.Close()
 	client3.Close()
 	client4.Close()
-	_ = tc.Stop()
 }
 
 func Test_Close(t *testing.T) {
-	var err error
-	var tc *zk.TestCluster
-	var address []string
-	tc, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
-	assert.NoError(t, err)
-	assert.NotNil(t, tc.Servers[0])
-	address = append(address, "127.0.0.1:"+strconv.Itoa(tc.Servers[0].Port))
+	addr := testZkAddr(t)
+	address := []string{addr}
+
 	client1, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
 	assert.Nil(t, err)
 	client2, err := NewZookeeperClient("test1", address, true, WithZkTimeOut(3*time.Second))
@@ -126,44 +165,45 @@ func Test_Close(t *testing.T) {
 	client6.Close()
 	assert.Equal(t, client6.activeNumber, uint32(0))
 	assert.Equal(t, client6.Conn, (*zk.Conn)(nil))
-	_ = tc.Stop()
+	client4.Close()
 }
 
 func Test_newMockZookeeperClient(t *testing.T) {
-	ts, _, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	testZkAddr(t)
+
+	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer func() {
-		err := ts.Stop()
-		assert.Nil(t, err)
-	}()
+	defer z.Close()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
 }
 
 func TestCreate(t *testing.T) {
-	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	testZkAddr(t)
+
+	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer func() {
-		_ = ts.Stop()
-		assert.Nil(t, err)
-	}()
-	err = z.Create("/test1/test2/test3/test4")
-	assert.NoError(t, err)
+	defer z.Close()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
+
+	cleanupZkPath(z, "/test1")
+	err = z.Create("/test1/test2/test3/test4")
+	assert.NoError(t, err)
 }
 
 func TestCreateDelete(t *testing.T) {
-	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	testZkAddr(t)
+
+	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer func() {
-		_ = ts.Stop()
-		assert.Nil(t, err)
-	}()
+	defer z.Close()
 
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
+
+	cleanupZkPath(z, "/test1")
 	err = z.Create("/test1/test2/test3/test4")
 	assert.NoError(t, err)
 	err = z.Delete("/test1/test2/test3/test4")
@@ -172,12 +212,13 @@ func TestCreateDelete(t *testing.T) {
 }
 
 func TestRegisterTemp(t *testing.T) {
-	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	testZkAddr(t)
+
+	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer func() {
-		_ = ts.Stop()
-		assert.Nil(t, err)
-	}()
+	defer z.Close()
+
+	cleanupZkPath(z, "/test1")
 	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
 
@@ -189,12 +230,13 @@ func TestRegisterTemp(t *testing.T) {
 }
 
 func TestRegisterTempSeq(t *testing.T) {
-	ts, z, event, err := NewMockZookeeperClient("test", 15*time.Second)
+	testZkAddr(t)
+
+	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
 	assert.NoError(t, err)
-	defer func() {
-		_ = ts.Stop()
-		assert.Nil(t, err)
-	}()
+	defer z.Close()
+
+	cleanupZkPath(z, "/test1")
 	err = z.Create("/test1/test2/test3")
 	assert.NoError(t, err)
 	tmpath, err := z.RegisterTempSeq("/test1/test2/test3", []byte("test"))
