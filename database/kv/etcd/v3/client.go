@@ -44,6 +44,8 @@ var (
 	ErrRevision int64 = -1
 )
 
+const defaultSessionTTL = 60
+
 // NewConfigClient create new Client
 func NewConfigClient(opts ...Option) *Client {
 	newClient, err := NewConfigClientWithErr(opts...)
@@ -123,6 +125,7 @@ func NewClient(name string, endpoints []string, timeout time.Duration, heartbeat
 
 	if err := c.keepSession(); err != nil {
 		cancel()
+		_ = rawClient.Close()
 		return nil, perrors.WithMessage(err, "client keep session")
 	}
 	return c, nil
@@ -163,6 +166,7 @@ func NewClientWithOptions(ctx context.Context, opts *Options) (*Client, error) {
 
 	if err := c.keepSession(); err != nil {
 		cancel()
+		_ = rawClient.Close()
 		return nil, perrors.WithMessage(err, "client keep session")
 	}
 	return c, nil
@@ -223,8 +227,31 @@ func (c *Client) Close() {
 }
 
 func (c *Client) keepSession() error {
-	s, err := concurrency.NewSession(c.rawClient, concurrency.WithTTL(c.heartbeat))
+	grantTTL := c.heartbeat
+	if grantTTL <= 0 {
+		grantTTL = defaultSessionTTL
+	}
+
+	grantCtx := c.ctx
+	if c.timeout > 0 {
+		var cancel context.CancelFunc
+		grantCtx, cancel = context.WithTimeout(c.ctx, c.timeout)
+		defer cancel()
+	}
+
+	lease, err := c.rawClient.Grant(grantCtx, int64(grantTTL))
 	if err != nil {
+		return perrors.WithMessage(err, "grant session lease")
+	}
+
+	s, err := concurrency.NewSession(c.rawClient,
+		concurrency.WithTTL(c.heartbeat),
+		concurrency.WithLease(lease.ID),
+	)
+	if err != nil {
+		revokeCtx, cancel := context.WithTimeout(c.ctx, time.Second)
+		_, _ = c.rawClient.Revoke(revokeCtx, lease.ID)
+		cancel()
 		return perrors.WithMessage(err, "new session with server")
 	}
 
