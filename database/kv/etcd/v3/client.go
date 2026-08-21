@@ -222,16 +222,52 @@ func (c *Client) Close() {
 	log.Printf("etcd client{Name:%s, Endpoints:%s} exit now.", c.name, c.endpoints)
 }
 
+// keepSession establishes the etcd concurrency Session (granting a lease
+// over RPC) that keepSessionLoop then holds open. Since NewClient no longer
+// dials with grpc.WithBlock() (see the revert in commit 3412137), the raw
+// client it's handed can be returned before it's actually connected, and
+// concurrency.NewSession's own Grant call carries no deadline of its own -
+// against an unreachable server it can block indefinitely. Race it against
+// c.timeout here so callers get back the bounded failure NewClient has
+// always documented, instead of hanging forever regardless of the timeout
+// they asked for.
+//
+// A session that completes after we've already timed out and returned is
+// abandoned rather than awaited: its Grant call shares c.ctx, which the
+// caller cancels on our error return, so it will itself unwind once that
+// happens rather than leak.
 func (c *Client) keepSession() error {
-	s, err := concurrency.NewSession(c.rawClient, concurrency.WithTTL(c.heartbeat))
-	if err != nil {
-		return perrors.WithMessage(err, "new session with server")
+	type sessionResult struct {
+		s   *concurrency.Session
+		err error
+	}
+	resCh := make(chan sessionResult, 1)
+	go func() {
+		s, err := concurrency.NewSession(c.rawClient, concurrency.WithTTL(c.heartbeat))
+		resCh <- sessionResult{s, err}
+	}()
+
+	// A timeout <= 0 has always meant "no bound, block until connected or
+	// cancelled" (it's passed straight through as grpc's DialTimeout too),
+	// so preserve that instead of racing against a channel that would fire
+	// immediately.
+	var deadline <-chan time.Time
+	if c.timeout > 0 {
+		deadline = time.After(c.timeout)
 	}
 
-	// must add wg before go keep session goroutine
-	c.Wait.Add(1)
-	go c.keepSessionLoop(s)
-	return nil
+	select {
+	case res := <-resCh:
+		if res.err != nil {
+			return perrors.WithMessage(res.err, "new session with server")
+		}
+		// must add wg before go keep session goroutine
+		c.Wait.Add(1)
+		go c.keepSessionLoop(res.s)
+		return nil
+	case <-deadline:
+		return perrors.Errorf("new session with server: timed out after %s", c.timeout)
+	}
 }
 
 func (c *Client) keepSessionLoop(s *concurrency.Session) {
