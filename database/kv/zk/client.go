@@ -18,6 +18,8 @@
 package gxzookeeper
 
 import (
+	"net"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -26,7 +28,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
 )
@@ -162,22 +164,58 @@ func (z *ZookeeperClient) createZookeeperConn() error {
 	return nil
 }
 
-// WithTestCluster sets test cluster for zk Client
-func WithTestCluster(ts *zk.TestCluster) Option {
-	return func(opt *options) {
-		opt.Ts = ts
+// zkAddrEnvKey is the environment variable used to tell NewZookeeperClientFromEnv
+// which real zookeeper server it should connect to.
+const zkAddrEnvKey = "ZK_ADDR"
+
+// defaultZkAddr is used by NewZookeeperClientFromEnv when the ZK_ADDR
+// environment variable is not set.
+const defaultZkAddr = "127.0.0.1:2181"
+
+// dialProbeTimeout bounds the reachability check NewZookeeperClientFromEnv
+// performs before calling zk.Connect.
+const dialProbeTimeout = 5 * time.Second
+
+// sessionEstablishTimeout bounds how long NewZookeeperClientFromEnv and
+// waitForSession will wait for a freshly dialed connection to reach
+// zk.StateHasSession.
+const sessionEstablishTimeout = 5 * time.Second
+
+// sessionPollInterval is the polling interval waitForSession uses while
+// waiting for a connection to reach zk.StateHasSession.
+const sessionPollInterval = 50 * time.Millisecond
+
+// waitForSession blocks until conn reports zk.StateHasSession, polling its
+// State() at pollInterval, and returns an error if timeout elapses first.
+// It never reads from conn's event channel, so callers that still need to
+// observe the full initial event sequence on that channel can do so
+// afterwards without having lost any events to this wait.
+func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		if conn.State() == zk.StateHasSession {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return perrors.Errorf("timed out after %s waiting for zookeeper session", timeout)
+		}
+		time.Sleep(pollInterval)
 	}
 }
 
-// NewMockZookeeperClient returns a mock Client instance
-func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) (*zk.TestCluster, *ZookeeperClient, <-chan zk.Event, error) {
-	var (
-		err error
-		z   *ZookeeperClient
-		ts  *zk.TestCluster
-	)
+// NewZookeeperClientFromEnv returns a ZookeeperClient instance that connects
+// to a real zookeeper server named by the ZK_ADDR environment variable
+// (defaulting to "127.0.0.1:2181" when unset). It is intended for tests and
+// local development, not production use.
+//
+// It blocks until the resulting connection reaches zk.StateHasSession or
+// sessionEstablishTimeout elapses. Callers are responsible for starting that
+// zookeeper server beforehand and should Close() the returned
+// *ZookeeperClient once done with it.
+func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
+	var err error
 
-	z = &ZookeeperClient{
+	z := &ZookeeperClient{
 		name:           name,
 		ZkAddrs:        []string{},
 		Timeout:        timeout,
@@ -193,23 +231,40 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		opt(option)
 	}
 
-	// connect to zookeeper
-	if option.Ts != nil {
-		ts = option.Ts
-	} else {
-		ts, err = zk.StartTestCluster(1, nil, nil, zk.WithRetryTimes(40))
-		if err != nil {
-			return nil, nil, nil, perrors.WithMessagef(err, "zk.StartTestCluster fail")
-		}
+	addr := os.Getenv(zkAddrEnvKey)
+	if addr == "" {
+		addr = defaultZkAddr
+	}
+	z.ZkAddrs = []string{addr}
+
+	// zk.Connect only fails on a malformed/empty server list: it dials in a
+	// background goroutine and otherwise returns immediately, so it would
+	// silently hand back a client marked valid even with nothing listening.
+	// Probe reachability up front so callers get an explicit error instead
+	// of hanging on the first operation.
+	probeConn, probeErr := net.DialTimeout("tcp", addr, dialProbeTimeout)
+	if probeErr != nil {
+		return nil, nil, perrors.WithMessagef(probeErr, "no zookeeper server reachable at %s (set %s to point at one)", addr, zkAddrEnvKey)
+	}
+	_ = probeConn.Close()
+
+	// connect to a real zookeeper server, see the doc comment above.
+	z.Conn, z.Session, err = zk.Connect(z.ZkAddrs, timeout)
+	if err != nil {
+		return nil, nil, perrors.WithMessagef(err, "zk.Connect fail")
 	}
 
-	z.Conn, z.Session, err = ts.ConnectWithOptions(timeout)
-	if err != nil {
-		return nil, nil, nil, perrors.WithMessagef(err, "zk.Connect fail")
+	// zk.Connect dials in a background goroutine and returns before the
+	// session handshake completes, so wait for it here rather than handing
+	// back a client that looks valid but isn't usable yet.
+	if err := waitForSession(z.Conn, sessionEstablishTimeout, sessionPollInterval); err != nil {
+		z.Conn.Close()
+		return nil, nil, perrors.WithMessagef(err, "zk.Connect to %s", strings.Join(z.ZkAddrs, ","))
 	}
+
 	atomic.StoreUint32(&z.valid, 1)
 	z.activeNumber++
-	return ts, z, z.Session, nil
+	return z, z.Session, nil
 }
 
 // HandleZkEvent handles zookeeper events
@@ -425,7 +480,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 	if conn == nil {
 		return nil, nil, ErrNilZkClientConn
 	}
-	children, stat, watcher, err := conn.ChildrenW(path)
+	children, stat, watchCh, err := conn.ChildrenW(path)
 
 	if err != nil {
 		return nil, nil, perrors.WithMessagef(err, "Error while invoking zk.ChildrenW(path:%s), the reason maybe is: ", path)
@@ -434,7 +489,7 @@ func (z *ZookeeperClient) GetChildrenW(path string) ([]string, <-chan zk.Event, 
 		return nil, nil, perrors.WithMessagef(ErrStatIsNil, "Error while invokeing zk.ChildrenW(path:%s), the reason is: ", path)
 	}
 
-	return children, watcher.EvtCh, nil
+	return children, watchCh, nil
 }
 
 // GetChildren gets children by @path
@@ -461,13 +516,13 @@ func (z *ZookeeperClient) ExistW(zkPath string) (<-chan zk.Event, error) {
 	if conn == nil {
 		return nil, ErrNilZkClientConn
 	}
-	_, _, watcher, err := conn.ExistsW(zkPath)
+	_, _, watchCh, err := conn.ExistsW(zkPath)
 
 	if err != nil {
 		return nil, perrors.WithMessagef(err, "zk.ExistsW(path:%s)", zkPath)
 	}
 
-	return watcher.EvtCh, nil
+	return watchCh, nil
 }
 
 // GetContent gets content by @zkPath
