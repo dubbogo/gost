@@ -164,19 +164,19 @@ func (z *ZookeeperClient) createZookeeperConn() error {
 	return nil
 }
 
-// zkMockAddrEnvKey is the environment variable used to tell NewMockZookeeperClient
+// zkAddrEnvKey is the environment variable used to tell NewZookeeperClientFromEnv
 // which real zookeeper server it should connect to.
-const zkMockAddrEnvKey = "ZK_ADDR"
+const zkAddrEnvKey = "ZK_ADDR"
 
-// defaultZkMockAddr is used by NewMockZookeeperClient when the ZK_ADDR
+// defaultZkAddr is used by NewZookeeperClientFromEnv when the ZK_ADDR
 // environment variable is not set.
-const defaultZkMockAddr = "127.0.0.1:2181"
+const defaultZkAddr = "127.0.0.1:2181"
 
-// dialProbeTimeout bounds the reachability check NewMockZookeeperClient
+// dialProbeTimeout bounds the reachability check NewZookeeperClientFromEnv
 // performs before calling zk.Connect.
 const dialProbeTimeout = 5 * time.Second
 
-// sessionEstablishTimeout bounds how long NewMockZookeeperClient and
+// sessionEstablishTimeout bounds how long NewZookeeperClientFromEnv and
 // waitForSession will wait for a freshly dialed connection to reach
 // zk.StateHasSession.
 const sessionEstablishTimeout = 5 * time.Second
@@ -203,14 +203,16 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 	}
 }
 
-// NewMockZookeeperClient returns a ZookeeperClient instance for testing purposes.
+// NewZookeeperClientFromEnv returns a ZookeeperClient instance that connects
+// to a real zookeeper server named by the ZK_ADDR environment variable
+// (defaulting to "127.0.0.1:2181" when unset). It is intended for tests and
+// local development, not production use.
 //
-// It dials the zookeeper server named by the ZK_ADDR environment variable
-// (defaulting to "127.0.0.1:2181" when unset) and blocks until the resulting
-// connection reaches zk.StateHasSession or sessionEstablishTimeout elapses.
-// Callers are responsible for starting that zookeeper server beforehand and
-// should Close() the returned *ZookeeperClient once done with it.
-func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
+// It blocks until the resulting connection reaches zk.StateHasSession or
+// sessionEstablishTimeout elapses. Callers are responsible for starting that
+// zookeeper server beforehand and should Close() the returned
+// *ZookeeperClient once done with it.
+func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
 	var err error
 
 	z := &ZookeeperClient{
@@ -229,9 +231,9 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 		opt(option)
 	}
 
-	addr := os.Getenv(zkMockAddrEnvKey)
+	addr := os.Getenv(zkAddrEnvKey)
 	if addr == "" {
-		addr = defaultZkMockAddr
+		addr = defaultZkAddr
 	}
 	z.ZkAddrs = []string{addr}
 
@@ -242,7 +244,7 @@ func NewMockZookeeperClient(name string, timeout time.Duration, opts ...Option) 
 	// of hanging on the first operation.
 	probeConn, probeErr := net.DialTimeout("tcp", addr, dialProbeTimeout)
 	if probeErr != nil {
-		return nil, nil, perrors.WithMessagef(probeErr, "no zookeeper server reachable at %s (set %s to point at one)", addr, zkMockAddrEnvKey)
+		return nil, nil, perrors.WithMessagef(probeErr, "no zookeeper server reachable at %s (set %s to point at one)", addr, zkAddrEnvKey)
 	}
 	_ = probeConn.Close()
 

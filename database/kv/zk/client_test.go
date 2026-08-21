@@ -206,14 +206,16 @@ func Test_Close(t *testing.T) {
 	client4.Close()
 }
 
-// Test_newMockZookeeperClient verifies that NewMockZookeeperClient connects
+// Test_newZookeeperClientFromEnv verifies that NewZookeeperClientFromEnv connects
 // successfully and that its event channel delivers the expected sequence of
 // session state events.
-func Test_newMockZookeeperClient(t *testing.T) {
+func Test_newZookeeperClientFromEnv(t *testing.T) {
 	testZkAddr(t)
 
-	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	z, event, err := NewZookeeperClientFromEnv("test", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
 	defer z.Close()
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
@@ -224,8 +226,10 @@ func Test_newMockZookeeperClient(t *testing.T) {
 func TestCreate(t *testing.T) {
 	testZkAddr(t)
 
-	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	z, event, err := NewZookeeperClientFromEnv("test", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
 	defer z.Close()
 	defer cleanupZkPath(z, testRootPath)
 
@@ -242,8 +246,10 @@ func TestCreate(t *testing.T) {
 func TestCreateDelete(t *testing.T) {
 	testZkAddr(t)
 
-	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	z, event, err := NewZookeeperClientFromEnv("test", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
 	defer z.Close()
 	defer cleanupZkPath(z, testRootPath)
 
@@ -263,8 +269,10 @@ func TestCreateDelete(t *testing.T) {
 func TestRegisterTemp(t *testing.T) {
 	testZkAddr(t)
 
-	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	z, event, err := NewZookeeperClientFromEnv("test", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
 	defer z.Close()
 	defer cleanupZkPath(z, testRootPath)
 
@@ -285,8 +293,10 @@ func TestRegisterTemp(t *testing.T) {
 func TestRegisterTempSeq(t *testing.T) {
 	testZkAddr(t)
 
-	z, event, err := NewMockZookeeperClient("test", 15*time.Second)
-	assert.NoError(t, err)
+	z, event, err := NewZookeeperClientFromEnv("test", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
 	defer z.Close()
 	defer cleanupZkPath(z, testRootPath)
 
