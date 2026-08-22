@@ -18,6 +18,8 @@
 package gxetcd
 
 import (
+	"context"
+	"net"
 	"net/url"
 	"os"
 	"path"
@@ -34,6 +36,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"go.etcd.io/etcd/server/v3/embed"
 
@@ -149,6 +152,98 @@ func (suite *ClientTestSuite) TestClientClose() {
 	if c.rawClient.ActiveConnection().GetState() != connectivity.Ready {
 		t.Fatal(suite.client.rawClient.ActiveConnection().GetState())
 	}
+}
+
+func TestNewClientWithOptionsTimeoutsInitialGrant(t *testing.T) {
+	const timeout = 100 * time.Millisecond
+
+	embed.SetupGrpcLoggingForTest(false)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	listenerDone := make(chan struct{})
+	go func() {
+		defer close(listenerDone)
+		conn, acceptErr := listener.Accept()
+		if acceptErr != nil {
+			return
+		}
+		defer conn.Close()
+		<-ctx.Done()
+	}()
+	t.Cleanup(func() {
+		cancel()
+		_ = listener.Close()
+		<-listenerDone
+	})
+
+	started := time.Now()
+	done := make(chan error, 1)
+	go func() {
+		_, clientErr := NewClientWithOptions(ctx, &Options{
+			Endpoints: []string{listener.Addr().String()},
+			Timeout:   timeout,
+			Heartbeat: 1,
+		})
+		done <- clientErr
+	}()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("expected client initialization to fail")
+		}
+		if !strings.Contains(err.Error(), "grant session lease") {
+			t.Fatalf("expected grant session lease error, got %v", err)
+		}
+		if elapsed := time.Since(started); elapsed > time.Second {
+			t.Fatalf("client initialization took too long: %s", elapsed)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("client initialization did not respect the grant timeout")
+	}
+}
+
+func (suite *ClientTestSuite) TestKeepSessionUsesDefaultTTL() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	before, err := suite.client.rawClient.Leases(ctx)
+	suite.Require().NoError(err)
+	existingLeases := make(map[clientv3.LeaseID]struct{}, len(before.Leases))
+	for _, lease := range before.Leases {
+		existingLeases[lease.ID] = struct{}{}
+	}
+
+	c, err := NewConfigClientWithErr(
+		WithName(suite.etcdConfig.name),
+		WithEndpoints(suite.etcdConfig.endpoints...),
+		WithTimeout(suite.etcdConfig.timeout),
+		WithHeartbeat(0),
+	)
+	suite.Require().NoError(err)
+	defer c.Close()
+
+	after, err := c.rawClient.Leases(ctx)
+	suite.Require().NoError(err)
+	newLeases := make([]clientv3.LeaseID, 0, 1)
+	for _, lease := range after.Leases {
+		if _, ok := existingLeases[lease.ID]; !ok {
+			newLeases = append(newLeases, lease.ID)
+		}
+	}
+	suite.Require().Len(newLeases, 1)
+
+	ttl, err := c.rawClient.TimeToLive(ctx, newLeases[0])
+	suite.Require().NoError(err)
+	suite.Equal(int64(defaultSessionTTL), ttl.GrantedTTL)
+
+	_, err = c.rawClient.Revoke(ctx, newLeases[0])
+	suite.Require().NoError(err)
 }
 
 func (suite *ClientTestSuite) TestClientValid() {
