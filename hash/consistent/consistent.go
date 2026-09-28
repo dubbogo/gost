@@ -20,20 +20,15 @@ package consistent
 import (
 	"encoding/binary"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
-)
 
-import (
-	"github.com/pkg/errors"
-
-	"golang.org/x/crypto/blake2b"
-)
-
-import (
 	"github.com/dubbogo/gost/strings"
+	"github.com/pkg/errors"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -156,6 +151,89 @@ func (c *Consistent) Add(host string) {
 	defer c.Unlock()
 
 	c.add(host)
+}
+
+// AddBatch adds hosts in input order, skipping existing hosts and preserving their loads.
+// Hash collisions follow the same ownership rules as sequential Add calls.
+// It holds the write lock for the entire batch and sorts at most once.
+// An empty or nil slice is a no-op.
+func (c *Consistent) AddBatch(hosts []string) {
+	if len(hosts) == 0 {
+		return
+	}
+	c.Lock()
+	defer c.Unlock()
+
+	c.addBatchMerge(hosts)
+}
+
+func (c *Consistent) addBatch(hosts []string) {
+	changed := false
+	for _, host := range hosts {
+		if _, exists := c.loadMap[host]; exists {
+			continue
+		}
+		c.loadMap[host] = &Host{Name: host}
+		for i := uint32(0); i < c.replicaFactor; i++ {
+			h := c.Hash(c.eltKey(host, int(i)))
+			c.circle[h] = host
+		}
+		changed = true
+	}
+	if changed {
+		c.updateSortedHashes()
+	}
+}
+
+// addBatchMerge sorts only new positions and merges them with the existing index.
+// The caller must hold the write lock and the existing index must match circle.
+func (c *Consistent) addBatchMerge(hosts []string) {
+	var added hashArray
+	for _, host := range hosts {
+		if _, exists := c.loadMap[host]; exists {
+			continue
+		}
+		c.loadMap[host] = &Host{Name: host}
+		for i := uint32(0); i < c.replicaFactor; i++ {
+			h := c.Hash(c.eltKey(host, int(i)))
+			if _, exists := c.circle[h]; !exists {
+				added = append(added, h)
+			}
+			// Publish each position immediately to deduplicate within this batch,
+			// while preserving sequential Add's last-new-host-wins ownership.
+			c.circle[h] = host
+		}
+	}
+	if len(added) == 0 {
+		return
+	}
+	slices.Sort(added)
+	if len(c.sortedHashes) == 0 {
+		c.sortedHashes = added
+		return
+	}
+	oldLen := len(c.sortedHashes)
+	addedLen := len(added)
+	hashes := slices.Grow(c.sortedHashes, addedLen)
+	hashes = hashes[:oldLen+addedLen]
+	i := oldLen - 1
+	j := addedLen - 1
+	k := len(hashes) - 1
+
+	for i >= 0 && j >= 0 {
+		if hashes[i] > added[j] {
+			hashes[k] = hashes[i]
+			i--
+		} else {
+			hashes[k] = added[j]
+			j--
+		}
+		k--
+	}
+	if j >= 0 {
+		copy(hashes[:j+1], added[:j+1])
+	}
+	c.sortedHashes = hashes
 }
 
 func (c *Consistent) add(host string) {
@@ -407,6 +485,52 @@ func (c *Consistent) remove(host string) bool {
 		delete(c.loadMap, host)
 	}
 	return true
+}
+
+// RemoveBatch removes only positions currently owned by the supplied hosts.
+// Unlike Remove, it preserves colliding positions owned by other hosts.
+// Missing and duplicate hosts are ignored. It holds one write lock and compacts
+// the index once; previously overwritten positions are not restored.
+func (c *Consistent) RemoveBatch(hosts []string) {
+	if len(hosts) == 0 {
+		return
+	}
+	c.Lock()
+	defer c.Unlock()
+	c.removeBatch(hosts)
+}
+
+// removeBatch requires the caller to hold the write lock.
+func (c *Consistent) removeBatch(hosts []string) {
+	changed := false
+	for _, host := range hosts {
+		if _, exists := c.loadMap[host]; !exists {
+			continue
+		}
+		for i := uint32(0); i < c.replicaFactor; i++ {
+			pos := c.Hash(c.eltKey(host, int(i)))
+			if owner, exists := c.circle[pos]; exists && owner == host {
+				delete(c.circle, pos)
+				changed = true
+			}
+		}
+		if h, exists := c.loadMap[host]; exists {
+			atomic.AddInt64(&c.totalLoad, -h.Load)
+			delete(c.loadMap, host)
+		}
+	}
+	if !changed {
+		return
+	}
+	// circle already records the surviving positions, so no deletion set is needed.
+	write := 0
+	for _, pos := range c.sortedHashes {
+		if _, exists := c.circle[pos]; exists {
+			c.sortedHashes[write] = pos
+			write++
+		}
+	}
+	c.sortedHashes = c.sortedHashes[:write]
 }
 
 // Hosts Return the list of hosts in the ring
