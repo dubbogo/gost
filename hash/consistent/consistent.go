@@ -487,9 +487,10 @@ func (c *Consistent) remove(host string) bool {
 	return true
 }
 
-// RemoveBatch has the same final-state semantics as sequential Remove calls.
-// Like Remove, it deletes computed positions regardless of their current owner,
-// even for missing hosts. It holds one write lock and compacts the index once.
+// RemoveBatch removes only positions currently owned by the supplied hosts.
+// Unlike Remove, it preserves colliding positions owned by other hosts.
+// Missing and duplicate hosts are ignored. It holds one write lock and compacts
+// the index once; previously overwritten positions are not restored.
 func (c *Consistent) RemoveBatch(hosts []string) {
 	if len(hosts) == 0 {
 		return
@@ -503,9 +504,12 @@ func (c *Consistent) RemoveBatch(hosts []string) {
 func (c *Consistent) removeBatch(hosts []string) {
 	changed := false
 	for _, host := range hosts {
+		if _, exists := c.loadMap[host]; !exists {
+			continue
+		}
 		for i := uint32(0); i < c.replicaFactor; i++ {
 			pos := c.Hash(c.eltKey(host, int(i)))
-			if _, exists := c.circle[pos]; exists {
+			if owner, exists := c.circle[pos]; exists && owner == host {
 				delete(c.circle, pos)
 				changed = true
 			}
