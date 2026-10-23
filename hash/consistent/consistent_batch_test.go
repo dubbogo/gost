@@ -359,7 +359,7 @@ func TestRemoveCollisionSemantics(t *testing.T) {
 				wantCircle[7] = "b"
 				wantHashes = hashArray{7}
 			}
-			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || len(c.loadMap) != 2 || c.totalLoad != 8 {
+			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || !reflect.DeepEqual(c.GetLoads(), map[string]int64{"a": 3, "b": 5}) || c.totalLoad != 8 {
 				t.Fatalf("missing-host semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
 			}
 			// Recreate the shared position, then remove a different existing owner.
@@ -368,7 +368,7 @@ func TestRemoveCollisionSemantics(t *testing.T) {
 			if batch {
 				wantCircle[7] = "c"
 			}
-			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || len(c.loadMap) != 2 || c.totalLoad != 5 {
+			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || !reflect.DeepEqual(c.GetLoads(), map[string]int64{"b": 5, "c": 0}) || c.totalLoad != 5 {
 				t.Fatalf("collision or duplicate semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
 			}
 			remove([]string{"c"})
