@@ -24,7 +24,21 @@ import (
 
 var benchmarkRingHash *Consistent
 
+// CI runs `go test ./... -bench . -race`. BenchmarkBatchAppend and
+// BenchmarkRemoveBatch rebuild a large ring inside b.Loop() with the timer
+// stopped, so the runner keeps iterating until the 10m package timeout.
+func skipRaceRingBenches(b *testing.B) bool {
+	if raceDetector {
+		b.Skip("ring rebuild benches exceed CI's 10m timeout under -race")
+		return true
+	}
+	return false
+}
+
 func BenchmarkFullBuild(b *testing.B) {
+	if skipRaceRingBenches(b) {
+		return
+	}
 	for _, hostCount := range []int{1, 32, 256, 1024} {
 		for _, replicaCount := range []int{10, 100} {
 			name := fmt.Sprintf("hosts=%d/replicas=%d", hostCount, replicaCount)
@@ -63,6 +77,9 @@ func BenchmarkFullBuild(b *testing.B) {
 // BenchmarkBatchAppend excludes rebuilding the initial ring from time and
 // allocation metrics. Every iteration starts with the same logical state.
 func BenchmarkBatchAppend(b *testing.B) {
+	if skipRaceRingBenches(b) {
+		return
+	}
 	for _, existing := range []int{256, 1024} {
 		for _, replicas := range []int{10, 100} {
 			initial := make([]string, existing)
@@ -102,6 +119,9 @@ func BenchmarkBatchAppend(b *testing.B) {
 }
 
 func BenchmarkRemoveBatch(b *testing.B) {
+	if skipRaceRingBenches(b) {
+		return
+	}
 	for _, size := range []int{256, 1024} {
 		for _, replicas := range []int{10, 100} {
 			hosts := make([]string, size)

@@ -5,8 +5,9 @@ on:
     branches: [ master ]
   pull_request:
     branches: "*"
-  pull_request_target:
-    branches: "*"
+  # Do not also listen for pull_request_target. That event checks out the
+  # base branch, so a red master fails every PR even when the PR itself is green.
+  # DING_* secrets must not be injected into PR jobs (unused by tests).
 
 jobs:
   build:
@@ -18,10 +19,6 @@ jobs:
           - '1.23'
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} - Go${{ matrix.go_version }}
-
-    env:
-      DING_TOKEN: ${{ secrets.DING_TOKEN }}
-      DING_SIGN: ${{ secrets.DING_SIGN }}
 
     steps:
     - uses: actions/checkout@v4
@@ -70,7 +67,3 @@ jobs:
 
     - name: Coverage
       run: bash <(curl -s https://codecov.io/bash)
-
-    - name: Hello world
-      run: echo Hello world ${{ secrets.DING_TOKEN }} ${{ secrets.DING_SIGN }}
-

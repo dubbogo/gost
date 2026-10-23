@@ -262,7 +262,7 @@ func TestAddBatchMergePositions(t *testing.T) {
 	}
 }
 
-func TestRemoveBatchMatchesSequentialRemove(t *testing.T) {
+func TestRemoveBatchSemantics(t *testing.T) {
 	for _, collision := range []bool{false, true} {
 		t.Run(fmt.Sprintf("collisions=%t", collision), func(t *testing.T) {
 			for _, tc := range []struct {
@@ -290,8 +290,12 @@ func TestRemoveBatchMatchesSequentialRemove(t *testing.T) {
 						got.UpdateLoad(h, int64(i+1))
 					}
 					for _, hosts := range tc.batches {
-						for _, h := range hosts {
-							want.Remove(h)
+						if collision {
+							removeOwnedPositionsForTest(want, hosts)
+						} else {
+							for _, h := range hosts {
+								want.Remove(h)
+							}
 						}
 						got.RemoveBatch(hosts)
 						assertBatchRingEquivalent(t, want, got)
@@ -306,7 +310,32 @@ func TestRemoveBatchMatchesSequentialRemove(t *testing.T) {
 	}
 }
 
-func TestRemoveBatchLegacyCollisionSemantics(t *testing.T) {
+// With collisions, legacy Remove is not a reference for RemoveBatch. Model the
+// documented ownership semantics by filtering positions rather than hashing hosts.
+// The reference ring is only accessed after all mutations have finished.
+func removeOwnedPositionsForTest(c *Consistent, hosts []string) {
+	removed := make(map[string]bool, len(hosts))
+	for _, host := range hosts {
+		removed[host] = true
+	}
+	c.sortedHashes = c.sortedHashes[:0]
+	for position, owner := range c.circle {
+		if removed[owner] {
+			delete(c.circle, position)
+		} else {
+			c.sortedHashes = append(c.sortedHashes, position)
+		}
+	}
+	slices.Sort(c.sortedHashes)
+	for host := range removed {
+		if load, exists := c.loadMap[host]; exists {
+			c.totalLoad -= load.Load
+			delete(c.loadMap, host)
+		}
+	}
+}
+
+func TestRemoveCollisionSemantics(t *testing.T) {
 	for _, batch := range []bool{false, true} {
 		t.Run(fmt.Sprintf("batch=%t", batch), func(t *testing.T) {
 			c := NewConsistentHash(WithHashFunc(func([]byte) uint64 { return 7 }))
@@ -322,15 +351,24 @@ func TestRemoveBatchLegacyCollisionSemantics(t *testing.T) {
 					}
 				}
 			}
-			// Legacy Remove deletes a colliding position even for an absent host.
+			// RemoveBatch preserves b; legacy Remove deletes its position even for an absent host.
 			remove([]string{"missing"})
-			if len(c.circle) != 0 || len(c.sortedHashes) != 0 || len(c.loadMap) != 2 || c.totalLoad != 8 {
+			wantCircle := map[uint32]string{}
+			wantHashes := hashArray{}
+			if batch {
+				wantCircle[7] = "b"
+				wantHashes = hashArray{7}
+			}
+			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || !reflect.DeepEqual(c.GetLoads(), map[string]int64{"a": 3, "b": 5}) || c.totalLoad != 8 {
 				t.Fatalf("missing-host semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
 			}
 			// Recreate the shared position, then remove a different existing owner.
 			c.Add("c")
 			remove([]string{"a", "a"})
-			if len(c.circle) != 0 || len(c.sortedHashes) != 0 || len(c.loadMap) != 2 || c.totalLoad != 5 {
+			if batch {
+				wantCircle[7] = "c"
+			}
+			if !reflect.DeepEqual(c.circle, wantCircle) || !slices.Equal(c.sortedHashes, wantHashes) || !reflect.DeepEqual(c.GetLoads(), map[string]int64{"b": 5, "c": 0}) || c.totalLoad != 5 {
 				t.Fatalf("collision or duplicate semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
 			}
 			remove([]string{"c"})
