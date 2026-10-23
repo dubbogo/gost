@@ -5,8 +5,9 @@ on:
     branches: [ master ]
   pull_request:
     branches: "*"
-  pull_request_target:
-    branches: "*"
+  # Do not also listen for pull_request_target. That event checks out the
+  # base branch, so a red master fails every PR even when the PR itself is green.
+  # Secrets are only needed on push to master; tests do not use them.
 
 jobs:
   build:
