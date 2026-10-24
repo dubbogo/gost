@@ -19,12 +19,27 @@ package consistent
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
 var benchmarkRingHash *Consistent
 
+// These performance comparisons include expensive reference builds and per-loop
+// setup excluded from the benchmark timer. Running them with the default
+// calibration under -race can exceed the package timeout. Keep ordinary CI's
+// `go test -bench . -race` bounded; opt in to performance runs explicitly:
+// GOST_CONSISTENT_BENCH=1 go test ./hash/consistent -run '^$' -bench . -benchmem -benchtime=3x -timeout=30m
+// Use a fixed iteration count to bound untimed setup work as well.
+func requireConsistentBenchmark(b *testing.B) {
+	b.Helper()
+	if os.Getenv("GOST_CONSISTENT_BENCH") != "1" {
+		b.Skip("set GOST_CONSISTENT_BENCH=1 to run consistent-hash performance comparisons")
+	}
+}
+
 func BenchmarkFullBuild(b *testing.B) {
+	requireConsistentBenchmark(b)
 	for _, hostCount := range []int{1, 32, 256, 1024} {
 		for _, replicaCount := range []int{10, 100} {
 			name := fmt.Sprintf("hosts=%d/replicas=%d", hostCount, replicaCount)
@@ -63,6 +78,7 @@ func BenchmarkFullBuild(b *testing.B) {
 // BenchmarkBatchAppend excludes rebuilding the initial ring from time and
 // allocation metrics. Every iteration starts with the same logical state.
 func BenchmarkBatchAppend(b *testing.B) {
+	requireConsistentBenchmark(b)
 	for _, existing := range []int{256, 1024} {
 		for _, replicas := range []int{10, 100} {
 			initial := make([]string, existing)
@@ -102,6 +118,7 @@ func BenchmarkBatchAppend(b *testing.B) {
 }
 
 func BenchmarkRemoveBatch(b *testing.B) {
+	requireConsistentBenchmark(b)
 	for _, size := range []int{256, 1024} {
 		for _, replicas := range []int{10, 100} {
 			hosts := make([]string, size)

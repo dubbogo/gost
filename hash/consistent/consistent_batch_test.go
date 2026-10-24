@@ -263,83 +263,88 @@ func TestAddBatchMergePositions(t *testing.T) {
 }
 
 func TestRemoveBatchMatchesSequentialRemove(t *testing.T) {
-	for _, collision := range []bool{false, true} {
-		t.Run(fmt.Sprintf("collisions=%t", collision), func(t *testing.T) {
-			for _, tc := range []struct {
-				name    string
-				initial []string
-				batches [][]string
-			}{
-				{"empty_ring", nil, [][]string{nil, {}, {"missing"}}},
-				{"empty_input", []string{"a", "b"}, [][]string{nil, {}}},
-				{"missing", []string{"a", "b"}, [][]string{{"missing"}}},
-				{"duplicates", []string{"a", "b", "c"}, [][]string{{"a", "a", "missing"}, {"a"}}},
-				{"all", []string{"a", "b", "c"}, [][]string{{"c", "b", "a"}, {"c"}}},
-				{"split", []string{"a", "b", "c", "d"}, [][]string{{"a", "c"}, {"d"}, {"b"}}},
-			} {
-				t.Run(tc.name, func(t *testing.T) {
-					opts := []Option{WithReplicaNum(13)}
-					if collision {
-						opts = append(opts, WithMaxVnodeNum(7))
-					}
-					want, got := NewConsistentHash(opts...), NewConsistentHash(opts...)
-					for i, h := range tc.initial {
-						want.Add(h)
-						got.Add(h)
-						want.UpdateLoad(h, int64(i+1))
-						got.UpdateLoad(h, int64(i+1))
-					}
-					for _, hosts := range tc.batches {
-						for _, h := range hosts {
-							want.Remove(h)
-						}
-						got.RemoveBatch(hosts)
-						assertBatchRingEquivalent(t, want, got)
-					}
-					// Verify subsequent additions also work with the compacted index.
-					want.Add("new")
-					got.AddBatch([]string{"new"})
-					assertBatchRingEquivalent(t, want, got)
-				})
+	for _, tc := range []struct {
+		name    string
+		initial []string
+		batches [][]string
+	}{
+		{"empty_ring", nil, [][]string{nil, {}, {"missing"}}},
+		{"empty_input", []string{"a", "b"}, [][]string{nil, {}}},
+		{"missing", []string{"a", "b"}, [][]string{{"missing"}}},
+		{"duplicates", []string{"a", "b", "c"}, [][]string{{"a", "a", "missing"}, {"a"}}},
+		{"all", []string{"a", "b", "c"}, [][]string{{"c", "b", "a"}, {"c"}}},
+		{"split", []string{"a", "b", "c", "d"}, [][]string{{"a", "c"}, {"d"}, {"b"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := []Option{WithReplicaNum(13)}
+			want, got := NewConsistentHash(opts...), NewConsistentHash(opts...)
+			for i, h := range tc.initial {
+				want.Add(h)
+				got.Add(h)
+				want.UpdateLoad(h, int64(i+1))
+				got.UpdateLoad(h, int64(i+1))
 			}
+			for _, hosts := range tc.batches {
+				for _, h := range hosts {
+					want.Remove(h)
+				}
+				got.RemoveBatch(hosts)
+				assertBatchRingEquivalent(t, want, got)
+			}
+			// Verify subsequent additions also work with the compacted index.
+			want.Add("new")
+			got.AddBatch([]string{"new"})
+			assertBatchRingEquivalent(t, want, got)
 		})
 	}
 }
 
-func TestRemoveBatchLegacyCollisionSemantics(t *testing.T) {
-	for _, batch := range []bool{false, true} {
-		t.Run(fmt.Sprintf("batch=%t", batch), func(t *testing.T) {
-			c := NewConsistentHash(WithHashFunc(func([]byte) uint64 { return 7 }))
-			c.AddBatch([]string{"a", "b"})
-			c.UpdateLoad("a", 3)
-			c.UpdateLoad("b", 5)
-			remove := func(hosts []string) {
-				if batch {
-					c.RemoveBatch(hosts)
-				} else {
-					for _, h := range hosts {
-						c.Remove(h)
-					}
+// Pin both behaviors: batch deletion preserves other owners, while legacy
+// single deletion still removes a computed position regardless of ownership.
+func TestRemoveBatchCollisionOwnership(t *testing.T) {
+	for _, target := range []string{"missing", "a", "b"} {
+		t.Run(target, func(t *testing.T) {
+			makeRing := func() *Consistent {
+				c := NewConsistentHash(WithHashFunc(func([]byte) uint64 { return 7 }))
+				c.AddBatch([]string{"a", "b"})
+				c.UpdateLoad("a", 3)
+				c.UpdateLoad("b", 5)
+				return c
+			}
+			c := makeRing()
+			c.RemoveBatch([]string{target, target})
+			if target != "b" {
+				if c.circle[7] != "b" || !slices.Equal(c.sortedHashes, hashArray{7}) {
+					t.Fatalf("removed another host's position: %v, %v", c.circle, c.sortedHashes)
+				}
+				if host, err := c.Get("key"); err != nil || host != "b" {
+					t.Fatalf("Get = %q, %v", host, err)
+				}
+			} else {
+				if len(c.circle) != 0 || len(c.sortedHashes) != 0 {
+					t.Fatal("deleted owner must not restore overwritten positions")
+				}
+				if _, err := c.Get("key"); err != ErrNoHosts {
+					t.Fatalf("expected ErrNoHosts, got %v", err)
 				}
 			}
-			// Legacy Remove deletes a colliding position even for an absent host.
-			remove([]string{"missing"})
-			if len(c.circle) != 0 || len(c.sortedHashes) != 0 || len(c.loadMap) != 2 || c.totalLoad != 8 {
-				t.Fatalf("missing-host semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
+			expected := map[string]int64{"a": 3, "b": 5}
+			delete(expected, target)
+			var total int64
+			for _, load := range expected {
+				total += load
 			}
-			// Recreate the shared position, then remove a different existing owner.
-			c.Add("c")
-			remove([]string{"a", "a"})
-			if len(c.circle) != 0 || len(c.sortedHashes) != 0 || len(c.loadMap) != 2 || c.totalLoad != 5 {
-				t.Fatalf("collision or duplicate semantics differ: circle=%v loads=%v total=%d", c.circle, c.GetLoads(), c.totalLoad)
+			if !reflect.DeepEqual(c.GetLoads(), expected) || c.totalLoad != total {
+				t.Fatalf("loads=%v total=%d, want %v total=%d", c.GetLoads(), c.totalLoad, expected, total)
 			}
-			remove([]string{"c"})
-			remove([]string{"b", "b"})
+			c.RemoveBatch([]string{"a", "b", "a"})
 			if len(c.circle) != 0 || len(c.sortedHashes) != 0 || len(c.loadMap) != 0 || c.totalLoad != 0 {
-				t.Fatal("ring not empty after deleting all hosts")
+				t.Fatal("ring not empty")
 			}
-			if _, err := c.Get("key"); err != ErrNoHosts {
-				t.Fatalf("want ErrNoHosts, got %v", err)
+			legacy := makeRing()
+			legacy.Remove(target)
+			if len(legacy.circle) != 0 || len(legacy.sortedHashes) != 0 {
+				t.Fatal("legacy Remove behavior changed")
 			}
 		})
 	}
