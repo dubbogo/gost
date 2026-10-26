@@ -274,16 +274,14 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 		switch event.State {
 		case zk.StateDisconnected:
 			atomic.StoreUint32(&z.valid, 0)
+		// StateConnected is a session state synthesized by the client. Its Path
+		// is always empty, so prefix subscribers can never match it. The case is
+		// kept only for compatibility. StateSyncConnected is the KeeperState on
+		// node watches.
 		case zk.StateConnected, zk.StateSyncConnected:
-			z.eventRegistryLock.RLock()
-			for path, a := range z.eventRegistry {
-				if strings.HasPrefix(event.Path, path) {
-					for _, e := range a {
-						e <- event
-					}
-				}
+			for _, e := range z.snapshotPrefixEventChans(event.Path) {
+				e <- event
 			}
-			z.eventRegistryLock.RUnlock()
 		case zk.StateConnecting, zk.StateHasSession:
 			if state == (int)(zk.StateHasSession) {
 				continue
@@ -296,16 +294,42 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 					z.reconnectCh = make(chan struct{})
 				}
 			}
-			z.eventRegistryLock.RLock()
-			if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
-				for _, e := range a {
-					e <- event
-				}
+			for _, e := range z.snapshotExactEventChans(event.Path) {
+				e <- event
 			}
-			z.eventRegistryLock.RUnlock()
 		}
 		state = (int)(event.State)
 	}
+}
+
+// snapshotPrefixEventChans copies subscriber channels whose registered path
+// is a prefix of eventPath, then releases eventRegistryLock. Sends happen
+// after the lock is released so one blocked subscriber cannot stall
+// RegisterEvent or UnregisterEvent. UnregisterEvent does not close channels.
+func (z *ZookeeperClient) snapshotPrefixEventChans(eventPath string) []chan zk.Event {
+	z.eventRegistryLock.RLock()
+	defer z.eventRegistryLock.RUnlock()
+	var targets []chan zk.Event
+	for path, subs := range z.eventRegistry {
+		if strings.HasPrefix(eventPath, path) {
+			targets = append(targets, subs...)
+		}
+	}
+	return targets
+}
+
+// snapshotExactEventChans copies subscriber channels registered on eventPath.
+// The registry lock is not held across the caller's send.
+func (z *ZookeeperClient) snapshotExactEventChans(eventPath string) []chan zk.Event {
+	z.eventRegistryLock.RLock()
+	defer z.eventRegistryLock.RUnlock()
+	subs := z.eventRegistry[eventPath]
+	if len(subs) == 0 {
+		return nil
+	}
+	targets := make([]chan zk.Event, len(subs))
+	copy(targets, subs)
+	return targets
 }
 
 // RegisterEvent registers zookeeper events

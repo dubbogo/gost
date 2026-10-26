@@ -261,7 +261,9 @@ func TestCreateDelete(t *testing.T) {
 	assert.NoError(t, err)
 	err = z.Delete(testRootPath + "/test2/test3/test4")
 	assert.NoError(t, err)
-	// verifyEventOrder(t, event, []zk.EventType{zk.EventNodeCreated}, "event channel")
+	// Left commented. verifyEventOrder is not defined in this package, and
+	// Create/Delete do not set a watch, so this session never receives
+	// EventNodeCreated. TestNodeEventCarriesSyncConnected covers that event.
 }
 
 // TestRegisterTemp verifies that RegisterTemp creates an ephemeral child
@@ -308,6 +310,55 @@ func TestRegisterTempSeq(t *testing.T) {
 	assert.Equal(t, testRootPath+"/test2/test3/0000000000", tmpath)
 	states := []zk.State{zk.StateConnecting, zk.StateConnected, zk.StateHasSession}
 	verifyEventStateOrder(t, event, states, "event channel")
+}
+
+// TestNodeEventCarriesSyncConnected checks a real ZooKeeper watch. The server
+// reports node creation as EventNodeCreated with StateSyncConnected, and the
+// prefix subscriber receives that event. testZkAddr skips the test when no
+// server is reachable.
+func TestNodeEventCarriesSyncConnected(t *testing.T) {
+	testZkAddr(t)
+
+	z, _, err := NewZookeeperClientFromEnv("node-event", 15*time.Second)
+	if !assert.NoError(t, err) {
+		return
+	}
+	defer z.Close()
+	defer cleanupZkPath(z, testRootPath)
+
+	// FromEnv leaves the session to the caller. Production NewZookeeperClient
+	// starts the handler, which is what feeds RegisterEvent.
+	go z.zkEventHandler.HandleZkEvent(z)
+
+	got := make(chan zk.Event, 4)
+	z.RegisterEvent(testRootPath+"/", got)
+	if !assert.NoError(t, z.Create(testRootPath)) {
+		return
+	}
+	node := testRootPath + "/demo.tag-router"
+	_, _, _, err = z.Conn.ExistsW(node)
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.NoError(t, z.Create(node)) {
+		return
+	}
+
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case ev := <-got:
+			if ev.Path != node {
+				continue
+			}
+			if ev.Type != zk.EventNodeCreated || ev.State != zk.StateSyncConnected {
+				t.Fatalf("node event = %+v, want Type=EventNodeCreated State=StateSyncConnected", ev)
+			}
+			return
+		case <-deadline:
+			t.Fatal("prefix subscriber did not receive the created node event")
+		}
+	}
 }
 
 // Test_UnregisterEvent verifies that UnregisterEvent removes a previously
