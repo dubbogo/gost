@@ -212,6 +212,17 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 // sessionEstablishTimeout elapses. Callers are responsible for starting that
 // zookeeper server beforehand and should Close() the returned
 // *ZookeeperClient once done with it.
+//
+// Unlike NewZookeeperClient, it does not start the event handler.
+// Channels passed to RegisterEvent receive nothing until the caller runs
+// go z.GetEventHandler().HandleZkEvent(z). The returned channel is z.Session,
+// which that handler also reads, so a caller that starts the handler must
+// not consume the returned channel as well.
+//
+// opts currently has no effect. Each Option is applied to a local value that
+// is never read, so WithZkName does not change the client name; use name
+// instead. Options for NewZookeeperClient such as WithZkEventHandler and
+// WithZkTimeOut have a different type and cannot be passed here.
 func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
 	var err error
 
@@ -274,16 +285,14 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 		switch event.State {
 		case zk.StateDisconnected:
 			atomic.StoreUint32(&z.valid, 0)
+		// StateConnected is a session state synthesized by the client. Its Path
+		// is always empty, so prefix subscribers can never match it. The case is
+		// kept only for compatibility. StateSyncConnected is the KeeperState on
+		// node watches.
 		case zk.StateConnected, zk.StateSyncConnected:
-			z.eventRegistryLock.RLock()
-			for path, a := range z.eventRegistry {
-				if strings.HasPrefix(event.Path, path) {
-					for _, e := range a {
-						e <- event
-					}
-				}
+			for _, e := range z.snapshotPrefixEventChans(event.Path) {
+				e <- event
 			}
-			z.eventRegistryLock.RUnlock()
 		case zk.StateConnecting, zk.StateHasSession:
 			if state == (int)(zk.StateHasSession) {
 				continue
@@ -296,19 +305,62 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 					z.reconnectCh = make(chan struct{})
 				}
 			}
-			z.eventRegistryLock.RLock()
-			if a, ok := z.eventRegistry[event.Path]; ok && 0 < len(a) {
-				for _, e := range a {
-					e <- event
-				}
+			// The exact-path send below never runs: these session states have
+			// an empty Path, and RegisterEvent rejects an empty path. The valid
+			// and reconnectCh updates above are live and must stay.
+			for _, e := range z.snapshotExactEventChans(event.Path) {
+				e <- event
 			}
-			z.eventRegistryLock.RUnlock()
 		}
 		state = (int)(event.State)
 	}
 }
 
-// RegisterEvent registers zookeeper events
+// snapshotPrefixEventChans copies subscriber channels whose registered path
+// is a prefix of eventPath, then releases eventRegistryLock. Sends happen
+// after the lock is released so one blocked subscriber cannot stall
+// RegisterEvent or UnregisterEvent. UnregisterEvent does not close channels.
+func (z *ZookeeperClient) snapshotPrefixEventChans(eventPath string) []chan zk.Event {
+	z.eventRegistryLock.RLock()
+	defer z.eventRegistryLock.RUnlock()
+	var targets []chan zk.Event
+	for path, subs := range z.eventRegistry {
+		if strings.HasPrefix(eventPath, path) {
+			targets = append(targets, subs...)
+		}
+	}
+	return targets
+}
+
+// snapshotExactEventChans copies subscriber channels registered on eventPath.
+// The registry lock is not held across the caller's send.
+func (z *ZookeeperClient) snapshotExactEventChans(eventPath string) []chan zk.Event {
+	z.eventRegistryLock.RLock()
+	defer z.eventRegistryLock.RUnlock()
+	subs := z.eventRegistry[eventPath]
+	if len(subs) == 0 {
+		return nil
+	}
+	targets := make([]chan zk.Event, len(subs))
+	copy(targets, subs)
+	return targets
+}
+
+// RegisterEvent registers zookeeper events.
+//
+// The client never closes a registered channel. Callers must not close a
+// channel they registered. Dispatch snapshots channels under the registry
+// lock and sends after releasing it, so a send may still be in flight when
+// UnregisterEvent returns. Closing the channel then panics the handler
+// goroutine, which the caller cannot recover. When the channel is no longer
+// needed, unregister it and drop the reference. Dispatch sends synchronously
+// on the handler goroutine: the channel should be buffered and the caller
+// must keep reading it, or one unread subscriber blocks later subscribers
+// and the whole handler goroutine.
+//
+// Registering the same channel on the same path again is a no-op, so the
+// channel receives each event for that path once and a single
+// UnregisterEvent removes it.
 func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
@@ -317,11 +369,23 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	z.eventRegistryLock.Lock()
 	defer z.eventRegistryLock.Unlock()
 	a := z.eventRegistry[zkPath]
+	for _, e := range a {
+		if e == event {
+			return
+		}
+	}
 	a = append(a, event)
 	z.eventRegistry[zkPath] = a
 }
 
-// UnregisterEvent unregisters zookeeper events
+// UnregisterEvent unregisters zookeeper events.
+//
+// It neither closes the channel nor waits for an in-flight dispatch to
+// finish. The client never closes a registered channel. Callers must not
+// close a channel they registered: dispatch snapshots channels under the
+// registry lock and sends after releasing it, so a send may still be in
+// flight when this function returns. Closing then panics the handler
+// goroutine, which the caller cannot recover. Drop the reference instead.
 func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
@@ -333,15 +397,18 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 	if !ok {
 		return
 	}
-	for i, e := range infoList {
-		if e == event {
-			infoList = append(infoList[:i], infoList[i+1:]...)
+	// Rebuild instead of deleting in place. Ranging a slice while truncating
+	// it panics when the same channel was registered more than once.
+	kept := make([]chan zk.Event, 0, len(infoList))
+	for _, e := range infoList {
+		if e != event {
+			kept = append(kept, e)
 		}
 	}
-	if len(infoList) == 0 {
+	if len(kept) == 0 {
 		delete(z.eventRegistry, zkPath)
 	} else {
-		z.eventRegistry[zkPath] = infoList
+		z.eventRegistry[zkPath] = kept
 	}
 }
 
@@ -550,7 +617,13 @@ func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 	return z.reconnectCh
 }
 
-// GetEventHandler gets zookeeper event handler
+// GetEventHandler returns the client's event handler.
+//
+// NewZookeeperClient already starts this handler. NewZookeeperClientFromEnv
+// does not, so a caller of that constructor that wants RegisterEvent channels
+// to receive events must run go z.GetEventHandler().HandleZkEvent(z) itself.
+// Do not start it for a client whose handler is already running: both copies
+// would read z.Session and split the events between them.
 func (z *ZookeeperClient) GetEventHandler() ZkEventHandler {
 	return z.zkEventHandler
 }
