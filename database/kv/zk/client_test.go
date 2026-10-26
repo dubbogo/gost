@@ -328,7 +328,7 @@ func TestNodeEventCarriesSyncConnected(t *testing.T) {
 
 	// FromEnv leaves the session to the caller. Production NewZookeeperClient
 	// starts the handler, which is what feeds RegisterEvent.
-	go z.zkEventHandler.HandleZkEvent(z)
+	go z.GetEventHandler().HandleZkEvent(z)
 
 	got := make(chan zk.Event, 4)
 	z.RegisterEvent(testRootPath+"/", got)

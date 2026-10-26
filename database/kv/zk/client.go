@@ -215,7 +215,7 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 //
 // Unlike the production constructors, it does not start the event handler.
 // Channels passed to RegisterEvent receive nothing until the caller runs
-// go z.zkEventHandler.HandleZkEvent(z). The returned channel is z.Session,
+// go z.GetEventHandler().HandleZkEvent(z). The returned channel is z.Session,
 // which that handler also reads, so a caller that starts the handler must
 // not consume the returned channel as well.
 func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
@@ -612,7 +612,13 @@ func (z *ZookeeperClient) Reconnect() <-chan struct{} {
 	return z.reconnectCh
 }
 
-// GetEventHandler gets zookeeper event handler
+// GetEventHandler returns the client's event handler.
+//
+// NewZookeeperClient already starts this handler. NewZookeeperClientFromEnv
+// does not, so a caller of that constructor that wants RegisterEvent channels
+// to receive events must run go z.GetEventHandler().HandleZkEvent(z) itself.
+// Do not start it for a client whose handler is already running: both copies
+// would read z.Session and split the events between them.
 func (z *ZookeeperClient) GetEventHandler() ZkEventHandler {
 	return z.zkEventHandler
 }
