@@ -135,25 +135,38 @@ func TestDispatchDoesNotHoldRegistryLockWhileSubscriberBlocks(t *testing.T) {
 	}
 }
 
-func TestUnregisterEventRemovesDuplicateRegistration(t *testing.T) {
+func TestRegisterEventIgnoresDuplicateRegistration(t *testing.T) {
+	session := make(chan zk.Event, 1)
 	client := &ZookeeperClient{
+		Session:       session,
 		eventRegistry: make(map[string][]chan zk.Event),
 	}
-	dup := make(chan zk.Event, 1)
+	dup := make(chan zk.Event, 2)
 	const path = "/dubbo/config/"
 	client.RegisterEvent(path, dup)
 	client.RegisterEvent(path, dup)
+	require.Len(t, client.eventRegistry[path], 1)
 
-	require.NotPanics(t, func() {
-		client.UnregisterEvent(path, dup)
-	})
+	session <- zk.Event{Type: zk.EventNodeDataChanged, State: zk.StateSyncConnected, Path: path + "demo"}
+	close(session)
+	(&DefaultHandler{}).HandleZkEvent(client)
+	require.Len(t, dup, 1)
+
+	client.UnregisterEvent(path, dup)
 	_, exists := client.eventRegistry[path]
 	require.False(t, exists)
+}
 
+func TestUnregisterEventRemovesDuplicateRegistration(t *testing.T) {
+	// RegisterEvent no longer stores duplicates, so build the registry
+	// directly to cover a slice that already holds the channel twice.
+	dup := make(chan zk.Event, 1)
 	other := make(chan zk.Event, 1)
-	client.RegisterEvent(path, other)
-	client.RegisterEvent(path, dup)
-	client.RegisterEvent(path, dup)
+	const path = "/dubbo/config/"
+	client := &ZookeeperClient{
+		eventRegistry: map[string][]chan zk.Event{path: {dup, other, dup}},
+	}
+
 	require.NotPanics(t, func() {
 		client.UnregisterEvent(path, dup)
 	})

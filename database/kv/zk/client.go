@@ -212,6 +212,12 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 // sessionEstablishTimeout elapses. Callers are responsible for starting that
 // zookeeper server beforehand and should Close() the returned
 // *ZookeeperClient once done with it.
+//
+// Unlike the production constructors, it does not start the event handler.
+// Channels passed to RegisterEvent receive nothing until the caller runs
+// go z.zkEventHandler.HandleZkEvent(z). The returned channel is z.Session,
+// which that handler also reads, so a caller that starts the handler must
+// not consume the returned channel as well.
 func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
 	var err error
 
@@ -346,6 +352,10 @@ func (z *ZookeeperClient) snapshotExactEventChans(eventPath string) []chan zk.Ev
 // on the handler goroutine: the channel should be buffered and the caller
 // must keep reading it, or one unread subscriber blocks later subscribers
 // and the whole handler goroutine.
+//
+// Registering the same channel on the same path again is a no-op, so the
+// channel receives each event for that path once and a single
+// UnregisterEvent removes it.
 func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
@@ -354,6 +364,11 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	z.eventRegistryLock.Lock()
 	defer z.eventRegistryLock.Unlock()
 	a := z.eventRegistry[zkPath]
+	for _, e := range a {
+		if e == event {
+			return
+		}
+	}
 	a = append(a, event)
 	z.eventRegistry[zkPath] = a
 }
