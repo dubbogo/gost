@@ -135,6 +135,31 @@ func TestDispatchDoesNotHoldRegistryLockWhileSubscriberBlocks(t *testing.T) {
 	}
 }
 
+func TestUnregisterEventRemovesDuplicateRegistration(t *testing.T) {
+	client := &ZookeeperClient{
+		eventRegistry: make(map[string][]chan zk.Event),
+	}
+	dup := make(chan zk.Event, 1)
+	const path = "/dubbo/config/"
+	client.RegisterEvent(path, dup)
+	client.RegisterEvent(path, dup)
+
+	require.NotPanics(t, func() {
+		client.UnregisterEvent(path, dup)
+	})
+	_, exists := client.eventRegistry[path]
+	require.False(t, exists)
+
+	other := make(chan zk.Event, 1)
+	client.RegisterEvent(path, other)
+	client.RegisterEvent(path, dup)
+	client.RegisterEvent(path, dup)
+	require.NotPanics(t, func() {
+		client.UnregisterEvent(path, dup)
+	})
+	require.Equal(t, []chan zk.Event{other}, client.eventRegistry[path])
+}
+
 func TestDisconnectedClearsConnValid(t *testing.T) {
 	session := make(chan zk.Event, 1)
 	client := &ZookeeperClient{

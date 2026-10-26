@@ -282,9 +282,6 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 			for _, e := range z.snapshotPrefixEventChans(event.Path) {
 				e <- event
 			}
-		// StateConnecting and StateHasSession carry an empty Path, and
-		// RegisterEvent rejects an empty path, so this exact-path send never
-		// runs. It is kept only for compatibility, like StateConnected above.
 		case zk.StateConnecting, zk.StateHasSession:
 			if state == (int)(zk.StateHasSession) {
 				continue
@@ -297,6 +294,9 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 					z.reconnectCh = make(chan struct{})
 				}
 			}
+			// The exact-path send below never runs: these session states have
+			// an empty Path, and RegisterEvent rejects an empty path. The valid
+			// and reconnectCh updates above are live and must stay.
 			for _, e := range z.snapshotExactEventChans(event.Path) {
 				e <- event
 			}
@@ -342,7 +342,10 @@ func (z *ZookeeperClient) snapshotExactEventChans(eventPath string) []chan zk.Ev
 // lock and sends after releasing it, so a send may still be in flight when
 // UnregisterEvent returns. Closing the channel then panics the handler
 // goroutine, which the caller cannot recover. When the channel is no longer
-// needed, unregister it and drop the reference.
+// needed, unregister it and drop the reference. Dispatch sends synchronously
+// on the handler goroutine: the channel should be buffered and the caller
+// must keep reading it, or one unread subscriber blocks later subscribers
+// and the whole handler goroutine.
 func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
@@ -374,15 +377,18 @@ func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 	if !ok {
 		return
 	}
-	for i, e := range infoList {
-		if e == event {
-			infoList = append(infoList[:i], infoList[i+1:]...)
+	// Rebuild instead of deleting in place. Ranging a slice while truncating
+	// it panics when the same channel was registered more than once.
+	kept := make([]chan zk.Event, 0, len(infoList))
+	for _, e := range infoList {
+		if e != event {
+			kept = append(kept, e)
 		}
 	}
-	if len(infoList) == 0 {
+	if len(kept) == 0 {
 		delete(z.eventRegistry, zkPath)
 	} else {
-		z.eventRegistry[zkPath] = infoList
+		z.eventRegistry[zkPath] = kept
 	}
 }
 
