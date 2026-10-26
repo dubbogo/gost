@@ -282,6 +282,9 @@ func (d *DefaultHandler) HandleZkEvent(z *ZookeeperClient) {
 			for _, e := range z.snapshotPrefixEventChans(event.Path) {
 				e <- event
 			}
+		// StateConnecting and StateHasSession carry an empty Path, and
+		// RegisterEvent rejects an empty path, so this exact-path send never
+		// runs. It is kept only for compatibility, like StateConnected above.
 		case zk.StateConnecting, zk.StateHasSession:
 			if state == (int)(zk.StateHasSession) {
 				continue
@@ -332,7 +335,14 @@ func (z *ZookeeperClient) snapshotExactEventChans(eventPath string) []chan zk.Ev
 	return targets
 }
 
-// RegisterEvent registers zookeeper events
+// RegisterEvent registers zookeeper events.
+//
+// The client never closes a registered channel. Callers must not close a
+// channel they registered. Dispatch snapshots channels under the registry
+// lock and sends after releasing it, so a send may still be in flight when
+// UnregisterEvent returns. Closing the channel then panics the handler
+// goroutine, which the caller cannot recover. When the channel is no longer
+// needed, unregister it and drop the reference.
 func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
@@ -345,7 +355,14 @@ func (z *ZookeeperClient) RegisterEvent(zkPath string, event chan zk.Event) {
 	z.eventRegistry[zkPath] = a
 }
 
-// UnregisterEvent unregisters zookeeper events
+// UnregisterEvent unregisters zookeeper events.
+//
+// It neither closes the channel nor waits for an in-flight dispatch to
+// finish. The client never closes a registered channel. Callers must not
+// close a channel they registered: dispatch snapshots channels under the
+// registry lock and sends after releasing it, so a send may still be in
+// flight when this function returns. Closing then panics the handler
+// goroutine, which the caller cannot recover. Drop the reference instead.
 func (z *ZookeeperClient) UnregisterEvent(zkPath string, event chan zk.Event) {
 	if zkPath == "" {
 		return
