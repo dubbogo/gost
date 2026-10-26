@@ -213,7 +213,7 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 // zookeeper server beforehand and should Close() the returned
 // *ZookeeperClient once done with it.
 //
-// Unlike the production constructors, it does not start the event handler.
+// Unlike NewZookeeperClient, it does not start the event handler.
 // Channels passed to RegisterEvent receive nothing until the caller runs
 // go z.GetEventHandler().HandleZkEvent(z). The returned channel is z.Session,
 // which that handler also reads, so a caller that starts the handler must
