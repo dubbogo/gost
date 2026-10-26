@@ -218,6 +218,11 @@ func waitForSession(conn *zk.Conn, timeout, pollInterval time.Duration) error {
 // go z.GetEventHandler().HandleZkEvent(z). The returned channel is z.Session,
 // which that handler also reads, so a caller that starts the handler must
 // not consume the returned channel as well.
+//
+// opts currently has no effect. Each Option is applied to a local value that
+// is never read, so WithZkName does not change the client name; use name
+// instead. Options for NewZookeeperClient such as WithZkEventHandler and
+// WithZkTimeOut have a different type and cannot be passed here.
 func NewZookeeperClientFromEnv(name string, timeout time.Duration, opts ...Option) (*ZookeeperClient, <-chan zk.Event, error) {
 	var err error
 
