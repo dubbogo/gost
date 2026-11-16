@@ -18,6 +18,8 @@
 package logger
 
 import (
+	"sync"
+
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
 
@@ -25,7 +27,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var logger Logger
+// loggerMutex protects logger from concurrent access.
+var (
+	loggerMutex sync.RWMutex
+	logger      Logger
+)
 
 func init() {
 	InitLogger(nil)
@@ -104,22 +110,30 @@ func InitLogger(conf *Config) {
 		zapLogger = initZapLoggerWithSyncer(config)
 	}
 
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
+	setLogger(&DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level})
+}
+
+func setLogger(log Logger) {
+	loggerMutex.Lock()
+	defer loggerMutex.Unlock()
+	logger = log
 }
 
 // SetLogger sets logger for dubbo and getty
 func SetLogger(log Logger) {
-	logger = log
+	setLogger(log)
 }
 
 // GetLogger gets the logger
 func GetLogger() Logger {
+	loggerMutex.RLock()
+	defer loggerMutex.RUnlock()
 	return logger
 }
 
 // SetLoggerLevel use for set logger level
 func SetLoggerLevel(level string) bool {
-	if l, ok := logger.(OpsLogger); ok {
+	if l, ok := GetLogger().(OpsLogger); ok {
 		return l.SetLoggerLevel(level)
 	}
 	return false
