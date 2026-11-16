@@ -39,6 +39,12 @@ func (l *nopLogger) Fatalf(format string, args ...interface{}) {}
 // TestSetLoggerConcurrentWithLogging checks that swapping the global logger
 // while other goroutines log does not race (apache/dubbo-go#3823).
 func TestSetLoggerConcurrentWithLogging(t *testing.T) {
+	// Save the logger installed before this test and restore it afterwards,
+	// so this test leaves no global state behind (e.g. a custom logger set
+	// by an earlier test is not silently replaced by the default one).
+	prev := GetLogger()
+	t.Cleanup(func() { SetLogger(prev) })
+
 	done := make(chan struct{})
 	var wg sync.WaitGroup
 
@@ -67,6 +73,4 @@ func TestSetLoggerConcurrentWithLogging(t *testing.T) {
 	}
 	close(done)
 	wg.Wait()
-
-	InitLogger(nil)
 }
