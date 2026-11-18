@@ -27,16 +27,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// loggerBox is the immutable snapshot of the global logger. Stores install a
-// brand-new box instead of mutating the old one, so a snapshot read with Load
-// can never change or tear underneath its caller.
-type loggerBox struct {
-	logger Logger
-}
-
 // globalLogger holds the current logger. Readers take a whole snapshot with a
-// single atomic load; writers publish a new box.
-var globalLogger atomic.Pointer[loggerBox]
+// single atomic load; writers publish a new *Logger instead of mutating the
+// old one, so a snapshot can never tear or change underneath its caller.
+var globalLogger atomic.Pointer[Logger]
 
 func init() {
 	InitLogger(nil)
@@ -119,7 +113,7 @@ func InitLogger(conf *Config) {
 }
 
 func setLogger(log Logger) {
-	globalLogger.Store(&loggerBox{logger: log})
+	globalLogger.Store(&log)
 }
 
 // SetLogger sets logger for dubbo and getty
@@ -129,8 +123,8 @@ func SetLogger(log Logger) {
 
 // GetLogger gets the logger
 func GetLogger() Logger {
-	if box := globalLogger.Load(); box != nil {
-		return box.logger
+	if p := globalLogger.Load(); p != nil {
+		return *p
 	}
 	return nil
 }
