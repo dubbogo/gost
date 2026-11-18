@@ -18,7 +18,7 @@
 package logger
 
 import (
-	"sync"
+	"sync/atomic"
 
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
@@ -27,11 +27,16 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// loggerMutex protects logger from concurrent access.
-var (
-	loggerMutex sync.RWMutex
-	logger      Logger
-)
+// loggerBox is the immutable snapshot of the global logger. Stores install a
+// brand-new box instead of mutating the old one, so a snapshot read with Load
+// can never change or tear underneath its caller.
+type loggerBox struct {
+	logger Logger
+}
+
+// globalLogger holds the current logger. Readers take a whole snapshot with a
+// single atomic load; writers publish a new box.
+var globalLogger atomic.Pointer[loggerBox]
 
 func init() {
 	InitLogger(nil)
@@ -114,9 +119,7 @@ func InitLogger(conf *Config) {
 }
 
 func setLogger(log Logger) {
-	loggerMutex.Lock()
-	defer loggerMutex.Unlock()
-	logger = log
+	globalLogger.Store(&loggerBox{logger: log})
 }
 
 // SetLogger sets logger for dubbo and getty
@@ -126,9 +129,10 @@ func SetLogger(log Logger) {
 
 // GetLogger gets the logger
 func GetLogger() Logger {
-	loggerMutex.RLock()
-	defer loggerMutex.RUnlock()
-	return logger
+	if box := globalLogger.Load(); box != nil {
+		return box.logger
+	}
+	return nil
 }
 
 // SetLoggerLevel use for set logger level
