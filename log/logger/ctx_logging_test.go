@@ -20,6 +20,7 @@ package logger
 import (
 	"context"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -102,15 +103,32 @@ func observedBase(t *testing.T) (*DubboLogger, *observer.ObservedLogs) {
 	return &DubboLogger{Logger: sugar, DynamicLevel: zap.NewAtomicLevelAt(zapcore.DebugLevel)}, logs
 }
 
-func logAll(ctx context.Context) {
+// nextLine returns the line number of the statement after the call.
+func nextLine() int {
+	_, _, line, _ := runtime.Caller(1)
+	return line + 1
+}
+
+// logAll calls each package-level Ctx function and returns their lines.
+func logAll(ctx context.Context) []int {
+	var lines []int
+	lines = append(lines, nextLine())
 	CtxDebug(ctx, "debug")
+	lines = append(lines, nextLine())
 	CtxInfo(ctx, "info")
+	lines = append(lines, nextLine())
 	CtxWarn(ctx, "warn")
+	lines = append(lines, nextLine())
 	CtxError(ctx, "error")
+	lines = append(lines, nextLine())
 	CtxDebugf(ctx, "%s", "debugf")
+	lines = append(lines, nextLine())
 	CtxInfof(ctx, "%s", "infof")
+	lines = append(lines, nextLine())
 	CtxWarnf(ctx, "%s", "warnf")
+	lines = append(lines, nextLine())
 	CtxErrorf(ctx, "%s", "errorf")
+	return lines
 }
 
 var wantEntries = []struct {
@@ -127,7 +145,9 @@ var wantEntries = []struct {
 	{zapcore.ErrorLevel, "errorf"},
 }
 
-func assertEntries(t *testing.T, logs *observer.ObservedLogs, traceID string, callerFile string) {
+// assertEntries checks the entries logged by logAll. A nil lines means the
+// caller is expected in callerFile at a line this test does not know.
+func assertEntries(t *testing.T, logs *observer.ObservedLogs, traceID string, callerFile string, lines []int) {
 	t.Helper()
 	entries := logs.AllUntimed()
 	require.Len(t, entries, len(wantEntries))
@@ -136,6 +156,9 @@ func assertEntries(t *testing.T, logs *observer.ObservedLogs, traceID string, ca
 		assert.Equal(t, want.level, got.Level, want.message)
 		assert.Equal(t, want.message, got.Message)
 		assert.Equal(t, callerFile, filepath.Base(got.Caller.File), want.message)
+		if lines != nil {
+			assert.Equal(t, lines[i], got.Caller.Line, want.message)
+		}
 		if traceID == "" {
 			assert.Empty(t, got.Context, want.message)
 		} else {
@@ -148,18 +171,18 @@ func TestCtxFuncsFallBackToPlainMethods(t *testing.T) {
 	base, logs := observedBase(t)
 	SetLogger(base)
 
-	logAll(context.WithValue(context.Background(), traceIDKey{}, "abc"))
+	lines := logAll(context.WithValue(context.Background(), traceIDKey{}, "abc"))
 
-	assertEntries(t, logs, "", testFile)
+	assertEntries(t, logs, "", testFile, lines)
 }
 
 func TestCtxFuncsUseCtxLogger(t *testing.T) {
 	base, logs := observedBase(t)
 	SetLogger(&skippingTraceLogger{traceLogger{base}})
 
-	logAll(context.WithValue(context.Background(), traceIDKey{}, "abc"))
+	lines := logAll(context.WithValue(context.Background(), traceIDKey{}, "abc"))
 
-	assertEntries(t, logs, "abc", testFile)
+	assertEntries(t, logs, "abc", testFile, lines)
 }
 
 func TestCtxFuncsWithoutCallerSkipper(t *testing.T) {
@@ -170,18 +193,20 @@ func TestCtxFuncsWithoutCallerSkipper(t *testing.T) {
 
 	// The context still reaches the logger. Without CallerSkipper the
 	// reported caller is the package-level function.
-	assertEntries(t, logs, "abc", "ctx_logging.go")
+	assertEntries(t, logs, "abc", "ctx_logging.go", nil)
 }
 
 func TestCtxMethodsCalledDirectly(t *testing.T) {
 	base, logs := observedBase(t)
 	l := &skippingTraceLogger{traceLogger{base}}
 
+	line := nextLine()
 	l.CtxInfof(context.WithValue(context.Background(), traceIDKey{}, "abc"), "%s", "direct")
 
 	entries := logs.AllUntimed()
 	require.Len(t, entries, 1)
 	assert.Equal(t, testFile, filepath.Base(entries[0].Caller.File))
+	assert.Equal(t, line, entries[0].Caller.Line)
 	assert.Equal(t, "abc", entries[0].ContextMap()["trace_id"])
 }
 
@@ -189,11 +214,13 @@ func TestPlainFuncsUnchangedWithCtxLogger(t *testing.T) {
 	base, logs := observedBase(t)
 	SetLogger(&skippingTraceLogger{traceLogger{base}})
 
+	line := nextLine()
 	Infof("%s", "plain")
 
 	entries := logs.AllUntimed()
 	require.Len(t, entries, 1)
 	assert.Equal(t, "plain", entries[0].Message)
 	assert.Equal(t, testFile, filepath.Base(entries[0].Caller.File))
+	assert.Equal(t, line, entries[0].Caller.Line)
 	assert.Empty(t, entries[0].Context)
 }
