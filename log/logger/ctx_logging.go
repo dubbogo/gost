@@ -52,7 +52,7 @@ type CallerSkipper interface {
 // ctxLogger returns the global logger as a CtxLogger, adjusted for the extra
 // stack frame of the package-level Ctx functions.
 func ctxLogger() (CtxLogger, bool) {
-	l, ok := logger.(CtxLogger)
+	l, ok := GetLogger().(CtxLogger)
 	if !ok {
 		return nil, false
 	}
@@ -68,7 +68,7 @@ func CtxDebug(ctx context.Context, args ...interface{}) {
 		l.CtxDebug(ctx, args...)
 		return
 	}
-	logger.Debug(args...)
+	GetLogger().Debug(args...)
 }
 
 // CtxInfo logs at info level with the context of the call.
@@ -77,7 +77,7 @@ func CtxInfo(ctx context.Context, args ...interface{}) {
 		l.CtxInfo(ctx, args...)
 		return
 	}
-	logger.Info(args...)
+	GetLogger().Info(args...)
 }
 
 // CtxWarn logs at warning level with the context of the call.
@@ -86,7 +86,7 @@ func CtxWarn(ctx context.Context, args ...interface{}) {
 		l.CtxWarn(ctx, args...)
 		return
 	}
-	logger.Warn(args...)
+	GetLogger().Warn(args...)
 }
 
 // CtxError logs at error level with the context of the call.
@@ -95,7 +95,7 @@ func CtxError(ctx context.Context, args ...interface{}) {
 		l.CtxError(ctx, args...)
 		return
 	}
-	logger.Error(args...)
+	GetLogger().Error(args...)
 }
 
 // CtxDebugf logs a templated message at debug level with the context of the call.
@@ -104,7 +104,7 @@ func CtxDebugf(ctx context.Context, fmt string, args ...interface{}) {
 		l.CtxDebugf(ctx, fmt, args...)
 		return
 	}
-	logger.Debugf(fmt, args...)
+	GetLogger().Debugf(fmt, args...)
 }
 
 // CtxInfof logs a templated message at info level with the context of the call.
@@ -113,7 +113,7 @@ func CtxInfof(ctx context.Context, fmt string, args ...interface{}) {
 		l.CtxInfof(ctx, fmt, args...)
 		return
 	}
-	logger.Infof(fmt, args...)
+	GetLogger().Infof(fmt, args...)
 }
 
 // CtxWarnf logs a templated message at warning level with the context of the call.
@@ -122,7 +122,7 @@ func CtxWarnf(ctx context.Context, fmt string, args ...interface{}) {
 		l.CtxWarnf(ctx, fmt, args...)
 		return
 	}
-	logger.Warnf(fmt, args...)
+	GetLogger().Warnf(fmt, args...)
 }
 
 // CtxErrorf logs a templated message at error level with the context of the call.
@@ -131,5 +131,5 @@ func CtxErrorf(ctx context.Context, fmt string, args ...interface{}) {
 		l.CtxErrorf(ctx, fmt, args...)
 		return
 	}
-	logger.Errorf(fmt, args...)
+	GetLogger().Errorf(fmt, args...)
 }
