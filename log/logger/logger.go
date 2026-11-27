@@ -18,6 +18,8 @@
 package logger
 
 import (
+	"sync/atomic"
+
 	"github.com/natefinch/lumberjack"
 	"github.com/sirupsen/logrus"
 
@@ -25,7 +27,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var logger Logger
+// globalLogger holds the current logger. Readers take a whole snapshot with a
+// single atomic load; writers publish a new *Logger instead of mutating the
+// old one, so a snapshot can never tear or change underneath its caller.
+var globalLogger atomic.Pointer[Logger]
 
 func init() {
 	InitLogger(nil)
@@ -104,22 +109,29 @@ func InitLogger(conf *Config) {
 		zapLogger = initZapLoggerWithSyncer(config)
 	}
 
-	logger = &DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level}
+	setLogger(&DubboLogger{Logger: zapLogger.Sugar(), DynamicLevel: config.ZapConfig.Level})
+}
+
+func setLogger(log Logger) {
+	globalLogger.Store(&log)
 }
 
 // SetLogger sets logger for dubbo and getty
 func SetLogger(log Logger) {
-	logger = log
+	setLogger(log)
 }
 
 // GetLogger gets the logger
 func GetLogger() Logger {
-	return logger
+	if p := globalLogger.Load(); p != nil {
+		return *p
+	}
+	return nil
 }
 
 // SetLoggerLevel use for set logger level
 func SetLoggerLevel(level string) bool {
-	if l, ok := logger.(OpsLogger); ok {
+	if l, ok := GetLogger().(OpsLogger); ok {
 		return l.SetLoggerLevel(level)
 	}
 	return false
